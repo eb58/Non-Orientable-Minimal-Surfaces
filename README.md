@@ -12,7 +12,7 @@ und rendert sie mit Three.js als frei drehbares WebGL-Modell.
 
 ## Start
 
-Dieses Projekt verwendet ES-Module. Darum sollte die Seite ueber einen lokalen HTTP-Server geoeffnet werden, nicht direkt per `file://`.
+Dieses Projekt verwendet ES-Module. Darum sollte die Seite ueber einen lokalen HTTP-Server geoeffnet werden, nicht direkt per `file://`. Es gibt keine npm-Abhaengigkeiten; Node.js reicht zum Starten.
 
 Mit dem enthaltenen kleinen Node-Server:
 
@@ -24,6 +24,13 @@ Danach im Browser oeffnen:
 
 ```text
 http://127.0.0.1:8765/
+```
+
+Der Server bindet lokal an `127.0.0.1`. Falls der Port belegt ist, kann er in PowerShell so geaendert werden:
+
+```powershell
+$env:PORT = "9000"
+node server.js
 ```
 
 Alternativ funktioniert jeder statische Webserver, der das Projektverzeichnis ausliefert.
