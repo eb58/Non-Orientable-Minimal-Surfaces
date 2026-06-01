@@ -79,7 +79,7 @@ const cobra = ({ name, m = 5, r1, r2, uSegments = 58, vSegments = 221 }) => ({
   g: C$("z => z^(m - 2) * (z - 1) * (z - i) / ((z + 1) * (z + i))", { m }),
   fText: `z => (z + 1)^2 * (z + i)^2 / z^${m + 1}`,
   gText: `z => z^${m - 2} * (z - 1) * (z - i) / ((z + 1) * (z + i))`,
-  parameters: { m: { label: "m", min: 3, max: 11, step: 2, value: m, format: value => Math.round(value).toString() } },
+  parameters: { m: { label: "m", min: 5, max: 11, step: 2, value: m, format: value => Math.round(value).toString() } },
   withParameters: values => cobra({ name, m: Math.round(values.m), r1, r2, uSegments, vSegments })
 });
 
