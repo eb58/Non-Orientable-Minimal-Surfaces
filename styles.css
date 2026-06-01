@@ -1,0 +1,166 @@
+:root {
+  color-scheme: light;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: #f3f6f8;
+  color: #172026;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+}
+
+code {
+  border-radius: 4px;
+  background: #e4edf2;
+  padding: 0.08rem 0.25rem;
+  font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+  font-size: 0.93em;
+}
+
+a {
+  color: #1d647a;
+}
+
+.app {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  min-height: 100vh;
+}
+
+.viewer {
+  position: relative;
+  overflow: hidden;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 45% 32%, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0) 38%),
+    linear-gradient(145deg, #dbe6ec 0%, #eef4f7 54%, #c8d8df 100%);
+}
+
+#surface {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+}
+
+.hud {
+  position: absolute;
+  left: 18px;
+  bottom: 18px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  max-width: calc(100% - 36px);
+  border: 1px solid rgba(44, 73, 85, 0.14);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.72);
+  padding: 10px 12px;
+  color: #2b4450;
+  font-size: 0.92rem;
+  backdrop-filter: blur(12px);
+}
+
+.hud strong {
+  color: #10242d;
+}
+
+.panel {
+  border-left: 1px solid #d0dbe0;
+  background: #ffffff;
+  padding: 28px;
+}
+
+.panel h1 {
+  margin: 0 0 14px;
+  font-size: 1.35rem;
+  line-height: 1.15;
+}
+
+.panel p {
+  margin: 0 0 18px;
+  color: #3c515c;
+  line-height: 1.55;
+}
+
+.panel dl {
+  margin: 20px 0;
+}
+
+.panel dt {
+  margin: 14px 0 8px;
+  font-weight: 700;
+}
+
+.panel dd {
+  margin: 0 0 6px;
+}
+
+.note {
+  border-left: 3px solid #2f8da8;
+  padding-left: 12px;
+}
+
+.run-note {
+  border-radius: 6px;
+  background: #f0f6f8;
+  padding: 10px 12px;
+}
+
+.surface-buttons {
+  display: grid;
+  gap: 8px;
+  margin: 22px 0 16px;
+}
+
+button {
+  width: 100%;
+  border: 0;
+  border-radius: 6px;
+  background: #163845;
+  padding: 11px 14px;
+  color: #fff;
+  font: inherit;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #205064;
+}
+
+.surface-option {
+  border: 1px solid #cfdde3;
+  background: #edf4f7;
+  color: #17343f;
+  text-align: left;
+}
+
+.surface-option:hover {
+  background: #dfecef;
+}
+
+.surface-option.active {
+  border-color: #163845;
+  background: #163845;
+  color: #fff;
+}
+
+@media (max-width: 820px) {
+  .app {
+    grid-template-columns: 1fr;
+  }
+
+  .viewer {
+    min-height: 68vh;
+  }
+
+  .panel {
+    border-left: 0;
+    border-top: 1px solid #d0dbe0;
+  }
+}

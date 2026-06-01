@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Weierstrass Minimalfläche</title>
+    <link rel="stylesheet" href="styles.css">
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "./vendor/three/three.module.js",
+          "three/addons/": "./vendor/three/addons/"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <main class="app">
+      <section class="viewer" aria-label="Minimalfläche">
+        <canvas id="surface"></canvas>
+        <div class="hud">
+          <strong id="surface-name">Catenoid</strong>
+          <span>Three.js WebGL</span>
+          <span>ziehen: drehen</span>
+          <span>mausrad: zoom</span>
+        </div>
+      </section>
+      <aside class="panel">
+        <h1>Weierstrass-Darstellung</h1>
+        <p>
+          Die Fläche wird wie in deiner Referenz aus
+          <code>Re ∫ (f(1 - g²)/2, i f(1 + g²)/2, fg) dz</code>
+          berechnet. Zum Experimentieren später nur <code>f</code>,
+          <code>g</code> und den Parameterbereich in <code>main.js</code>
+          ändern.
+        </p>
+        <dl>
+          <dt>Aktuelle Fläche</dt>
+          <dd id="domain-info"></dd>
+          <dt>f</dt>
+          <dd><code id="formula-f"></code></dd>
+          <dt>g</dt>
+          <dd><code id="formula-g"></code></dd>
+        </dl>
+        <p class="note">
+          Das Catenoid folgt hier der Variante aus
+          <a href="https://github.com/eb58/algorithms-js/blob/master/src/minimal-moebius-strips/minimal-moebius-strips.html">minimal-moebius-strips.html</a>.
+        </p>
+        <p class="run-note">
+          Start über <code>node server.js</code>, dann
+          <code>http://127.0.0.1:8765/</code> öffnen.
+        </p>
+        <div id="surface-buttons" class="surface-buttons" aria-label="Minimalflächen"></div>
+        <button id="reset-view" type="button">Ansicht zurücksetzen</button>
+      </aside>
+    </main>
+    <script type="module" src="main.js"></script>
+  </body>
+</html>
