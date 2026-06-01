@@ -3,6 +3,7 @@
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   background: #f3f6f8;
   color: #172026;
+  --panel-width: 410px;
 }
 
 * {
@@ -28,7 +29,7 @@ a {
 
 .app {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 340px;
+  grid-template-columns: minmax(0, 1fr) 10px var(--panel-width);
   min-height: 100vh;
 }
 
@@ -46,6 +47,36 @@ a {
   width: 100%;
   height: 100%;
   touch-action: none;
+}
+
+.panel-resizer {
+  position: relative;
+  cursor: col-resize;
+  background: linear-gradient(90deg, #c7d6dd, #e7eef2);
+}
+
+.panel-resizer::after {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 3px;
+  height: 54px;
+  border-radius: 999px;
+  background: #79919b;
+  content: "";
+  transform: translate(-50%, -50%);
+  opacity: 0.55;
+}
+
+.panel-resizer:hover::after,
+.panel-resizer:focus-visible::after,
+body.resizing-panel .panel-resizer::after {
+  opacity: 1;
+}
+
+body.resizing-panel {
+  cursor: col-resize;
+  user-select: none;
 }
 
 .hud {
@@ -71,9 +102,9 @@ a {
 }
 
 .panel {
-  border-left: 1px solid #d0dbe0;
   background: #ffffff;
   padding: 28px;
+  overflow-x: hidden;
 }
 
 .panel h1 {
@@ -197,6 +228,10 @@ button:hover {
 
   .viewer {
     min-height: 68vh;
+  }
+
+  .panel-resizer {
+    display: none;
   }
 
   .panel {

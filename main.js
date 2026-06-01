@@ -20,6 +20,7 @@ const range = (min, max, segments) => Array.from(
   { length: segments + 1 },
   (_, index) => min + (max - min) * index / segments
 );
+const clamp = (min, value, max) => Math.min(max, Math.max(min, value));
 const formatNumber = value => Number(value).toFixed(2);
 const sliderBounds = rangeValues => {
   const span = rangeValues[1] - rangeValues[0];
@@ -106,6 +107,8 @@ const surfaces = [
 ];
 
 const canvas = document.querySelector("#surface");
+const app = document.querySelector(".app");
+const panelResizer = document.querySelector("#panel-resizer");
 const resetButton = document.querySelector("#reset-view");
 const surfaceName = document.querySelector("#surface-name");
 const formulaF = document.querySelector("#formula-f");
@@ -367,6 +370,43 @@ const resetDomain = () => {
   updateDomainInfo(data);
 };
 
+const setPanelWidth = width => {
+  const maxWidth = Math.max(320, window.innerWidth - 360);
+  const nextWidth = clamp(300, width, maxWidth);
+  app.style.setProperty("--panel-width", `${Math.round(nextWidth)}px`);
+  localStorage.setItem("minimalSurfacePanelWidth", Math.round(nextWidth).toString());
+  resize();
+};
+
+const initPanelWidth = () => {
+  const storedWidth = Number(localStorage.getItem("minimalSurfacePanelWidth"));
+  if (Number.isFinite(storedWidth) && storedWidth > 0) setPanelWidth(storedWidth);
+};
+
+const startPanelResize = event => {
+  panelResizer.setPointerCapture(event.pointerId);
+  document.body.classList.add("resizing-panel");
+};
+
+const movePanelResize = event => {
+  if (!document.body.classList.contains("resizing-panel")) return;
+  setPanelWidth(window.innerWidth - event.clientX);
+};
+
+const stopPanelResize = event => {
+  if (panelResizer.hasPointerCapture(event.pointerId)) panelResizer.releasePointerCapture(event.pointerId);
+  document.body.classList.remove("resizing-panel");
+};
+
+const resizePanelWithKeyboard = event => {
+  if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+  event.preventDefault();
+  const currentWidth = panelResizer.getBoundingClientRect().right
+    ? document.querySelector(".panel").getBoundingClientRect().width
+    : 410;
+  setPanelWidth(currentWidth + (event.key === "ArrowLeft" ? 24 : -24));
+};
+
 const resetView = () => {
   camera.position.set(1.95, -3.35, 1.45);
   controls.target.set(0, 0, 0);
@@ -402,8 +442,14 @@ surfaceButtons.append(...surfaces.map(createSurfaceButton));
 resetButton.addEventListener("click", resetView);
 resetDomainButton.addEventListener("click", resetDomain);
 Object.values(domainControls).forEach(control => control.addEventListener("input", updateCurrentDomain));
+panelResizer.addEventListener("pointerdown", startPanelResize);
+panelResizer.addEventListener("pointermove", movePanelResize);
+panelResizer.addEventListener("pointerup", stopPanelResize);
+panelResizer.addEventListener("pointercancel", stopPanelResize);
+panelResizer.addEventListener("keydown", resizePanelWithKeyboard);
 window.addEventListener("resize", resize);
 
+initPanelWidth();
 resetView();
 setSurface(surfaces[0]);
 resize();
