@@ -41,17 +41,16 @@ Alternativ funktioniert jeder statische Webserver, der das Projektverzeichnis au
 - Zoom: Mausrad oder Trackpad-Scroll
 - Ansicht zuruecksetzen: Button `Ansicht zuruecksetzen`
 - Parameterbereich aendern: Slider `r min`, `r max`, `w min`, `w max`
+- Flaechenparameter aendern: bei Cobra steuert der Slider `m` den Exponenten
 - Seitenpanel skalieren: Griff zwischen Viewer und Seitenbereich ziehen
 
-Die Sliderwerte werden pro Flaeche separat gemerkt. Der Button `Bereich zuruecksetzen` setzt nur den Bereich der aktuell ausgewaehlten Flaeche zurueck.
+Die Sliderwerte fuer Bereich und Flaechenparameter werden pro Flaeche separat gemerkt. Der Button `Bereich zuruecksetzen` setzt nur den Bereich der aktuell ausgewaehlten Flaeche zurueck.
 
 ## Enthaltene Flaechen
 
 - Catenoid
 - Twisted Catenoid
-- Cobra
-- Cobra 7
-- Cobra 9
+- Cobra mit einstellbarem Parameter `m`
 - S42
 - Trefoil
 - Double Trefoil

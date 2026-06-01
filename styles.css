@@ -137,18 +137,21 @@ body.resizing-panel {
   padding-left: 12px;
 }
 
-.domain-controls {
+.domain-controls,
+.surface-parameters {
   display: grid;
   gap: 10px;
   margin: 22px 0 18px;
 }
 
-.domain-controls h2 {
+.domain-controls h2,
+.surface-parameters h2 {
   margin: 0 0 2px;
   font-size: 1rem;
 }
 
-.domain-controls label {
+.domain-controls label,
+.surface-parameters label {
   display: grid;
   grid-template-columns: 58px minmax(0, 1fr) 56px;
   gap: 8px;
@@ -157,14 +160,20 @@ body.resizing-panel {
   font-size: 0.92rem;
 }
 
-.domain-controls input {
+.domain-controls input,
+.surface-parameters input {
   width: 100%;
   accent-color: #2f8da8;
 }
 
-.domain-controls output {
+.domain-controls output,
+.surface-parameters output {
   font-variant-numeric: tabular-nums;
   text-align: right;
+}
+
+.surface-parameters[hidden] {
+  display: none;
 }
 
 #reset-domain {

@@ -33,6 +33,12 @@ const defaultDomain = surface => ({
   vRange: [...surface.vRange]
 });
 const domainFor = surface => state.domains.get(domainKey(surface)) || defaultDomain(surface);
+const defaultParameters = surface => Object.fromEntries(
+  Object.entries(surface.parameters || {}).map(([key, parameter]) => [key, parameter.value])
+);
+const parametersFor = surface => state.parameters.get(domainKey(surface)) || defaultParameters(surface);
+const withParameters = surface => surface.withParameters ? surface.withParameters(parametersFor(surface)) : surface;
+const currentData = () => withDomain(withParameters(state.surface));
 const domainTextFor = data => data.parameter
   ? `${formatNumber(data.uRange[0])} <= |z| <= ${formatNumber(data.uRange[1])}, ${formatNumber(data.vRange[0])} <= arg z <= ${formatNumber(data.vRange[1])}`
   : `${formatNumber(data.uRange[0])} <= Re z <= ${formatNumber(data.uRange[1])}, ${formatNumber(data.vRange[0])} <= Im z <= ${formatNumber(data.vRange[1])}`;
@@ -66,13 +72,15 @@ const s41 = ({ name, m, n, r1 = 1, r2 = 1.2, uSegments = 58, vSegments = 221 }) 
   gText: `z => ${zPowerText(m - n)} * (${zPowerText(n)} - 1) / (${zPowerText(n)} + 1)`
 });
 
-const cobra = ({ name, m, r1, r2, uSegments = 58, vSegments = 221 }) => ({
+const cobra = ({ name, m = 5, r1, r2, uSegments = 58, vSegments = 221 }) => ({
   name,
   ...annulus(r1, r2, uSegments, vSegments),
   f: C$("z => (z + 1)^2 * (z + i)^2 / z^(m + 1)", { m }),
   g: C$("z => z^(m - 2) * (z - 1) * (z - i) / ((z + 1) * (z + i))", { m }),
   fText: `z => (z + 1)^2 * (z + i)^2 / z^${m + 1}`,
-  gText: `z => z^${m - 2} * (z - 1) * (z - i) / ((z + 1) * (z + i))`
+  gText: `z => z^${m - 2} * (z - 1) * (z - i) / ((z + 1) * (z + i))`,
+  parameters: { m: { label: "m", min: 3, max: 11, step: 2, value: m, format: value => Math.round(value).toString() } },
+  withParameters: values => cobra({ name, m: Math.round(values.m), r1, r2, uSegments, vSegments })
 });
 
 const s42 = (r1 = 1.8, r2 = 3) => {
@@ -98,8 +106,6 @@ const surfaces = [
   },
   s41({ name: "Twisted Catenoid", m: 3, n: 1, r1: 1, r2: 2 }),
   cobra({ name: "Cobra", m: 5, r1: 1, r2: 1.2 }),
-  cobra({ name: "Cobra 7", m: 7, r1: 1, r2: 1.1 }),
-  cobra({ name: "Cobra 9", m: 9, r1: 1, r2: 1.05 }),
   s42(),
   s41({ name: "Trefoil", m: 5, n: 3, r1: 1, r2: 1.5 }),
   s41({ name: "Double Trefoil", m: 5, n: 3, r1: 1.1, r2: 1.5 }),
@@ -115,6 +121,8 @@ const formulaF = document.querySelector("#formula-f");
 const formulaG = document.querySelector("#formula-g");
 const domainInfo = document.querySelector("#domain-info");
 const surfaceButtons = document.querySelector("#surface-buttons");
+const surfaceParameters = document.querySelector("#surface-parameters");
+const surfaceParameterControls = document.querySelector("#surface-parameter-controls");
 const resetDomainButton = document.querySelector("#reset-domain");
 const domainControls = {
   uMin: document.querySelector("#u-min"),
@@ -137,6 +145,7 @@ const domainLabels = {
 const state = {
   surface: null,
   domains: new Map(),
+  parameters: new Map(),
   sliderFrame: 0
 };
 
@@ -310,10 +319,11 @@ const updateDomainInfo = data => {
 
 const setSurface = surface => {
   state.surface = surface;
-  const data = withDomain(surface);
+  const data = currentData();
   renderSurface(data);
   updateDomainInfo(data);
-  syncDomainControls(surface);
+  syncDomainControls(data);
+  syncParameterControls(surface);
 };
 
 const configureSlider = (control, bounds, value, step = 0.01) => {
@@ -347,6 +357,33 @@ const syncDomainControls = surface => {
   syncDomainOutputs(domain);
 };
 
+const parameterText = (parameter, value) => parameter.format ? parameter.format(value) : formatNumber(value);
+
+const createParameterControl = ([key, parameter], values) => {
+  const label = document.createElement("label");
+  const title = document.createElement("span");
+  const input = document.createElement("input");
+  const output = document.createElement("output");
+  input.type = "range";
+  input.min = parameter.min;
+  input.max = parameter.max;
+  input.step = parameter.step || 1;
+  input.value = values[key];
+  input.dataset.parameter = key;
+  title.textContent = parameter.label || key;
+  output.value = parameterText(parameter, values[key]);
+  label.append(title, input, output);
+  return label;
+};
+
+const syncParameterControls = surface => {
+  const entries = Object.entries(surface.parameters || {});
+  const values = parametersFor(surface);
+  surfaceParameters.hidden = entries.length === 0;
+  surfaceParameterControls.replaceChildren(...entries.map(entry => createParameterControl(entry, values)));
+  [...surfaceParameterControls.querySelectorAll("input")].forEach(control => control.addEventListener("input", updateCurrentParameters));
+};
+
 const sortedRange = (min, max) => {
   const values = [Number(min), Number(max)].sort((a, b) => a - b);
   return values[0] === values[1] ? [values[0], values[1] + 0.01] : values;
@@ -362,17 +399,33 @@ const updateCurrentDomain = () => {
   syncDomainOutputs(domain);
   cancelAnimationFrame(state.sliderFrame);
   state.sliderFrame = requestAnimationFrame(() => {
-    const data = withDomain(state.surface);
+    const data = currentData();
     renderSurface(data);
     updateDomainInfo(data);
   });
 };
 
+const updateCurrentParameters = () => {
+  if (!state.surface) return;
+  const values = Object.fromEntries(
+    [...surfaceParameterControls.querySelectorAll("input")].map(control => [control.dataset.parameter, Number(control.value)])
+  );
+  const parameters = state.surface.parameters || {};
+  state.parameters.set(domainKey(state.surface), values);
+  [...surfaceParameterControls.querySelectorAll("input")].forEach(control => {
+    control.nextElementSibling.value = parameterText(parameters[control.dataset.parameter], Number(control.value));
+  });
+  const data = currentData();
+  renderSurface(data);
+  updateDomainInfo(data);
+  syncDomainControls(data);
+};
+
 const resetDomain = () => {
   if (!state.surface) return;
   state.domains.delete(domainKey(state.surface));
-  syncDomainControls(state.surface);
-  const data = withDomain(state.surface);
+  const data = currentData();
+  syncDomainControls(data);
   renderSurface(data);
   updateDomainInfo(data);
 };
