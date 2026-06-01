@@ -152,9 +152,13 @@ const camera = new THREE.PerspectiveCamera(36, 1, 0.05, 100);
 const controls = new OrbitControls(camera, renderer.domElement);
 const surfaceGroup = new THREE.Group();
 
-const material = new THREE.MeshBasicMaterial({
+const material = new THREE.MeshPhysicalMaterial({
   color: 0xffffff,
   vertexColors: true,
+  metalness: 0,
+  roughness: 0.34,
+  clearcoat: 0.62,
+  clearcoatRoughness: 0.24,
   side: THREE.DoubleSide,
   transparent: false,
   opacity: 1
@@ -172,9 +176,10 @@ controls.maxDistance = 8;
 controls.enablePan = false;
 
 scene.add(surfaceGroup);
-scene.add(new THREE.HemisphereLight(0xf5fbff, 0x6b8794, 1.35));
-scene.add(((light) => { light.position.set(-2.6, -3.2, 4.4); return light; })(new THREE.DirectionalLight(0xffffff, 2.15)));
-scene.add(((light) => { light.position.set(3.2, 2.1, 2.5); return light; })(new THREE.DirectionalLight(0x9ee9ff, 0.85)));
+scene.add(new THREE.HemisphereLight(0xf5fbff, 0x6b8794, 1.25));
+scene.add(((light) => { light.position.set(-2.6, -3.2, 4.4); return light; })(new THREE.DirectionalLight(0xffffff, 2.75)));
+scene.add(((light) => { light.position.set(3.2, 2.1, 2.5); return light; })(new THREE.DirectionalLight(0x9ee9ff, 1.15)));
+scene.add(((light) => { light.position.set(0.4, -1.2, 3.8); return light; })(new THREE.DirectionalLight(0xfff0c8, 1.55)));
 
 const weierstrass = data => z => {
   const fz = data.f(z);
