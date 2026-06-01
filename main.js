@@ -54,14 +54,6 @@ const annulus = (r1, r2, uSegments = 60, vSegments = 181) => ({
   domainText: `${r1} <= |z| <= ${r2}`
 });
 
-const rectangle = (u1, u2, v1, v2, uSegments = 80, vSegments = 80) => ({
-  uRange: [u1, u2],
-  vRange: [v1, v2],
-  uSegments,
-  vSegments,
-  domainText: `${u1} <= Re z <= ${u2}, ${v1} <= Im z <= ${v2}`
-});
-
 const zPowerText = n => n === 0 ? "1" : n === 1 ? "z" : `z^${n}`;
 
 const s41 = ({ name, m, n, r1 = 1, r2 = 1.2, uSegments = 58, vSegments = 221 }) => ({
@@ -110,23 +102,7 @@ const surfaces = [
   s42(),
   s41({ name: "Trefoil", m: 5, n: 3, r1: 1, r2: 1.5 }),
   s41({ name: "Double Trefoil", m: 5, n: 3, r1: 1.1, r2: 1.5 }),
-  s41({ name: "UFO", m: 5, n: 1, r1: 1, r2: 1.1 }),
-  {
-    name: "Enneper",
-    ...rectangle(-1.35, 1.35, -1.35, 1.35, 82, 82),
-    f: C$("z => 1"),
-    g: C$("z => z"),
-    fText: "z => 1",
-    gText: "z => z"
-  },
-  {
-    name: "Catenoid, log-Parameter",
-    ...rectangle(-1.45, 1.45, 0, TAU, 78, 104),
-    f: C$("z => exp(-z)"),
-    g: C$("z => exp(z)"),
-    fText: "z => exp(-z)",
-    gText: "z => exp(z)"
-  }
+  s41({ name: "UFO", m: 5, n: 1, r1: 1, r2: 1.1 })
 ];
 
 const canvas = document.querySelector("#surface");
