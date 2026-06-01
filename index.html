@@ -29,28 +29,18 @@
       <aside class="panel">
         <h1>Weierstrass-Darstellung</h1>
         <p>
-          Die Fläche wird wie in deiner Referenz aus
-          <code>Re ∫ (f(1 - g²)/2, i f(1 + g²)/2, fg) dz</code>
-          berechnet. Zum Experimentieren später nur <code>f</code>,
+          Die Fläche wird <code>Re ∫ (f(1 - g²)/2, i f(1 + g²)/2, fg) dz</code> berechnet. Zum Experimentieren später nur <code>f</code>,
           <code>g</code> und den Parameterbereich in <code>main.js</code>
           ändern.
         </p>
         <dl>
           <dt>Aktuelle Fläche</dt>
           <dd id="domain-info"></dd>
-          <dt>f</dt>
-          <dd><code id="formula-f"></code></dd>
           <dt>g</dt>
           <dd><code id="formula-g"></code></dd>
+          <dt>f</dt>
+          <dd><code id="formula-f"></code></dd>
         </dl>
-        <p class="note">
-          Das Catenoid folgt hier der Variante aus
-          <a href="https://github.com/eb58/algorithms-js/blob/master/src/minimal-moebius-strips/minimal-moebius-strips.html">minimal-moebius-strips.html</a>.
-        </p>
-        <p class="run-note">
-          Start über <code>node server.js</code>, dann
-          <code>http://127.0.0.1:8765/</code> öffnen.
-        </p>
         <section class="domain-controls" aria-label="Parameterbereich">
           <h2>Parameterbereich</h2>
           <label>
