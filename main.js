@@ -58,6 +58,18 @@ const cobra = ({ name, m, r1, r2, uSegments = 58, vSegments = 221 }) => ({
   gText: `z => z^${m - 2} * (z - 1) * (z - i) / ((z + 1) * (z + i))`
 });
 
+const s42 = (r1 = 1.8, r2 = 3) => {
+  const a = -5 + 2 * Math.sqrt(15);
+  return {
+    name: "S42",
+    ...annulus(r1, r2, 70, 221),
+    f: C$("z => i * (a * z^2 - 1)^2 / (z^2 * (z - 1)^4 * (z + 1)^4)", { a }),
+    g: C$("z => z^3 * (z^2 - a) / (a * z^2 - 1)", { a }),
+    fText: "z => i * (a*z^2 - 1)^2 / (z^2 * (z - 1)^4 * (z + 1)^4)",
+    gText: "z => z^3 * (z^2 - a) / (a*z^2 - 1)"
+  };
+};
+
 const surfaces = [
   {
     name: "Catenoid",
@@ -71,6 +83,7 @@ const surfaces = [
   cobra({ name: "Cobra", m: 5, r1: 1, r2: 1.2 }),
   cobra({ name: "Cobra 7", m: 7, r1: 1, r2: 1.1 }),
   cobra({ name: "Cobra 9", m: 9, r1: 1, r2: 1.05 }),
+  s42(),
   s41({ name: "Trefoil", m: 5, n: 3, r1: 1, r2: 1.5 }),
   s41({ name: "Double Trefoil", m: 5, n: 3, r1: 1.1, r2: 1.5 }),
   s41({ name: "UFO", m: 5, n: 1, r1: 1, r2: 1.1 }),
