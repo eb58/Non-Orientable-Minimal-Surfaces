@@ -50,6 +50,30 @@
           Start über <code>node server.js</code>, dann
           <code>http://127.0.0.1:8765/</code> öffnen.
         </p>
+        <section class="domain-controls" aria-label="Parameterbereich">
+          <h2>Parameterbereich</h2>
+          <label>
+            <span id="u-min-label">u min</span>
+            <input id="u-min" type="range" step="0.01">
+            <output id="u-min-value"></output>
+          </label>
+          <label>
+            <span id="u-max-label">u max</span>
+            <input id="u-max" type="range" step="0.01">
+            <output id="u-max-value"></output>
+          </label>
+          <label>
+            <span id="v-min-label">v min</span>
+            <input id="v-min" type="range" step="0.01">
+            <output id="v-min-value"></output>
+          </label>
+          <label>
+            <span id="v-max-label">v max</span>
+            <input id="v-max" type="range" step="0.01">
+            <output id="v-max-value"></output>
+          </label>
+          <button id="reset-domain" type="button">Bereich zurücksetzen</button>
+        </section>
         <div id="surface-buttons" class="surface-buttons" aria-label="Minimalflächen"></div>
         <button id="reset-view" type="button">Ansicht zurücksetzen</button>
       </aside>

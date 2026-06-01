@@ -112,6 +112,46 @@ a {
   padding: 10px 12px;
 }
 
+.domain-controls {
+  display: grid;
+  gap: 10px;
+  margin: 22px 0 18px;
+}
+
+.domain-controls h2 {
+  margin: 0 0 2px;
+  font-size: 1rem;
+}
+
+.domain-controls label {
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr) 56px;
+  gap: 8px;
+  align-items: center;
+  color: #2d4651;
+  font-size: 0.92rem;
+}
+
+.domain-controls input {
+  width: 100%;
+  accent-color: #2f8da8;
+}
+
+.domain-controls output {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+#reset-domain {
+  background: #edf4f7;
+  color: #17343f;
+  border: 1px solid #cfdde3;
+}
+
+#reset-domain:hover {
+  background: #dfecef;
+}
+
 .surface-buttons {
   display: grid;
   gap: 8px;

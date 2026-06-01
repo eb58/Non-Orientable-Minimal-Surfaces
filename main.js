@@ -20,6 +20,30 @@ const range = (min, max, segments) => Array.from(
   { length: segments + 1 },
   (_, index) => min + (max - min) * index / segments
 );
+const formatNumber = value => Number(value).toFixed(2);
+const sliderBounds = rangeValues => {
+  const span = rangeValues[1] - rangeValues[0];
+  const padding = Math.max(0.25, Math.abs(span) * 0.8);
+  return [rangeValues[0] - padding, rangeValues[1] + padding];
+};
+const domainKey = surface => surface.name;
+const defaultDomain = surface => ({
+  uRange: [...surface.uRange],
+  vRange: [...surface.vRange]
+});
+const domainFor = surface => state.domains.get(domainKey(surface)) || defaultDomain(surface);
+const domainTextFor = data => data.parameter
+  ? `${formatNumber(data.uRange[0])} <= |z| <= ${formatNumber(data.uRange[1])}, ${formatNumber(data.vRange[0])} <= arg z <= ${formatNumber(data.vRange[1])}`
+  : `${formatNumber(data.uRange[0])} <= Re z <= ${formatNumber(data.uRange[1])}, ${formatNumber(data.vRange[0])} <= Im z <= ${formatNumber(data.vRange[1])}`;
+const withDomain = surface => {
+  const domain = domainFor(surface);
+  return {
+    ...surface,
+    uRange: [...domain.uRange],
+    vRange: [...domain.vRange],
+    domainText: domainTextFor({ ...surface, ...domain })
+  };
+};
 
 const annulus = (r1, r2, uSegments = 60, vSegments = 181) => ({
   uRange: [r1, r2],
@@ -112,6 +136,30 @@ const formulaF = document.querySelector("#formula-f");
 const formulaG = document.querySelector("#formula-g");
 const domainInfo = document.querySelector("#domain-info");
 const surfaceButtons = document.querySelector("#surface-buttons");
+const resetDomainButton = document.querySelector("#reset-domain");
+const domainControls = {
+  uMin: document.querySelector("#u-min"),
+  uMax: document.querySelector("#u-max"),
+  vMin: document.querySelector("#v-min"),
+  vMax: document.querySelector("#v-max")
+};
+const domainOutputs = {
+  uMin: document.querySelector("#u-min-value"),
+  uMax: document.querySelector("#u-max-value"),
+  vMin: document.querySelector("#v-min-value"),
+  vMax: document.querySelector("#v-max-value")
+};
+const domainLabels = {
+  uMin: document.querySelector("#u-min-label"),
+  uMax: document.querySelector("#u-max-label"),
+  vMin: document.querySelector("#v-min-label"),
+  vMax: document.querySelector("#v-max-label")
+};
+const state = {
+  surface: null,
+  domains: new Map(),
+  sliderFrame: 0
+};
 
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
 renderer.setClearColor(0x000000, 0);
@@ -259,16 +307,88 @@ const disposeSurface = () => {
   surfaceGroup.clear();
 };
 
-const setSurface = data => {
+const renderSurface = data => {
   const geometries = surfaceGeometry(data);
   disposeSurface();
   surfaceGroup.add(new THREE.Mesh(geometries.geometry, material));
   surfaceGroup.add(new THREE.LineSegments(geometries.lineGeometry, lineMaterial));
+};
+
+const updateDomainInfo = data => {
   surfaceName.textContent = data.name;
   formulaF.textContent = data.fText;
   formulaG.textContent = data.gText;
   domainInfo.textContent = data.domainText;
   [...surfaceButtons.children].forEach(button => button.classList.toggle("active", button.dataset.surface === data.name));
+};
+
+const setSurface = surface => {
+  state.surface = surface;
+  const data = withDomain(surface);
+  renderSurface(data);
+  updateDomainInfo(data);
+  syncDomainControls(surface);
+};
+
+const configureSlider = (control, bounds, value, step = 0.01) => {
+  control.min = formatNumber(bounds[0]);
+  control.max = formatNumber(bounds[1]);
+  control.step = step;
+  control.value = formatNumber(value);
+};
+
+const syncDomainOutputs = domain => {
+  domainOutputs.uMin.value = formatNumber(domain.uRange[0]);
+  domainOutputs.uMax.value = formatNumber(domain.uRange[1]);
+  domainOutputs.vMin.value = formatNumber(domain.vRange[0]);
+  domainOutputs.vMax.value = formatNumber(domain.vRange[1]);
+};
+
+const syncDomainControls = surface => {
+  const domain = domainFor(surface);
+  const uBounds = surface.parameter
+    ? [Math.max(0.01, sliderBounds(surface.uRange)[0]), sliderBounds(surface.uRange)[1]]
+    : sliderBounds(surface.uRange);
+  const vBounds = surface.parameter ? [0, TAU * 2] : sliderBounds(surface.vRange);
+  domainLabels.uMin.textContent = surface.parameter ? "r min" : "u min";
+  domainLabels.uMax.textContent = surface.parameter ? "r max" : "u max";
+  domainLabels.vMin.textContent = surface.parameter ? "w min" : "v min";
+  domainLabels.vMax.textContent = surface.parameter ? "w max" : "v max";
+  configureSlider(domainControls.uMin, uBounds, domain.uRange[0]);
+  configureSlider(domainControls.uMax, uBounds, domain.uRange[1]);
+  configureSlider(domainControls.vMin, vBounds, domain.vRange[0]);
+  configureSlider(domainControls.vMax, vBounds, domain.vRange[1]);
+  syncDomainOutputs(domain);
+};
+
+const sortedRange = (min, max) => {
+  const values = [Number(min), Number(max)].sort((a, b) => a - b);
+  return values[0] === values[1] ? [values[0], values[1] + 0.01] : values;
+};
+
+const updateCurrentDomain = () => {
+  if (!state.surface) return;
+  const domain = {
+    uRange: sortedRange(domainControls.uMin.value, domainControls.uMax.value),
+    vRange: sortedRange(domainControls.vMin.value, domainControls.vMax.value)
+  };
+  state.domains.set(domainKey(state.surface), domain);
+  syncDomainOutputs(domain);
+  cancelAnimationFrame(state.sliderFrame);
+  state.sliderFrame = requestAnimationFrame(() => {
+    const data = withDomain(state.surface);
+    renderSurface(data);
+    updateDomainInfo(data);
+  });
+};
+
+const resetDomain = () => {
+  if (!state.surface) return;
+  state.domains.delete(domainKey(state.surface));
+  syncDomainControls(state.surface);
+  const data = withDomain(state.surface);
+  renderSurface(data);
+  updateDomainInfo(data);
 };
 
 const resetView = () => {
@@ -304,6 +424,8 @@ const createSurfaceButton = data => {
 
 surfaceButtons.append(...surfaces.map(createSurfaceButton));
 resetButton.addEventListener("click", resetView);
+resetDomainButton.addEventListener("click", resetDomain);
+Object.values(domainControls).forEach(control => control.addEventListener("input", updateCurrentDomain));
 window.addEventListener("resize", resize);
 
 resetView();
