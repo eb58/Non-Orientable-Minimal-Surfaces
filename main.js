@@ -144,29 +144,25 @@ const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true 
 renderer.setClearColor(0x000000, 0);
 renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
 renderer.outputColorSpace = THREE.SRGBColorSpace;
-renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.04;
+renderer.toneMapping = THREE.NoToneMapping;
+renderer.toneMappingExposure = 1;
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(36, 1, 0.05, 100);
 const controls = new OrbitControls(camera, renderer.domElement);
 const surfaceGroup = new THREE.Group();
 
-const material = new THREE.MeshPhysicalMaterial({
+const material = new THREE.MeshBasicMaterial({
   color: 0xffffff,
   vertexColors: true,
-  metalness: 0.02,
-  roughness: 0.36,
-  clearcoat: 0.45,
-  clearcoatRoughness: 0.5,
   side: THREE.DoubleSide,
-  transparent: true,
-  opacity: 0.96
+  transparent: false,
+  opacity: 1
 });
 const lineMaterial = new THREE.LineBasicMaterial({
-  color: 0x0f2e3a,
+  color: 0x172433,
   transparent: true,
-  opacity: 0.18
+  opacity: 0.11
 });
 
 controls.enableDamping = true;
@@ -176,9 +172,9 @@ controls.maxDistance = 8;
 controls.enablePan = false;
 
 scene.add(surfaceGroup);
-scene.add(new THREE.HemisphereLight(0xf5fbff, 0x7aa6b3, 2.8));
-scene.add(((light) => { light.position.set(-2.6, -3.2, 4.4); return light; })(new THREE.DirectionalLight(0xffffff, 3.4)));
-scene.add(((light) => { light.position.set(3.2, 2.1, 2.5); return light; })(new THREE.DirectionalLight(0x9ee9ff, 1.3)));
+scene.add(new THREE.HemisphereLight(0xf5fbff, 0x6b8794, 1.35));
+scene.add(((light) => { light.position.set(-2.6, -3.2, 4.4); return light; })(new THREE.DirectionalLight(0xffffff, 2.15)));
+scene.add(((light) => { light.position.set(3.2, 2.1, 2.5); return light; })(new THREE.DirectionalLight(0x9ee9ff, 0.85)));
 
 const weierstrass = data => z => {
   const fz = data.f(z);
@@ -229,14 +225,20 @@ const normalizePoints = points => {
   return points.map(row => row.map(point => finiteVector(point) ? vSub(point, center).map(value => value / radius) : [0, 0, 0]));
 };
 
+const surfacePalette = [0x009e9a, 0x0068ff, 0x7132ff, 0xe03aad, 0xff9d00].map(color => new THREE.Color(color));
+const paletteColor = value => {
+  const scaled = THREE.MathUtils.clamp(value, 0, 1) * (surfacePalette.length - 1);
+  const index = Math.min(surfacePalette.length - 2, Math.floor(scaled));
+  return surfacePalette[index].clone().lerp(surfacePalette[index + 1], scaled - index);
+};
+
 const colorForPoint = point => {
-  const height = (point[2] + 1) / 2;
-  const radius = Math.hypot(point[0], point[1]);
+  const height = THREE.MathUtils.clamp((point[2] + 1) / 2, 0, 1);
+  const radial = THREE.MathUtils.clamp(Math.hypot(point[0], point[1]), 0, 1);
   const angle = (Math.atan2(point[1], point[0]) + TAU) / TAU;
-  const hue = (0.03 + 0.68 * height + 0.34 * angle + 0.12 * Math.min(1, radius)) % 1;
-  const saturation = 0.82 + 0.12 * Math.min(1, radius);
-  const lightness = 0.48 + 0.18 * height;
-  return new THREE.Color().setHSL(hue, saturation, lightness);
+  const fold = (Math.sin(angle * TAU * 2 + point[2] * 3) + 1) / 2;
+  const value = 0.56 * height + 0.3 * radial + 0.14 * fold;
+  return paletteColor(value);
 };
 
 const colorAttribute = points => new THREE.Float32BufferAttribute(
