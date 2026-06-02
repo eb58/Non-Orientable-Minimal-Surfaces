@@ -12,7 +12,9 @@ und rendert sie mit Three.js als frei drehbares WebGL-Modell.
 
 ## Start
 
-Dieses Projekt verwendet ES-Module. Darum sollte die Seite ueber einen lokalen HTTP-Server geoeffnet werden, nicht direkt per `file://`. Es gibt keine npm-Abhaengigkeiten; Node.js reicht zum Starten.
+Zum einfachen Anschauen kann `standalone.html` direkt im Browser geoeffnet werden. Diese Datei enthaelt CSS, Three.js, OrbitControls, die `C$`-Bibliothek und den App-Code inline und funktioniert dadurch auch per `file://`.
+
+Fuer die Entwicklung ist `index.html` gedacht. Diese Variante verwendet ES-Module. Darum sollte sie ueber einen lokalen HTTP-Server geoeffnet werden, nicht direkt per `file://`. Es gibt keine npm-Abhaengigkeiten; Node.js reicht zum Starten.
 
 Mit dem enthaltenen kleinen Node-Server:
 
@@ -34,6 +36,12 @@ node server.js
 ```
 
 Alternativ funktioniert jeder statische Webserver, der das Projektverzeichnis ausliefert.
+
+Nach Aenderungen an `main.js`, `styles.css` oder den vendorten Bibliotheken wird die Standalone-Datei neu erzeugt mit:
+
+```powershell
+node scripts/build-standalone.js
+```
 
 ## Bedienung
 
@@ -64,6 +72,8 @@ Die Formeln fuer `f` und `g` stehen in `main.js` direkt bei den Presets.
 - `main.js` berechnet die Weierstrass-Daten, erzeugt Three.js-Geometrien und steuert die UI.
 - `styles.css` enthaelt das responsive Layout und das resizable Panel.
 - `server.js` ist ein minimaler lokaler Static-File-Server.
+- `standalone.html` ist die direkt oeffenbare Einzeldatei.
+- `scripts/build-standalone.js` erzeugt `standalone.html` aus den Projektdateien.
 - `vendor/complex/c-dollar.js` ist eine ES-Modul-Version der `C$`-Bibliothek.
 - `vendor/three/` enthaelt Three.js und OrbitControls lokal, damit die App ohne CDN laeuft.
 
