@@ -42,6 +42,8 @@ const defaultParameters = surface => Object.fromEntries(
   Object.entries(surface.parameters || {}).map(([key, parameter]) => [key, parameter.value])
 );
 const parametersFor = surface => normalizeParameters(surface, state.parameters.get(domainKey(surface)) || defaultParameters(surface));
+const defaultObjectPosition = () => ({ x: 0, y: 0, z: 0 });
+const objectPositionFor = surface => state.objectPositions.get(domainKey(surface)) || defaultObjectPosition();
 const withParameters = surface => surface.withParameters ? surface.withParameters(parametersFor(surface)) : surface;
 const currentData = () => withDomain(withParameters(state.surface));
 const domainTextFor = data => data.parameter
@@ -245,6 +247,7 @@ const surfaceParameters = document.querySelector("#surface-parameters");
 const surfaceParameterControls = document.querySelector("#surface-parameter-controls");
 const materialToggle = document.querySelector("#material-toggle");
 const resetDomainButton = document.querySelector("#reset-domain");
+const resetObjectPositionButton = document.querySelector("#reset-object-position");
 const domainControls = {
   uMin: document.querySelector("#u-min"),
   uMax: document.querySelector("#u-max"),
@@ -263,11 +266,16 @@ const domainLabels = {
   vMin: document.querySelector("#v-min-label"),
   vMax: document.querySelector("#v-max-label")
 };
+const objectAxes = ["x", "y", "z"];
+const objectControls = Object.fromEntries(objectAxes.map(axis => [axis, document.querySelector(`#object-${axis}`)]));
+const objectOutputs = Object.fromEntries(objectAxes.map(axis => [axis, document.querySelector(`#object-${axis}-value`)]));
 const state = {
   surface: null,
   domains: new Map(),
   parameters: new Map(),
+  objectPositions: new Map(),
   materialMode: "copper",
+  objectDrag: null,
   sliderFrame: 0
 };
 
@@ -501,6 +509,31 @@ const updateDomainInfo = data => {
   [...surfaceButtons.children].forEach(button => button.classList.toggle("active", button.dataset.surface === data.name));
 };
 
+const applyObjectPosition = position => surfaceGroup.position.set(position.x, position.y, position.z);
+
+const syncObjectOutputs = position => objectAxes.forEach(axis => {
+  objectOutputs[axis].value = formatNumber(position[axis]);
+});
+
+const syncObjectControls = surface => {
+  const position = objectPositionFor(surface);
+  objectAxes.forEach(axis => {
+    objectControls[axis].value = formatNumber(position[axis]);
+  });
+  syncObjectOutputs(position);
+  applyObjectPosition(position);
+};
+
+const setObjectPosition = position => {
+  if (!state.surface) return;
+  state.objectPositions.set(domainKey(state.surface), position);
+  objectAxes.forEach(axis => {
+    objectControls[axis].value = formatNumber(position[axis]);
+  });
+  syncObjectOutputs(position);
+  applyObjectPosition(position);
+};
+
 const setSurface = surface => {
   state.surface = surface;
   const data = currentData();
@@ -508,6 +541,7 @@ const setSurface = surface => {
   updateDomainInfo(data);
   syncDomainControls(data);
   syncParameterControls(surface);
+  syncObjectControls(surface);
 };
 
 const configureSlider = (control, bounds, value, step = 0.01) => {
@@ -616,6 +650,73 @@ const resetDomain = () => {
   updateDomainInfo(data);
 };
 
+const updateCurrentObjectPosition = () => {
+  if (!state.surface) return;
+  const position = Object.fromEntries(objectAxes.map(axis => [axis, Number(objectControls[axis].value)]));
+  setObjectPosition(position);
+};
+
+const resetObjectPosition = () => {
+  if (!state.surface) return;
+  state.objectPositions.delete(domainKey(state.surface));
+  syncObjectControls(state.surface);
+};
+
+const cameraBasis = () => {
+  const forward = new THREE.Vector3();
+  camera.getWorldDirection(forward);
+  const right = new THREE.Vector3().crossVectors(forward, camera.up).normalize();
+  const up = new THREE.Vector3().crossVectors(right, forward).normalize();
+  return { right, up };
+};
+
+const objectDragScale = () => {
+  const distance = Math.max(0.1, camera.position.distanceTo(surfaceGroup.position));
+  const height = 2 * distance * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
+  return height / Math.max(1, canvas.getBoundingClientRect().height);
+};
+
+const startObjectDrag = event => {
+  if (!event.ctrlKey || !state.surface) return;
+  event.preventDefault();
+  event.stopImmediatePropagation();
+  canvas.setPointerCapture(event.pointerId);
+  controls.enabled = false;
+  canvas.classList.add("dragging-object");
+  state.objectDrag = {
+    pointerId: event.pointerId,
+    x: event.clientX,
+    y: event.clientY,
+    start: objectPositionFor(state.surface),
+    scale: objectDragScale()
+  };
+};
+
+const moveObjectDrag = event => {
+  if (!state.objectDrag || event.pointerId !== state.objectDrag.pointerId) return;
+  event.preventDefault();
+  event.stopImmediatePropagation();
+  const { right, up } = cameraBasis();
+  const dx = (event.clientX - state.objectDrag.x) * state.objectDrag.scale;
+  const dy = (event.clientY - state.objectDrag.y) * state.objectDrag.scale;
+  const delta = right.multiplyScalar(dx).add(up.multiplyScalar(-dy));
+  setObjectPosition({
+    x: clamp(-1.5, state.objectDrag.start.x + delta.x, 1.5),
+    y: clamp(-1.5, state.objectDrag.start.y + delta.y, 1.5),
+    z: clamp(-1.5, state.objectDrag.start.z + delta.z, 1.5)
+  });
+};
+
+const stopObjectDrag = event => {
+  if (!state.objectDrag || event.pointerId !== state.objectDrag.pointerId) return;
+  event.preventDefault();
+  event.stopImmediatePropagation();
+  if (canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId);
+  state.objectDrag = null;
+  controls.enabled = true;
+  canvas.classList.remove("dragging-object");
+};
+
 const setPanelWidth = width => {
   const maxWidth = Math.max(320, window.innerWidth - 360);
   const nextWidth = clamp(300, width, maxWidth);
@@ -687,8 +788,14 @@ const createSurfaceButton = data => {
 surfaceButtons.append(...surfaces.map(createSurfaceButton));
 resetButton.addEventListener("click", resetView);
 resetDomainButton.addEventListener("click", resetDomain);
+resetObjectPositionButton.addEventListener("click", resetObjectPosition);
 materialToggle.addEventListener("click", toggleMaterialMode);
 Object.values(domainControls).forEach(control => control.addEventListener("input", updateCurrentDomain));
+Object.values(objectControls).forEach(control => control.addEventListener("input", updateCurrentObjectPosition));
+canvas.addEventListener("pointerdown", startObjectDrag, { capture: true });
+canvas.addEventListener("pointermove", moveObjectDrag, { capture: true });
+canvas.addEventListener("pointerup", stopObjectDrag, { capture: true });
+canvas.addEventListener("pointercancel", stopObjectDrag, { capture: true });
 panelResizer.addEventListener("pointerdown", startPanelResize);
 panelResizer.addEventListener("pointermove", movePanelResize);
 panelResizer.addEventListener("pointerup", stopPanelResize);

@@ -50,6 +50,10 @@ a {
   touch-action: none;
 }
 
+#surface.dragging-object {
+  cursor: move;
+}
+
 .panel-resizer {
   position: relative;
   cursor: col-resize;
@@ -139,20 +143,23 @@ body.resizing-panel {
 }
 
 .domain-controls,
-.surface-parameters {
+.surface-parameters,
+.object-controls {
   display: grid;
   gap: 10px;
   margin: 22px 0 18px;
 }
 
 .domain-controls h2,
-.surface-parameters h2 {
+.surface-parameters h2,
+.object-controls h2 {
   margin: 0 0 2px;
   font-size: 1rem;
 }
 
 .domain-controls label,
-.surface-parameters label {
+.surface-parameters label,
+.object-controls label {
   display: grid;
   grid-template-columns: 58px minmax(0, 1fr) 56px;
   gap: 8px;
@@ -162,13 +169,15 @@ body.resizing-panel {
 }
 
 .domain-controls input,
-.surface-parameters input {
+.surface-parameters input,
+.object-controls input {
   width: 100%;
   accent-color: #2f8da8;
 }
 
 .domain-controls output,
-.surface-parameters output {
+.surface-parameters output,
+.object-controls output {
   font-variant-numeric: tabular-nums;
   text-align: right;
 }
@@ -177,13 +186,15 @@ body.resizing-panel {
   display: none;
 }
 
-#reset-domain {
+#reset-domain,
+#reset-object-position {
   background: #edf4f7;
   color: #17343f;
   border: 1px solid #cfdde3;
 }
 
-#reset-domain:hover {
+#reset-domain:hover,
+#reset-object-position:hover {
   background: #dfecef;
 }
 
