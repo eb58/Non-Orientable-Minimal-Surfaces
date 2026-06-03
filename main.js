@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
-import { C$ } from "./vendor/complex/c-dollar.js";
+import { C$ } from "./vendor/complex/C$.js";
 
 const TAU = Math.PI * 2;
 const center = C$("(za, ze) => (za + ze) / 2");

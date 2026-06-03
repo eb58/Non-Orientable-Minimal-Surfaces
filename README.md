@@ -70,7 +70,7 @@ Die Formeln fuer `f` und `g` stehen in `main.js` direkt bei den Presets.
 - `server.js` ist ein minimaler lokaler Static-File-Server.
 - `standalone.html` ist die direkt oeffenbare Einzeldatei.
 - `scripts/build-standalone.js` erzeugt `standalone.html` aus den Projektdateien.
-- `vendor/complex/c-dollar.js` ist eine ES-Modul-Version der `C$`-Bibliothek.
+- `vendor/complex/C$.js` ist eine ES-Modul-Version der `C$`-Bibliothek.
 - `vendor/three/` enthaelt Three.js und OrbitControls lokal, damit die App ohne CDN laeuft.
 
 ## Neue Flaechen hinzufuegen

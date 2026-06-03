@@ -84,7 +84,7 @@ const bundle = () => [
   bundleThreeCore(read("vendor/three/three.core.js")),
   bundleThree(read("vendor/three/three.module.js")),
   bundleOrbitControls(read("vendor/three/addons/controls/OrbitControls.js")),
-  bundleComplex(read("vendor/complex/c-dollar.js")),
+  bundleComplex(read("vendor/complex/C$.js")),
   bundleMain(read("main.js"))
 ].join("\n\n");
 
