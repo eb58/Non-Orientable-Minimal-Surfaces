@@ -72,7 +72,7 @@ const s41 = ({ name, m, n, r1 = 1, r2 = 1.2, uSegments = 58, vSegments = 221 }) 
   gText: `z => ${zPowerText(m - n)} * (${zPowerText(n)} - 1) / (${zPowerText(n)} + 1)`
 });
 
-const cobra = ({ name, m = 5, r1, r2, uSegments = 58, vSegments = 221 }) => ({
+const cobra = ({ name, m = 5, r1, r2, uSegments = 58, vSegments = 221 }) => ({ // S39 
   name,
   ...annulus(r1, r2, uSegments, vSegments),
   f: C$("z => (z + 1)^2 * (z + i)^2 / z^(m + 1)", { m }),
@@ -84,32 +84,40 @@ const cobra = ({ name, m = 5, r1, r2, uSegments = 58, vSegments = 221 }) => ({
 });
 
 const s42 = (r1 = 1.8, r2 = 3) => {
-  const a = -5 + 2 * Math.sqrt(15);
+  const a = Math.sqrt(-5 + 2 * Math.sqrt(15));
+  const gText = "z => z^3 * (z^2 - a^2) / ((a*z)^2 - 1)";
+  const fText = 'z => i * ((a*z)^2 - 1)^2 / (z^2 * (z - 1)^4 * (z + 1)^4)';
+
   return {
     name: "S42",
     ...annulus(r1, r2, 70, 221),
-    f: C$("z => i * (a * z^2 - 1)^2 / (z^2 * (z - 1)^4 * (z + 1)^4)", { a }),
-    g: C$("z => z^3 * (z^2 - a) / (a * z^2 - 1)", { a }),
-    fText: "z => i * (a*z^2 - 1)^2 / (z^2 * (z - 1)^4 * (z + 1)^4)",
-    gText: "z => z^3 * (z^2 - a) / (a*z^2 - 1)"
+    f: C$(fText, { a }),
+    g: C$(gText, { a }),
+    fText,
+    gText
   };
 };
 
+const catenoid = () => ({
+  name: "Catenoid",
+  ...annulus(0.3, 3, 70, 180),
+  f: C$("z => -2 / z^2"),
+  g: C$("z => z"),
+  fText: "z => -2 / z^2",
+  gText: "z => z"
+})
+
 const surfaces = [
-  {
-    name: "Catenoid",
-    ...annulus(0.3, 3, 70, 180),
-    f: C$("z => -2 / z^2"),
-    g: C$("z => z"),
-    fText: "z => -2 / z^2",
-    gText: "z => z"
-  },
-  s41({ name: "Twisted Catenoid", m: 3, n: 1, r1: 1, r2: 2 }),
+  s41({ name: "Twisted Catenoid", m: 3, n: 1, r1: 1.0, r2: 2 }),
+  s41({ name: "Trefoil         ", m: 5, n: 3, r1: 1.0, r2: 1.5 }),
+  s41({ name: "Double Trefoil  ", m: 5, n: 3, r1: 1.1, r2: 1.5 }),
+  s41({ name: "UFO             ", m: 5, n: 1, r1: 1, r2: 1.1 }),
+  s41({ name: "UFO             ", m: 5, n: 1, r1: 1, r2: 1.1 }),
+
+   s42(),
+
   cobra({ name: "Cobra", m: 5, r1: 1, r2: 1.2 }),
-  s42(),
-  s41({ name: "Trefoil", m: 5, n: 3, r1: 1, r2: 1.5 }),
-  s41({ name: "Double Trefoil", m: 5, n: 3, r1: 1.1, r2: 1.5 }),
-  s41({ name: "UFO", m: 5, n: 1, r1: 1, r2: 1.1 })
+  catenoid()
 ];
 
 const canvas = document.querySelector("#surface");
