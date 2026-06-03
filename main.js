@@ -15,6 +15,10 @@ const vAdd = (a, b) => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
 const vSub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
 const vLength = v => Math.hypot(v[0], v[1], v[2]) || 1;
 const finiteVector = v => v.every(Number.isFinite);
+const cNeg = z => ({ re: -z.re, im: -z.im });
+const cAvg = (a, b) => ({ re: (a.re + b.re) / 2, im: (a.im + b.im) / 2 });
+const cDistance = (a, b) => Math.hypot(a.re - b.re, a.im - b.im);
+const cNear = (value, target) => cDistance(value, target) <= cDistance(cNeg(value), target) ? value : cNeg(value);
 
 const range = (min, max, segments) => Array.from(
   { length: segments + 1 },
@@ -112,7 +116,7 @@ const s42 = (r1 = 1.8, r2 = 3) => {
   });
 };
 
-const kusner = ({ name = "Kusner", p = 3, r1 = 0.96, r2 = 1.04, uSegments = 64, vSegments = 241 }) => {
+const kusner = ({ name = "Kusner", p = 3, r1 = 1, r2 = 1.2, uSegments = 64, vSegments = 241 }) => {
   const A = Math.sqrt(2 * p - 1);
   const B = 2 * A / (p - 1);
   const zp = zPowerText(p);
@@ -128,6 +132,82 @@ const kusner = ({ name = "Kusner", p = 3, r1 = 0.96, r2 = 1.04, uSegments = 64, 
     },
     normalizeParameters: values => ({ p: oddInRange(values.p, 3, 11) }),
     withParameters: values => kusner({ name, p: values.p, r1, r2, uSegments, vSegments })
+  });
+};
+
+const lopezNodeGrid = (data, w) => {
+  const us = range(data.uRange[0], data.uRange[1], data.uSegments);
+  const vs = range(data.vRange[0], data.vRange[1], data.vSegments);
+  const zGrid = vs.map(angle => us.map(radius => data.parameter(radius, angle)));
+  const wGrid = zGrid.reduce((rows, zRow, row) => [
+    ...rows,
+    zRow.reduce((columns, z, column) => {
+      const principal = w(z);
+      const target = row > 0 && column > 0
+        ? cAvg(columns[column - 1], rows[row - 1][column])
+        : row > 0
+          ? rows[row - 1][column]
+          : column > 0
+            ? columns[column - 1]
+            : principal;
+      const value = cNear(principal, target);
+      return [...columns, value];
+    }, [])
+  ], []);
+  return { zGrid, wGrid };
+};
+
+const lopezSegmentDelta = (z0, w0, z1, w1, f, g, w) => {
+  const z = center(z0, z1);
+  const dz = diff(z0, z1);
+  const wz = cNear(w(z), cAvg(w0, w1));
+  const fz = f(z, wz);
+  const gz = g(z, wz);
+  const delta = phis.map(phi => phi(fz, gz, dz).re);
+  return finiteVector(delta) ? delta : [0, 0, 0];
+};
+
+const lopezSheetPoints = ({ zGrid, wGrid }, f, g, w) => {
+  const points = zGrid.map(row => row.map(() => [0, 0, 0]));
+
+  zGrid[0].slice(1).forEach((_, offset) => {
+    const column = offset + 1;
+    points[0][column] = vAdd(
+      points[0][column - 1],
+      lopezSegmentDelta(zGrid[0][column - 1], wGrid[0][column - 1], zGrid[0][column], wGrid[0][column], f, g, w)
+    );
+  });
+
+  zGrid.slice(1).forEach((_, offset) => {
+    const row = offset + 1;
+    zGrid[row].forEach((z, column) => {
+      points[row][column] = vAdd(
+        points[row - 1][column],
+        lopezSegmentDelta(zGrid[row - 1][column], wGrid[row - 1][column], z, wGrid[row][column], f, g, w)
+      );
+    });
+  });
+
+  return points;
+};
+
+const lopezPointGrids = (data, w, f, g) => [lopezSheetPoints(lopezNodeGrid(data, w), f, g, w)];
+
+const lopezKlein = () => {
+  const r = -0.392973;
+  const wText = "sqrt(z * (z - r) / (r * z + 1))";
+  const w = C$(`z => ${wText}`, { r });
+  const f = C$("(z, w) => i * (z + 1)^2 / (z^2 * w)");
+  const g = C$("(z, w) => w * (z - 1) / (z + 1)");
+
+  return surfaceWithFormulas({
+    name: "Lopez Klein Bottle",
+    ...annulus(0.405, 2.45, 76, 241),
+    vRange: [0.03, TAU - 0.03],
+    fText: `z => i * (z + 1)^2 / (z^2 * ${wText})`,
+    gText: `z => ${wText} * (z - 1) / (z + 1)`,
+    constants: { r },
+    pointGrids: data => lopezPointGrids(data, w, f, g)
   });
 };
 
@@ -148,6 +228,7 @@ const surfaces = [
   s41({ name: "S41_7_5                 ", m: 7, n: 5, r1: 1.1, r2: 1.3 }),
   cobra({ name: "Cobra", m: 5, r1: 1, r2: 1.2 }),
   kusner({ name: "Kusner" }),
+  lopezKlein(),
   catenoid()
 ];
 
@@ -186,7 +267,7 @@ const state = {
   surface: null,
   domains: new Map(),
   parameters: new Map(),
-  materialMode: "color",
+  materialMode: "copper",
   sliderFrame: 0
 };
 
@@ -253,7 +334,7 @@ const segmentDelta = (z0, z1, data) => {
   return finiteVector(delta) ? delta : [0, 0, 0];
 };
 
-const buildPoints = data => {
+const buildPointGrid = data => {
   const us = range(data.uRange[0], data.uRange[1], data.uSegments);
   const vs = range(data.vRange[0], data.vRange[1], data.vSegments);
   const points = vs.map(() => us.map(() => [0, 0, 0]));
@@ -277,15 +358,19 @@ const buildPoints = data => {
   return points;
 };
 
-const normalizePoints = points => {
-  const allPoints = points.flat().filter(finiteVector);
+const pointGridsFor = data => data.pointGrids ? data.pointGrids(data) : [buildPointGrid(data)];
+
+const normalizePointGrids = pointGrids => {
+  const allPoints = pointGrids.flat(2).filter(finiteVector);
   const safePoints = allPoints.length > 0 ? allPoints : [[0, 0, 0]];
   const center = [0, 1, 2].map(axis =>
     safePoints.reduce((sum, point) => sum + point[axis], 0) / safePoints.length
   );
   const centered = safePoints.map(point => vSub(point, center));
   const radius = Math.max(...centered.map(vLength)) || 1;
-  return points.map(row => row.map(point => finiteVector(point) ? vSub(point, center).map(value => value / radius) : [0, 0, 0]));
+  return pointGrids.map(points => points.map(row =>
+    row.map(point => finiteVector(point) ? vSub(point, center).map(value => value / radius) : [0, 0, 0])
+  ));
 };
 
 const surfacePalette = [0x009e9a, 0x0068ff, 0x7132ff, 0xe03aad, 0xff9d00].map(color => new THREE.Color(color));
@@ -304,16 +389,16 @@ const colorForPoint = point => {
   return paletteColor(value);
 };
 
-const colorAttribute = points => new THREE.Float32BufferAttribute(
-  points.flatMap(row => row.flatMap(point => colorForPoint(point).toArray())),
+const colorAttribute = pointGrids => new THREE.Float32BufferAttribute(
+  pointGrids.flatMap(points => points.flatMap(row => row.flatMap(point => colorForPoint(point).toArray()))),
   3
 );
 
-const makeIndices = points => {
+const makeGridIndices = (points, offset = 0) => {
   const columns = points[0].length;
   return points.slice(0, -1).flatMap((row, rowIndex) =>
     row.slice(0, -1).flatMap((_, column) => {
-      const p00 = rowIndex * columns + column;
+      const p00 = offset + rowIndex * columns + column;
       const p10 = p00 + 1;
       const p01 = p00 + columns;
       const p11 = p01 + 1;
@@ -322,7 +407,15 @@ const makeIndices = points => {
   );
 };
 
-const makeLinePositions = points => {
+const makeIndices = pointGrids => pointGrids.reduce(
+  (state, points) => ({
+    offset: state.offset + points.length * points[0].length,
+    indices: [...state.indices, ...makeGridIndices(points, state.offset)]
+  }),
+  { offset: 0, indices: [] }
+).indices;
+
+const makeGridLinePositions = points => {
   const rowStep = Math.max(1, Math.round((points.length - 1) / 18));
   const columnStep = Math.max(1, Math.round((points[0].length - 1) / 16));
   const horizontal = points
@@ -333,6 +426,8 @@ const makeLinePositions = points => {
     .flatMap((_, column) => points.slice(0, -1).flatMap((row, rowIndex) => [...row[column], ...points[rowIndex + 1][column]]));
   return [...horizontal, ...vertical];
 };
+
+const makeLinePositions = pointGrids => pointGrids.flatMap(makeGridLinePositions);
 
 const hammeredValue = (x, y, z) => {
   const wave = Math.sin(128 * x + 47 * y) + Math.sin(101 * y - 83 * z) + Math.sin(89 * z + 113 * x);
@@ -361,15 +456,15 @@ const hammerGeometry = geometry => {
 };
 
 const surfaceGeometry = data => {
-  const points = normalizePoints(buildPoints(data));
+  const pointGrids = normalizePointGrids(pointGridsFor(data));
   const geometry = new THREE.BufferGeometry();
   const lineGeometry = new THREE.BufferGeometry();
-  geometry.setAttribute("position", new THREE.Float32BufferAttribute(points.flat(2), 3));
-  geometry.setAttribute("color", colorAttribute(points));
-  geometry.setIndex(makeIndices(points));
+  geometry.setAttribute("position", new THREE.Float32BufferAttribute(pointGrids.flat(3), 3));
+  geometry.setAttribute("color", colorAttribute(pointGrids));
+  geometry.setIndex(makeIndices(pointGrids));
   geometry.computeVertexNormals();
   if (state.materialMode === "copper") hammerGeometry(geometry);
-  lineGeometry.setAttribute("position", new THREE.Float32BufferAttribute(makeLinePositions(points), 3));
+  lineGeometry.setAttribute("position", new THREE.Float32BufferAttribute(makeLinePositions(pointGrids), 3));
   return { geometry, lineGeometry };
 };
 

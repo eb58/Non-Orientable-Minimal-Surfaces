@@ -60,6 +60,7 @@ Die Sliderwerte fuer Bereich und Flaechenparameter werden pro Flaeche separat ge
 - S41-Presets mit einstellbaren ungeraden Parametern `m` und `n`, wobei `n < m` gilt
 - Cobra mit einstellbarem Parameter `m`
 - Kusner-Familie mit einstellbarem ungeraden Parameter `p`
+- Lopez Klein Bottle, die einmal punktierte minimale Kleinsche Flasche mit einem Ende; gerendert wird ein stetiger Zweig der orientierbaren Doppelflaeche
 - Catenoid
 
 Die Formeln fuer `f` und `g` stehen in `main.js` direkt bei den Presets.
@@ -90,4 +91,4 @@ Ein neues Preset wird in `main.js` im Array `surfaces` angelegt. Beispiel:
 }
 ```
 
-Fuer Kreisringe wird `annulus(r1, r2, uSegments, vSegments)` verwendet. `C$` wertet komplexe Ausdruecke wie `z^3`, `i`, `sin(z)`, `cos(z)` und `exp(z)` aus.
+Fuer Kreisringe wird `annulus(r1, r2, uSegments, vSegments)` verwendet. `C$` wertet komplexe Ausdruecke wie `z^3`, `i`, `sqrt(z)`, `sin(z)`, `cos(z)` und `exp(z)` aus.

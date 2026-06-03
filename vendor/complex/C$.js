@@ -9,6 +9,12 @@ const sqr = c => adj({ re: c.re ** 2 - c.im ** 2, im: 2 * c.re * c.im });
 const cub = c => adj({ re: c.re ** 3 - 3 * c.re * c.im ** 2, im: 3 * c.re ** 2 * c.im - c.im ** 3 });
 const mul = (c1, c2) => adj({ re: c1.re * c2.re - c1.im * c2.im, im: c1.re * c2.im + c1.im * c2.re });
 const len = c => Math.sqrt(c.re ** 2 + c.im ** 2);
+const sqrt = c => {
+  const radius = len(c);
+  const re = Math.sqrt(Math.max(0, (radius + c.re) / 2));
+  const im = (c.im < 0 ? -1 : 1) * Math.sqrt(Math.max(0, (radius - c.re) / 2));
+  return adj({ re, im });
+};
 const div = (c1, c2) => {
   const den = c2.re ** 2 + c2.im ** 2;
   return adj({ re: (c1.re * c2.re + c1.im * c2.im) / den, im: (c1.im * c2.re - c1.re * c2.im) / den });
@@ -49,6 +55,7 @@ export const cops = {
   sqr,
   cub,
   len,
+  sqrt,
   ln,
   pow,
   sin,
