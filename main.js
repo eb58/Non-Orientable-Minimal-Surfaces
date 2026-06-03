@@ -112,6 +112,25 @@ const s42 = (r1 = 1.8, r2 = 3) => {
   });
 };
 
+const kusner = ({ name = "Kusner", p = 3, r1 = 0.96, r2 = 1.04, uSegments = 64, vSegments = 241 }) => {
+  const A = Math.sqrt(2 * p - 1);
+  const B = 2 * A / (p - 1);
+  const zp = zPowerText(p);
+
+  return surfaceWithFormulas({
+    name,
+    ...annulus(r1, r2, uSegments, vSegments),
+    fText: `z => i * (A * ${zp} + 1)^2 / (${zPowerText(2 * p)} + B * ${zp} - 1)^2`,
+    gText: `z => ${zPowerText(p - 1)} * (${zp} - A) / (A * ${zp} + 1)`,
+    constants: { A, B },
+    parameters: {
+      p: { label: "p", min: 3, max: 11, step: 2, value: p, format: value => Math.round(value).toString() }
+    },
+    normalizeParameters: values => ({ p: oddInRange(values.p, 3, 11) }),
+    withParameters: values => kusner({ name, p: values.p, r1, r2, uSegments, vSegments })
+  });
+};
+
 const catenoid = () => surfaceWithFormulas({
   name: "Catenoid",
   ...annulus(0.3, 3, 70, 180),
@@ -128,6 +147,7 @@ const surfaces = [
   s41({ name: "S41_7_3                 ", m: 7, n: 3, r1: 1.1, r2: 1.2 }),
   s41({ name: "S41_7_5                 ", m: 7, n: 5, r1: 1.1, r2: 1.3 }),
   cobra({ name: "Cobra", m: 5, r1: 1, r2: 1.2 }),
+  kusner({ name: "Kusner" }),
   catenoid()
 ];
 

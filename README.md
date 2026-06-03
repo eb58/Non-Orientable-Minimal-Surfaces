@@ -49,7 +49,7 @@ node scripts/build-standalone.js
 - Zoom: Mausrad oder Trackpad-Scroll
 - Ansicht zuruecksetzen: Button `Ansicht zuruecksetzen`
 - Parameterbereich aendern: Slider `r min`, `r max`, `w min`, `w max`
-- Flaechenparameter aendern: bei S41 steuern die Slider `m` und `n` die Exponenten, bei Cobra steuert `m` den Exponenten
+- Flaechenparameter aendern: bei S41 steuern die Slider `m` und `n` die Exponenten, bei Cobra steuert `m` den Exponenten, bei Kusner steuert `p` die Familie
 - Darstellung umschalten: Button `Gedengeltes Kupfer`
 - Seitenpanel skalieren: Griff zwischen Viewer und Seitenbereich ziehen
 
@@ -59,6 +59,7 @@ Die Sliderwerte fuer Bereich und Flaechenparameter werden pro Flaeche separat ge
 
 - S41-Presets mit einstellbaren ungeraden Parametern `m` und `n`, wobei `n < m` gilt
 - Cobra mit einstellbarem Parameter `m`
+- Kusner-Familie mit einstellbarem ungeraden Parameter `p`
 - Catenoid
 
 Die Formeln fuer `f` und `g` stehen in `main.js` direkt bei den Presets.
