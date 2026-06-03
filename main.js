@@ -142,6 +142,7 @@ const domainInfo = document.querySelector("#domain-info");
 const surfaceButtons = document.querySelector("#surface-buttons");
 const surfaceParameters = document.querySelector("#surface-parameters");
 const surfaceParameterControls = document.querySelector("#surface-parameter-controls");
+const materialToggle = document.querySelector("#material-toggle");
 const resetDomainButton = document.querySelector("#reset-domain");
 const domainControls = {
   uMin: document.querySelector("#u-min"),
@@ -165,6 +166,7 @@ const state = {
   surface: null,
   domains: new Map(),
   parameters: new Map(),
+  materialMode: "color",
   sliderFrame: 0
 };
 
@@ -190,6 +192,14 @@ const material = new THREE.MeshPhysicalMaterial({
   side: THREE.DoubleSide,
   transparent: false,
   opacity: 1
+});
+const copperMaterial = new THREE.MeshPhysicalMaterial({
+  color: 0xb76a32,
+  metalness: 0.82,
+  roughness: 0.31,
+  clearcoat: 0.18,
+  clearcoatRoughness: 0.48,
+  side: THREE.DoubleSide
 });
 const lineMaterial = new THREE.LineBasicMaterial({
   color: 0x172433,
@@ -304,6 +314,32 @@ const makeLinePositions = points => {
   return [...horizontal, ...vertical];
 };
 
+const hammeredValue = (x, y, z) => {
+  const wave = Math.sin(128 * x + 47 * y) + Math.sin(101 * y - 83 * z) + Math.sin(89 * z + 113 * x);
+  return Math.max(0, Math.sin(wave * 1.8 + x * 37 - y * 29));
+};
+
+const hammerGeometry = geometry => {
+  geometry.computeVertexNormals();
+  const positions = geometry.attributes.position;
+  const normals = geometry.attributes.normal;
+  Array.from({ length: positions.count }).forEach((_, index) => {
+    const x = positions.getX(index);
+    const y = positions.getY(index);
+    const z = positions.getZ(index);
+    const dent = hammeredValue(x, y, z) ** 2.6;
+    const lift = 0.0038 * dent - 0.0013 * (1 - dent);
+    positions.setXYZ(
+      index,
+      x + normals.getX(index) * lift,
+      y + normals.getY(index) * lift,
+      z + normals.getZ(index) * lift
+    );
+  });
+  positions.needsUpdate = true;
+  geometry.computeVertexNormals();
+};
+
 const surfaceGeometry = data => {
   const points = normalizePoints(buildPoints(data));
   const geometry = new THREE.BufferGeometry();
@@ -312,6 +348,7 @@ const surfaceGeometry = data => {
   geometry.setAttribute("color", colorAttribute(points));
   geometry.setIndex(makeIndices(points));
   geometry.computeVertexNormals();
+  if (state.materialMode === "copper") hammerGeometry(geometry);
   lineGeometry.setAttribute("position", new THREE.Float32BufferAttribute(makeLinePositions(points), 3));
   return { geometry, lineGeometry };
 };
@@ -324,8 +361,21 @@ const disposeSurface = () => {
 const renderSurface = data => {
   const geometries = surfaceGeometry(data);
   disposeSurface();
-  surfaceGroup.add(new THREE.Mesh(geometries.geometry, material));
-  surfaceGroup.add(new THREE.LineSegments(geometries.lineGeometry, lineMaterial));
+  surfaceGroup.add(new THREE.Mesh(geometries.geometry, state.materialMode === "copper" ? copperMaterial : material));
+  if (state.materialMode !== "copper") surfaceGroup.add(new THREE.LineSegments(geometries.lineGeometry, lineMaterial));
+};
+
+const syncMaterialToggle = () => {
+  const copper = state.materialMode === "copper";
+  materialToggle.classList.toggle("active", copper);
+  materialToggle.setAttribute("aria-pressed", copper.toString());
+  materialToggle.textContent = copper ? "Farbverlauf anzeigen" : "Gedengeltes Kupfer";
+};
+
+const toggleMaterialMode = () => {
+  state.materialMode = state.materialMode === "copper" ? "color" : "copper";
+  syncMaterialToggle();
+  if (state.surface) renderSurface(currentData());
 };
 
 const updateDomainInfo = data => {
@@ -522,6 +572,7 @@ const createSurfaceButton = data => {
 surfaceButtons.append(...surfaces.map(createSurfaceButton));
 resetButton.addEventListener("click", resetView);
 resetDomainButton.addEventListener("click", resetDomain);
+materialToggle.addEventListener("click", toggleMaterialMode);
 Object.values(domainControls).forEach(control => control.addEventListener("input", updateCurrentDomain));
 panelResizer.addEventListener("pointerdown", startPanelResize);
 panelResizer.addEventListener("pointermove", movePanelResize);
@@ -531,6 +582,7 @@ panelResizer.addEventListener("keydown", resizePanelWithKeyboard);
 window.addEventListener("resize", resize);
 
 initPanelWidth();
+syncMaterialToggle();
 resetView();
 setSurface(surfaces[0]);
 resize();

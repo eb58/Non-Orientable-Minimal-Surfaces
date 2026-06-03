@@ -50,6 +50,7 @@ node scripts/build-standalone.js
 - Ansicht zuruecksetzen: Button `Ansicht zuruecksetzen`
 - Parameterbereich aendern: Slider `r min`, `r max`, `w min`, `w max`
 - Flaechenparameter aendern: bei S41 steuern die Slider `m` und `n` die Exponenten, bei Cobra steuert `m` den Exponenten
+- Darstellung umschalten: Button `Gedengeltes Kupfer`
 - Seitenpanel skalieren: Griff zwischen Viewer und Seitenbereich ziehen
 
 Die Sliderwerte fuer Bereich und Flaechenparameter werden pro Flaeche separat gemerkt. Der Button `Bereich zuruecksetzen` setzt nur den Bereich der aktuell ausgewaehlten Flaeche zurueck.

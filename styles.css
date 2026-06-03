@@ -187,6 +187,18 @@ body.resizing-panel {
   background: #dfecef;
 }
 
+.mode-toggle {
+  margin: 8px 0 0;
+  border: 1px solid #9b6a38;
+  background: linear-gradient(135deg, #7a421f, #c87732 48%, #5a2f1b);
+  color: #fff7ef;
+}
+
+.mode-toggle:hover,
+.mode-toggle.active {
+  background: linear-gradient(135deg, #8c4d25, #dd8a42 48%, #6f3a20);
+}
+
 .surface-buttons {
   display: grid;
   gap: 8px;
