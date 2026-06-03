@@ -33,10 +33,11 @@ const defaultDomain = surface => ({
   vRange: [...surface.vRange]
 });
 const domainFor = surface => state.domains.get(domainKey(surface)) || defaultDomain(surface);
+const normalizeParameters = (surface, values) => surface.normalizeParameters ? surface.normalizeParameters(values) : values;
 const defaultParameters = surface => Object.fromEntries(
   Object.entries(surface.parameters || {}).map(([key, parameter]) => [key, parameter.value])
 );
-const parametersFor = surface => state.parameters.get(domainKey(surface)) || defaultParameters(surface);
+const parametersFor = surface => normalizeParameters(surface, state.parameters.get(domainKey(surface)) || defaultParameters(surface));
 const withParameters = surface => surface.withParameters ? surface.withParameters(parametersFor(surface)) : surface;
 const currentData = () => withDomain(withParameters(state.surface));
 const domainTextFor = data => data.parameter
@@ -62,6 +63,7 @@ const annulus = (r1, r2, uSegments = 60, vSegments = 181) => ({
 });
 
 const zPowerText = n => n === 0 ? "1" : n === 1 ? "z" : `z^${n}`;
+const oddInRange = (value, min, max) => clamp(min, Math.round(value) | 1, max);
 const surfaceWithFormulas = ({ fText, gText, constants = {}, ...surface }) => ({
   ...surface,
   f: C$(fText, constants),
@@ -74,7 +76,17 @@ const s41 = ({ name, m, n, r1 = 1, r2 = 1.2, uSegments = 58, vSegments = 221 }) 
   name,
   ...annulus(r1, r2, uSegments, vSegments),
   fText: `z => i * (${zPowerText(n)} + 1)^2 / z^${m + 1}`,
-  gText: `z => ${zPowerText(m - n)} * (${zPowerText(n)} - 1) / (${zPowerText(n)} + 1)`
+  gText: `z => ${zPowerText(m - n)} * (${zPowerText(n)} - 1) / (${zPowerText(n)} + 1)`,
+  parameters: {
+    m: { label: "m", min: 3, max: 13, step: 2, value: m, format: value => Math.round(value).toString() },
+    n: { label: "n", min: 1, max: 11, step: 2, value: n, format: value => Math.round(value).toString() }
+  },
+  normalizeParameters: values => {
+    const nextM = oddInRange(values.m, 3, 13);
+    const nextN = oddInRange(values.n, 1, nextM - 2);
+    return { m: nextM, n: nextN };
+  },
+  withParameters: values => s41({ name, ...values, r1, r2, uSegments, vSegments })
 });
 
 const cobra = ({ name, m = 5, r1, r2, uSegments = 58, vSegments = 221 }) => surfaceWithFormulas({ // S39 
@@ -114,8 +126,7 @@ const surfaces = [
   s41({ name: "S41_5_3 Double Trefoil  ", m: 5, n: 3, r1: 1.1, r2: 1.5 }),
   s41({ name: "S41_7_1                 ", m: 7, n: 1, r1: 1.1, r2: 1.2 }),
   s41({ name: "S41_7_3                 ", m: 7, n: 3, r1: 1.1, r2: 1.2 }),
-  s41({ name: "S41_7_5                 ", m: 7, n: 3, r1: 1.1, r2: 1.3 }),
-  
+  s41({ name: "S41_7_5                 ", m: 7, n: 5, r1: 1.1, r2: 1.3 }),
   cobra({ name: "Cobra", m: 5, r1: 1, r2: 1.2 }),
   catenoid()
 ];
@@ -415,13 +426,15 @@ const updateCurrentDomain = () => {
 
 const updateCurrentParameters = () => {
   if (!state.surface) return;
-  const values = Object.fromEntries(
+  const values = normalizeParameters(state.surface, Object.fromEntries(
     [...surfaceParameterControls.querySelectorAll("input")].map(control => [control.dataset.parameter, Number(control.value)])
-  );
+  ));
   const parameters = state.surface.parameters || {};
   state.parameters.set(domainKey(state.surface), values);
   [...surfaceParameterControls.querySelectorAll("input")].forEach(control => {
-    control.nextElementSibling.value = parameterText(parameters[control.dataset.parameter], Number(control.value));
+    const value = values[control.dataset.parameter];
+    control.value = value;
+    control.nextElementSibling.value = parameterText(parameters[control.dataset.parameter], value);
   });
   const data = currentData();
   renderSurface(data);

@@ -49,20 +49,16 @@ node scripts/build-standalone.js
 - Zoom: Mausrad oder Trackpad-Scroll
 - Ansicht zuruecksetzen: Button `Ansicht zuruecksetzen`
 - Parameterbereich aendern: Slider `r min`, `r max`, `w min`, `w max`
-- Flaechenparameter aendern: bei Cobra steuert der Slider `m` den Exponenten
+- Flaechenparameter aendern: bei S41 steuern die Slider `m` und `n` die Exponenten, bei Cobra steuert `m` den Exponenten
 - Seitenpanel skalieren: Griff zwischen Viewer und Seitenbereich ziehen
 
 Die Sliderwerte fuer Bereich und Flaechenparameter werden pro Flaeche separat gemerkt. Der Button `Bereich zuruecksetzen` setzt nur den Bereich der aktuell ausgewaehlten Flaeche zurueck.
 
 ## Enthaltene Flaechen
 
-- Catenoid
-- Twisted Catenoid
+- S41-Presets mit einstellbaren ungeraden Parametern `m` und `n`, wobei `n < m` gilt
 - Cobra mit einstellbarem Parameter `m`
-- S42
-- Trefoil
-- Double Trefoil
-- UFO
+- Catenoid
 
 Die Formeln fuer `f` und `g` stehen in `main.js` direkt bei den Presets.
 
