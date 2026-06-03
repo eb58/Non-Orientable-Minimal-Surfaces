@@ -79462,21 +79462,24 @@ const annulus = (r1, r2, uSegments = 60, vSegments = 181) => ({
 });
 
 const zPowerText = n => n === 0 ? "1" : n === 1 ? "z" : `z^${n}`;
+const surfaceWithFormulas = ({ fText, gText, constants = {}, ...surface }) => ({
+  ...surface,
+  f: C$(fText, constants),
+  g: C$(gText, constants),
+  fText,
+  gText
+});
 
-const s41 = ({ name, m, n, r1 = 1, r2 = 1.2, uSegments = 58, vSegments = 221 }) => ({
+const s41 = ({ name, m, n, r1 = 1, r2 = 1.2, uSegments = 58, vSegments = 221 }) => surfaceWithFormulas({
   name,
   ...annulus(r1, r2, uSegments, vSegments),
-  f: C$("z => i * (z^n + 1)^2 / z^(m + 1)", { m, n }),
-  g: C$("z => z^(m - n) * (z^n - 1) / (z^n + 1)", { m, n }),
   fText: `z => i * (${zPowerText(n)} + 1)^2 / z^${m + 1}`,
   gText: `z => ${zPowerText(m - n)} * (${zPowerText(n)} - 1) / (${zPowerText(n)} + 1)`
 });
 
-const cobra = ({ name, m = 5, r1, r2, uSegments = 58, vSegments = 221 }) => ({ // S39 
+const cobra = ({ name, m = 5, r1, r2, uSegments = 58, vSegments = 221 }) => surfaceWithFormulas({ // S39 
   name,
   ...annulus(r1, r2, uSegments, vSegments),
-  f: C$("z => (z + 1)^2 * (z + i)^2 / z^(m + 1)", { m }),
-  g: C$("z => z^(m - 2) * (z - 1) * (z - i) / ((z + 1) * (z + i))", { m }),
   fText: `z => (z + 1)^2 * (z + i)^2 / z^${m + 1}`,
   gText: `z => z^${m - 2} * (z - 1) * (z - i) / ((z + 1) * (z + i))`,
   parameters: { m: { label: "m", min: 5, max: 11, step: 2, value: m, format: value => Math.round(value).toString() } },
@@ -79488,24 +79491,21 @@ const s42 = (r1 = 1.8, r2 = 3) => {
   const gText = "z => z^3 * (z^2 - a^2) / ((a*z)^2 - 1)";
   const fText = 'z => i * ((a*z)^2 - 1)^2 / (z^2 * (z - 1)^4 * (z + 1)^4)';
 
-  return {
+  return surfaceWithFormulas({
     name: "S42",
     ...annulus(r1, r2, 70, 221),
-    f: C$(fText, { a }),
-    g: C$(gText, { a }),
     fText,
-    gText
-  };
+    gText,
+    constants: { a }
+  });
 };
 
-const catenoid = () => ({
+const catenoid = () => surfaceWithFormulas({
   name: "Catenoid",
   ...annulus(0.3, 3, 70, 180),
-  f: C$("z => -2 / z^2"),
-  g: C$("z => z"),
   fText: "z => -2 / z^2",
   gText: "z => z"
-})
+});
 
 const surfaces = [
   s41({ name: "Twisted Catenoid", m: 3, n: 1, r1: 1.0, r2: 2 }),
