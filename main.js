@@ -3,6 +3,7 @@ import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { C$ } from "./vendor/complex/C$.js";
 
 const TAU = Math.PI * 2;
+const SEAM_OVERLAP = 0.1;
 const center = C$("(za, ze) => (za + ze) / 2");
 const diff = C$("(za, ze) => ze - za");
 const phis = [
@@ -61,7 +62,7 @@ const withDomain = surface => {
 
 const annulus = (r1, r2, uSegments = 60, vSegments = 181) => ({
   uRange: [r1, r2],
-  vRange: [0, TAU],
+  vRange: [0, TAU + SEAM_OVERLAP],
   uSegments,
   vSegments,
   parameter: (radius, angle) => C$(radius * Math.cos(angle), radius * Math.sin(angle)),
@@ -77,6 +78,16 @@ const surfaceWithFormulas = ({ fText, gText, constants = {}, ...surface }) => ({
   fText,
   gText
 });
+
+const kusnerRadiusRange = p => {
+  const A = Math.sqrt(2 * p - 1);
+  const B = 2 * A / (p - 1);
+  const rootSpan = Math.sqrt(B ** 2 + 4);
+  const innerPole = ((rootSpan - B) / 2) ** (1 / p);
+  const outerPole = ((rootSpan + B) / 2) ** (1 / p);
+  const margin = Math.min(0.08, (outerPole - innerPole) * 0.22);
+  return [innerPole + margin, outerPole - margin];
+};
 
 const s41 = ({ name, m, n, r1 = 1, r2 = 1.2, uSegments = 58, vSegments = 221 }) => surfaceWithFormulas({
   name,
@@ -118,22 +129,26 @@ const s42 = (r1 = 1.8, r2 = 3) => {
   });
 };
 
-const kusner = ({ name = "Kusner", p = 3, r1 = 1, r2 = 1.2, uSegments = 64, vSegments = 241 }) => {
+const kusner = ({ name = "Kusner", p = 3, r1, r2 }) => {
   const A = Math.sqrt(2 * p - 1);
   const B = 2 * A / (p - 1);
   const zp = zPowerText(p);
+  const uSegments = 70 + Math.round(p * 4);
+  const vSegments = 241 + Math.round(p * 28);
+  const radiusRange = kusnerRadiusRange(p);
 
   return surfaceWithFormulas({
     name,
-    ...annulus(r1, r2, uSegments, vSegments),
+    ...annulus(r1 ?? radiusRange[0], r2 ?? radiusRange[1], uSegments, vSegments),
     fText: `z => i * (A * ${zp} + 1)^2 / (${zPowerText(2 * p)} + B * ${zp} - 1)^2`,
     gText: `z => ${zPowerText(p - 1)} * (${zp} - A) / (A * ${zp} + 1)`,
     constants: { A, B },
     parameters: {
-      p: { label: "p", min: 3, max: 11, step: 2, value: p, format: value => Math.round(value).toString() }
+      p: { label: "p", min: 3, max: 17, step: 2, value: p, format: value => Math.round(value).toString() }
     },
-    normalizeParameters: values => ({ p: oddInRange(values.p, 3, 11) }),
-    withParameters: values => kusner({ name, p: values.p, r1, r2, uSegments, vSegments })
+    normalizeParameters: values => ({ p: oddInRange(values.p, 3, 17) }),
+    resetDomainOnParameterChange: true,
+    withParameters: values => kusner({ name, p: values.p })
   });
 };
 
@@ -205,7 +220,7 @@ const lopezKlein = () => {
   return surfaceWithFormulas({
     name: "Lopez Klein Bottle",
     ...annulus(0.405, 2.45, 76, 241),
-    vRange: [0.03, TAU - 0.03],
+    vRange: [0.03, TAU + SEAM_OVERLAP],
     fText: `z => i * (z + 1)^2 / (z^2 * ${wText})`,
     gText: `z => ${wText} * (z - 1) / (z + 1)`,
     constants: { r },
@@ -251,19 +266,16 @@ const resetObjectPositionButton = document.querySelector("#reset-object-position
 const domainControls = {
   uMin: document.querySelector("#u-min"),
   uMax: document.querySelector("#u-max"),
-  vMin: document.querySelector("#v-min"),
   vMax: document.querySelector("#v-max")
 };
 const domainOutputs = {
   uMin: document.querySelector("#u-min-value"),
   uMax: document.querySelector("#u-max-value"),
-  vMin: document.querySelector("#v-min-value"),
   vMax: document.querySelector("#v-max-value")
 };
 const domainLabels = {
   uMin: document.querySelector("#u-min-label"),
   uMax: document.querySelector("#u-max-label"),
-  vMin: document.querySelector("#v-min-label"),
   vMax: document.querySelector("#v-max-label")
 };
 const objectAxes = ["x", "y", "z"];
@@ -554,7 +566,6 @@ const configureSlider = (control, bounds, value, step = 0.01) => {
 const syncDomainOutputs = domain => {
   domainOutputs.uMin.value = formatNumber(domain.uRange[0]);
   domainOutputs.uMax.value = formatNumber(domain.uRange[1]);
-  domainOutputs.vMin.value = formatNumber(domain.vRange[0]);
   domainOutputs.vMax.value = formatNumber(domain.vRange[1]);
 };
 
@@ -563,14 +574,14 @@ const syncDomainControls = surface => {
   const uBounds = surface.parameter
     ? [Math.max(0.01, sliderBounds(surface.uRange)[0]), sliderBounds(surface.uRange)[1]]
     : sliderBounds(surface.uRange);
-  const vBounds = surface.parameter ? [0, TAU * 2] : sliderBounds(surface.vRange);
+  const vBounds = surface.parameter
+    ? [surface.vRange[0] + 0.01, TAU * 2]
+    : [surface.vRange[0] + 0.01, sliderBounds(surface.vRange)[1]];
   domainLabels.uMin.textContent = surface.parameter ? "r min" : "u min";
   domainLabels.uMax.textContent = surface.parameter ? "r max" : "u max";
-  domainLabels.vMin.textContent = surface.parameter ? "w min" : "v min";
   domainLabels.vMax.textContent = surface.parameter ? "w max" : "v max";
   configureSlider(domainControls.uMin, uBounds, domain.uRange[0]);
   configureSlider(domainControls.uMax, uBounds, domain.uRange[1]);
-  configureSlider(domainControls.vMin, vBounds, domain.vRange[0]);
   configureSlider(domainControls.vMax, vBounds, domain.vRange[1]);
   syncDomainOutputs(domain);
 };
@@ -609,9 +620,10 @@ const sortedRange = (min, max) => {
 
 const updateCurrentDomain = () => {
   if (!state.surface) return;
+  const currentDomain = domainFor(state.surface);
   const domain = {
     uRange: sortedRange(domainControls.uMin.value, domainControls.uMax.value),
-    vRange: sortedRange(domainControls.vMin.value, domainControls.vMax.value)
+    vRange: sortedRange(currentDomain.vRange[0], domainControls.vMax.value)
   };
   state.domains.set(domainKey(state.surface), domain);
   syncDomainOutputs(domain);
@@ -630,6 +642,7 @@ const updateCurrentParameters = () => {
   ));
   const parameters = state.surface.parameters || {};
   state.parameters.set(domainKey(state.surface), values);
+  if (state.surface.resetDomainOnParameterChange) state.domains.delete(domainKey(state.surface));
   [...surfaceParameterControls.querySelectorAll("input")].forEach(control => {
     const value = values[control.dataset.parameter];
     control.value = value;

@@ -48,20 +48,20 @@ node scripts/build-standalone.js
 - Flaeche drehen: mit der Maus oder dem Trackpad ziehen
 - Zoom: Mausrad oder Trackpad-Scroll
 - Ansicht zuruecksetzen: Button `Ansicht zuruecksetzen`
-- Parameterbereich aendern: Slider `r min`, `r max`, `w min`, `w max`
+- Parameterbereich aendern: Slider `r min`, `r max`, `w max`
 - Flaechenparameter aendern: bei S41 steuern die Slider `m` und `n` die Exponenten, bei Cobra steuert `m` den Exponenten, bei Kusner steuert `p` die Familie
 - Objekt verschieben: Slider `x`, `y`, `z`
 - Objekt mit der Maus verschieben: `Ctrl` gedrueckt halten und im Viewer ziehen
 - Darstellung umschalten: Button `Gedengeltes Kupfer`
 - Seitenpanel skalieren: Griff zwischen Viewer und Seitenbereich ziehen
 
-Die Sliderwerte fuer Bereich, Flaechenparameter und Objektposition werden pro Flaeche separat gemerkt. Der Button `Bereich zuruecksetzen` setzt nur den Bereich der aktuell ausgewaehlten Flaeche zurueck.
+Die Sliderwerte fuer Bereich, Flaechenparameter und Objektposition werden pro Flaeche separat gemerkt. Der Button `Bereich zuruecksetzen` setzt nur den Bereich der aktuell ausgewaehlten Flaeche zurueck. Kreisring-Flaechen starten mit einem kleinen Winkel-Overlap ueber `2pi`, damit an der Naht keine Luecke sichtbar bleibt.
 
 ## Enthaltene Flaechen
 
 - S41-Presets mit einstellbaren ungeraden Parametern `m` und `n`, wobei `n < m` gilt
 - Cobra mit einstellbarem Parameter `m`
-- Kusner-Familie mit einstellbarem ungeraden Parameter `p`
+- Kusner-Familie mit einstellbarem ungeraden Parameter `p`; hoehere `p`-Werte werden mit dichterem Mesh und passendem Radiusbereich zwischen den Polradien gerendert
 - Lopez Klein Bottle, die einmal punktierte minimale Kleinsche Flasche mit einem Ende; gerendert wird ein stetiger Zweig der orientierbaren Doppelflaeche
 - Catenoid
 

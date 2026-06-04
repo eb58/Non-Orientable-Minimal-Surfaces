@@ -1,11 +1,12 @@
 <!doctype html>
 <html lang="de">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Weierstrass Minimalfläche</title>
-    <link rel="stylesheet" href="styles.css">
-    <script type="importmap">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Weierstrass Minimalfläche</title>
+  <link rel="stylesheet" href="styles.css">
+  <script type="importmap">
       {
         "imports": {
           "three": "./vendor/three/three.module.js",
@@ -13,87 +14,83 @@
         }
       }
     </script>
-  </head>
-  <body>
-    <main class="app">
-      <section class="viewer" aria-label="Minimalfläche">
-        <canvas id="surface"></canvas>
-        <div class="hud">
-          <strong id="surface-name">Catenoid</strong>
-          <span>Three.js WebGL</span>
-          <span>ziehen: drehen</span>
-          <span>ctrl+ziehen: verschieben</span>
-          <span>mausrad: zoom</span>
-        </div>
+</head>
+
+<body>
+  <main class="app">
+    <section class="viewer" aria-label="Minimalfläche">
+      <canvas id="surface"></canvas>
+      <div class="hud">
+        <strong id="surface-name">Catenoid</strong>
+        <span>Three.js WebGL</span>
+        <span>Ziehen: Drehen</span>
+        <span>Ctrl+Ziehen: Verschieben</span>
+        <span>Mausrad: Zoom</span>
+      </div>
+    </section>
+    <div id="panel-resizer" class="panel-resizer" role="separator" aria-label="Seitenbereich skalieren"
+      aria-orientation="vertical" tabindex="0"></div>
+    <aside class="panel">
+      <h1>Weierstrass-Darstellung</h1>
+      <p>
+        Die Fläche wird <code>Re ∫ (f(1 - g²)/2, i f(1 + g²)/2, fg) dz</code> berechnet.
+      </p>
+      <dl>
+        <dt>Aktuelle Fläche</dt>
+        <dt>g</dt>
+        <dd><code id="formula-g"></code></dd>
+        <dt>f</dt>
+        <dd><code id="formula-f"></code></dd>
+      </dl>
+      <section class="domain-controls" aria-label="Parameterbereich">
+        <h2>Parameterbereich</h2>
+        <dd id="domain-info"></dd>
+        <label>
+          <span id="u-min-label">u min</span>
+          <input id="u-min" type="range" step="0.01">
+          <output id="u-min-value"></output>
+        </label>
+        <label>
+          <span id="u-max-label">u max</span>
+          <input id="u-max" type="range" step="0.01">
+          <output id="u-max-value"></output>
+        </label>
+        <label>
+          <span id="v-max-label">v max</span>
+          <input id="v-max" type="range" step="0.01">
+          <output id="v-max-value"></output>
+        </label>
+        <button id="reset-domain" type="button">Bereich zurücksetzen</button>
       </section>
-      <div id="panel-resizer" class="panel-resizer" role="separator" aria-label="Seitenbereich skalieren" aria-orientation="vertical" tabindex="0"></div>
-      <aside class="panel">
-        <h1>Weierstrass-Darstellung</h1>
-        <p>
-          Die Fläche wird <code>Re ∫ (f(1 - g²)/2, i f(1 + g²)/2, fg) dz</code> berechnet. Zum Experimentieren später nur <code>f</code>,
-          <code>g</code> und den Parameterbereich in <code>main.js</code>
-          ändern.
-        </p>
-        <dl>
-          <dt>Aktuelle Fläche</dt>
-          <dd id="domain-info"></dd>
-          <dt>g</dt>
-          <dd><code id="formula-g"></code></dd>
-          <dt>f</dt>
-          <dd><code id="formula-f"></code></dd>
-        </dl>
-        <section class="domain-controls" aria-label="Parameterbereich">
-          <h2>Parameterbereich</h2>
-          <label>
-            <span id="u-min-label">u min</span>
-            <input id="u-min" type="range" step="0.01">
-            <output id="u-min-value"></output>
-          </label>
-          <label>
-            <span id="u-max-label">u max</span>
-            <input id="u-max" type="range" step="0.01">
-            <output id="u-max-value"></output>
-          </label>
-          <label>
-            <span id="v-min-label">v min</span>
-            <input id="v-min" type="range" step="0.01">
-            <output id="v-min-value"></output>
-          </label>
-          <label>
-            <span id="v-max-label">v max</span>
-            <input id="v-max" type="range" step="0.01">
-            <output id="v-max-value"></output>
-          </label>
-          <button id="reset-domain" type="button">Bereich zurücksetzen</button>
-        </section>
-        <section id="surface-parameters" class="surface-parameters" aria-label="Flaechenparameter" hidden>
-          <h2>Flaechenparameter</h2>
-          <div id="surface-parameter-controls"></div>
-        </section>
-        <section class="object-controls" aria-label="Objekt verschieben">
-          <h2>Objekt verschieben</h2>
-          <label>
-            <span>x</span>
-            <input id="object-x" type="range" min="-1.5" max="1.5" step="0.01">
-            <output id="object-x-value"></output>
-          </label>
-          <label>
-            <span>y</span>
-            <input id="object-y" type="range" min="-1.5" max="1.5" step="0.01">
-            <output id="object-y-value"></output>
-          </label>
-          <label>
-            <span>z</span>
-            <input id="object-z" type="range" min="-1.5" max="1.5" step="0.01">
-            <output id="object-z-value"></output>
-          </label>
-          <button id="reset-object-position" type="button">Position zuruecksetzen</button>
-        </section>
-        <button id="material-toggle" class="mode-toggle" type="button" aria-pressed="false">Gedengeltes Kupfer</button>
-        <div id="surface-buttons" class="surface-buttons" aria-label="Minimalflächen"></div>
-        <button id="reset-view" type="button">Ansicht zurücksetzen</button>
-      </aside>
-    </main>
-    <script type="module" src="main.js"></script>
-  </body>
+      <section id="surface-parameters" class="surface-parameters" aria-label="Flaechenparameter" hidden>
+        <h2>Flaechenparameter</h2>
+        <div id="surface-parameter-controls"></div>
+      </section>
+      <section class="object-controls" aria-label="Objekt verschieben">
+        <h2>Objekt verschieben</h2>
+        <label>
+          <span>x</span>
+          <input id="object-x" type="range" min="-1.5" max="1.5" step="0.01">
+          <output id="object-x-value"></output>
+        </label>
+        <label>
+          <span>y</span>
+          <input id="object-y" type="range" min="-1.5" max="1.5" step="0.01">
+          <output id="object-y-value"></output>
+        </label>
+        <label>
+          <span>z</span>
+          <input id="object-z" type="range" min="-1.5" max="1.5" step="0.01">
+          <output id="object-z-value"></output>
+        </label>
+        <button id="reset-object-position" type="button">Position zuruecksetzen</button>
+      </section>
+      <button id="material-toggle" class="mode-toggle" type="button" aria-pressed="false">Gedengeltes Kupfer</button>
+      <div id="surface-buttons" class="surface-buttons" aria-label="Minimalflächen"></div>
+      <button id="reset-view" type="button">Ansicht zurücksetzen</button>
+    </aside>
+  </main>
+  <script type="module" src="main.js"></script>
+</body>
+
 </html>
