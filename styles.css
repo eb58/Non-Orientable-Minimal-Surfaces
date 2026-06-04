@@ -87,18 +87,18 @@ body.resizing-panel {
 .hud {
   position: absolute;
   left: 18px;
-  bottom: 18px;
+  top: 18px;
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 7px;
   align-items: center;
   max-width: calc(100% - 36px);
   border: 1px solid rgba(204, 226, 235, 0.16);
   border-radius: 8px;
   background: rgba(13, 24, 31, 0.62);
-  padding: 10px 12px;
+  padding: 7px 9px;
   color: #d4e4eb;
-  font-size: 0.92rem;
+  font-size: 0.78rem;
   backdrop-filter: blur(12px);
 }
 

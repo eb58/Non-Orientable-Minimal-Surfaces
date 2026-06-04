@@ -43,7 +43,7 @@ const defaultParameters = surface => Object.fromEntries(
   Object.entries(surface.parameters || {}).map(([key, parameter]) => [key, parameter.value])
 );
 const parametersFor = surface => normalizeParameters(surface, state.parameters.get(domainKey(surface)) || defaultParameters(surface));
-const defaultObjectPosition = () => ({ x: 0, y: 0, z: 0 });
+const defaultObjectPosition = () => ({ x: 0, y: 0, z: 0.30 });
 const objectPositionFor = surface => state.objectPositions.get(domainKey(surface)) || defaultObjectPosition();
 const withParameters = surface => surface.withParameters ? surface.withParameters(parametersFor(surface)) : surface;
 const currentData = () => withDomain(withParameters(state.surface));
@@ -249,6 +249,26 @@ const surfaces = [
   catenoid()
 ];
 
+const STORAGE_KEY = "minimalSurfaceStateV1";
+const finiteNumberArray = (value, length) => Array.isArray(value)
+  && value.length === length
+  && value.every(Number.isFinite);
+const validDomain = value => finiteNumberArray(value?.uRange, 2) && finiteNumberArray(value?.vRange, 2);
+const validParameters = value => value && typeof value === "object" && Object.values(value).every(Number.isFinite);
+const validObjectPosition = value => ["x", "y", "z"].every(axis => Number.isFinite(value?.[axis]));
+const validSurfaceView = value => finiteNumberArray(value?.camera, 3) && finiteNumberArray(value?.target, 3);
+const readStorageState = () => {
+  try {
+    return JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+  } catch {
+    return {};
+  }
+};
+const mapFromStorage = (value, validValue) => new Map(
+  Object.entries(value || {}).filter(([key, item]) => surfaces.some(surface => domainKey(surface) === key) && validValue(item))
+);
+const storageState = readStorageState();
+
 const canvas = document.querySelector("#surface");
 const app = document.querySelector(".app");
 const panelResizer = document.querySelector("#panel-resizer");
@@ -283,12 +303,28 @@ const objectControls = Object.fromEntries(objectAxes.map(axis => [axis, document
 const objectOutputs = Object.fromEntries(objectAxes.map(axis => [axis, document.querySelector(`#object-${axis}-value`)]));
 const state = {
   surface: null,
-  domains: new Map(),
-  parameters: new Map(),
-  objectPositions: new Map(),
-  materialMode: "copper",
+  domains: mapFromStorage(storageState.domains, validDomain),
+  parameters: mapFromStorage(storageState.parameters, validParameters),
+  objectPositions: mapFromStorage(storageState.objectPositions, validObjectPosition),
+  surfaceViews: mapFromStorage(storageState.surfaceViews, validSurfaceView),
+  materialMode: storageState.materialMode === "color" ? "color" : "copper",
   objectDrag: null,
+  persistenceFrame: 0,
   sliderFrame: 0
+};
+
+const saveAppState = () => localStorage.setItem(STORAGE_KEY, JSON.stringify({
+  activeSurface: state.surface ? domainKey(state.surface) : storageState.activeSurface,
+  materialMode: state.materialMode,
+  domains: Object.fromEntries(state.domains),
+  parameters: Object.fromEntries(state.parameters),
+  objectPositions: Object.fromEntries(state.objectPositions),
+  surfaceViews: Object.fromEntries(state.surfaceViews)
+}));
+
+const scheduleSaveAppState = () => {
+  cancelAnimationFrame(state.persistenceFrame);
+  state.persistenceFrame = requestAnimationFrame(saveAppState);
 };
 
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
@@ -302,6 +338,28 @@ const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(36, 1, 0.05, 100);
 const controls = new OrbitControls(camera, renderer.domElement);
 const surfaceGroup = new THREE.Group();
+const defaultView = () => ({
+  camera: [1.95, -3.35, 1.45],
+  target: [0, 0, 0]
+});
+const currentView = () => ({
+  camera: camera.position.toArray(),
+  target: controls.target.toArray()
+});
+const viewFor = surface => {
+  const view = state.surfaceViews.get(domainKey(surface));
+  return finiteNumberArray(view?.camera, 3) && finiteNumberArray(view?.target, 3) ? view : defaultView();
+};
+const applyView = view => {
+  camera.position.fromArray(view.camera);
+  controls.target.fromArray(view.target);
+  controls.update();
+};
+const saveCurrentView = () => {
+  if (!state.surface) return;
+  state.surfaceViews.set(domainKey(state.surface), currentView());
+  scheduleSaveAppState();
+};
 
 const material = new THREE.MeshPhysicalMaterial({
   color: 0xffffff,
@@ -436,8 +494,8 @@ const makeIndices = pointGrids => pointGrids.reduce(
 ).indices;
 
 const makeGridLinePositions = points => {
-  const rowStep = Math.max(1, Math.round((points.length - 1) / 18));
-  const columnStep = Math.max(1, Math.round((points[0].length - 1) / 16));
+  const rowStep = Math.max(1, Math.round((points.length - 1) / 26));
+  const columnStep = Math.max(1, Math.round((points[0].length - 1) / 24));
   const horizontal = points
     .filter((_, row) => row % rowStep === 0 || row === points.length - 1)
     .flatMap(row => row.slice(0, -1).flatMap((point, column) => [...point, ...row[column + 1]]));
@@ -510,6 +568,7 @@ const syncMaterialToggle = () => {
 const toggleMaterialMode = () => {
   state.materialMode = state.materialMode === "copper" ? "color" : "copper";
   syncMaterialToggle();
+  scheduleSaveAppState();
   if (state.surface) renderSurface(currentData());
 };
 
@@ -544,6 +603,7 @@ const setObjectPosition = position => {
   });
   syncObjectOutputs(position);
   applyObjectPosition(position);
+  scheduleSaveAppState();
 };
 
 const setSurface = surface => {
@@ -554,6 +614,8 @@ const setSurface = surface => {
   syncDomainControls(data);
   syncParameterControls(surface);
   syncObjectControls(surface);
+  applyView(viewFor(surface));
+  scheduleSaveAppState();
 };
 
 const configureSlider = (control, bounds, value, step = 0.01) => {
@@ -627,6 +689,7 @@ const updateCurrentDomain = () => {
   };
   state.domains.set(domainKey(state.surface), domain);
   syncDomainOutputs(domain);
+  scheduleSaveAppState();
   cancelAnimationFrame(state.sliderFrame);
   state.sliderFrame = requestAnimationFrame(() => {
     const data = currentData();
@@ -643,6 +706,7 @@ const updateCurrentParameters = () => {
   const parameters = state.surface.parameters || {};
   state.parameters.set(domainKey(state.surface), values);
   if (state.surface.resetDomainOnParameterChange) state.domains.delete(domainKey(state.surface));
+  scheduleSaveAppState();
   [...surfaceParameterControls.querySelectorAll("input")].forEach(control => {
     const value = values[control.dataset.parameter];
     control.value = value;
@@ -657,6 +721,7 @@ const updateCurrentParameters = () => {
 const resetDomain = () => {
   if (!state.surface) return;
   state.domains.delete(domainKey(state.surface));
+  scheduleSaveAppState();
   const data = currentData();
   syncDomainControls(data);
   renderSurface(data);
@@ -673,6 +738,7 @@ const resetObjectPosition = () => {
   if (!state.surface) return;
   state.objectPositions.delete(domainKey(state.surface));
   syncObjectControls(state.surface);
+  scheduleSaveAppState();
 };
 
 const cameraBasis = () => {
@@ -768,9 +834,11 @@ const resizePanelWithKeyboard = event => {
 };
 
 const resetView = () => {
-  camera.position.set(1.95, -3.35, 1.45);
-  controls.target.set(0, 0, 0);
-  controls.update();
+  const view = defaultView();
+  applyView(view);
+  if (!state.surface) return;
+  state.surfaceViews.set(domainKey(state.surface), view);
+  scheduleSaveAppState();
 };
 
 const resize = () => {
@@ -803,6 +871,7 @@ resetButton.addEventListener("click", resetView);
 resetDomainButton.addEventListener("click", resetDomain);
 resetObjectPositionButton.addEventListener("click", resetObjectPosition);
 materialToggle.addEventListener("click", toggleMaterialMode);
+controls.addEventListener("change", saveCurrentView);
 Object.values(domainControls).forEach(control => control.addEventListener("input", updateCurrentDomain));
 Object.values(objectControls).forEach(control => control.addEventListener("input", updateCurrentObjectPosition));
 canvas.addEventListener("pointerdown", startObjectDrag, { capture: true });
@@ -819,6 +888,6 @@ window.addEventListener("resize", resize);
 initPanelWidth();
 syncMaterialToggle();
 resetView();
-setSurface(surfaces[0]);
+setSurface(surfaces.find(surface => domainKey(surface) === storageState.activeSurface) || surfaces[0]);
 resize();
 animate();
