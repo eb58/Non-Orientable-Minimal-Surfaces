@@ -888,6 +888,26 @@ window.addEventListener("resize", resize);
 initPanelWidth();
 syncMaterialToggle();
 resetView();
-setSurface(surfaces.find(surface => domainKey(surface) === storageState.activeSurface) || surfaces[0]);
+setSurface(surfaces.find(surface => domainKey(surface) === storageState.activeSurface) || surfaces.find(surface => surface.name.startsWith('S41_7_5')));
 resize();
 animate();
+
+const panelToggle = document.getElementById('panel-toggle');
+const isMobile = () => window.matchMedia('(max-width: 820px)').matches;
+
+const updatePanelToggle = () => {
+  const collapsed = app.classList.contains('panel-collapsed');
+  panelToggle.textContent = isMobile() ? (collapsed ? '∧' : '∨') : (collapsed ? '‹' : '›');
+  panelToggle.setAttribute('aria-expanded', String(!collapsed));
+};
+
+if (isMobile()) app.classList.add('panel-collapsed');
+updatePanelToggle();
+
+panelToggle.addEventListener('click', () => {
+  app.classList.toggle('panel-collapsed');
+  updatePanelToggle();
+  resize();
+});
+
+window.addEventListener('resize', updatePanelToggle);
