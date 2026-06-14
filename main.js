@@ -883,7 +883,7 @@ panelResizer.addEventListener("pointermove", movePanelResize);
 panelResizer.addEventListener("pointerup", stopPanelResize);
 panelResizer.addEventListener("pointercancel", stopPanelResize);
 panelResizer.addEventListener("keydown", resizePanelWithKeyboard);
-window.addEventListener("resize", resize);
+new ResizeObserver(resize).observe(canvas);
 
 initPanelWidth();
 syncMaterialToggle();
@@ -907,7 +907,6 @@ updatePanelToggle();
 panelToggle.addEventListener('click', () => {
   app.classList.toggle('panel-collapsed');
   updatePanelToggle();
-  resize();
 });
 
 window.addEventListener('resize', updatePanelToggle);
