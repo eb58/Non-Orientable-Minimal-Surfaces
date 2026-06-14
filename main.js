@@ -446,9 +446,8 @@ const normalizePointGrids = pointGrids => {
   );
   const centered = safePoints.map(point => vSub(point, center));
   const radius = Math.max(...centered.map(vLength)) || 1;
-  return pointGrids.map(points => points.map(row =>
-    row.map(point => finiteVector(point) ? vSub(point, center).map(value => value / radius) : [0, 0, 0])
-  ));
+  const normalizePoint = point => finiteVector(point) ? vSub(point, center).map(value => value / radius) : [0, 0, 0];
+  return pointGrids.map(points => points.map(row => row.map(normalizePoint)));
 };
 
 const surfacePalette = [0x009e9a, 0x0068ff, 0x7132ff, 0xe03aad, 0xff9d00].map(color => new THREE.Color(color));
@@ -893,7 +892,7 @@ resize();
 animate();
 
 const panelToggle = document.getElementById('panel-toggle');
-const isMobile = () => window.matchMedia('(max-width: 820px)').matches;
+const isMobile = () => globalThis.matchMedia('(max-width: 820px)').matches;
 
 const updatePanelToggle = () => {
   const collapsed = app.classList.contains('panel-collapsed');
