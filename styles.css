@@ -30,6 +30,7 @@ a {
   grid-template-columns: minmax(0, 1fr) 10px var(--panel-width);
   height: 100vh;
   height: 100dvh;
+  overflow: hidden;
   transition: grid-template-columns 0.3s ease;
 }
 

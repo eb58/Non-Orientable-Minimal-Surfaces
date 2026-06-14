@@ -282,6 +282,8 @@ const surfaceParameters = document.querySelector("#surface-parameters");
 const surfaceParameterControls = document.querySelector("#surface-parameter-controls");
 const materialToggle = document.querySelector("#material-toggle");
 const resetDomainButton = document.querySelector("#reset-domain");
+const saveImageButton = document.querySelector("#save-image");
+const hud = document.querySelector(".hud");
 const resetObjectPositionButton = document.querySelector("#reset-object-position");
 const domainControls = {
   uMin: document.querySelector("#u-min"),
@@ -327,7 +329,7 @@ const scheduleSaveAppState = () => {
   state.persistenceFrame = requestAnimationFrame(saveAppState);
 };
 
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, preserveDrawingBuffer: true });
 renderer.setClearColor(0x000000, 0);
 renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
 renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -832,6 +834,21 @@ const resizePanelWithKeyboard = event => {
   setPanelWidth(currentWidth + (event.key === "ArrowLeft" ? 24 : -24));
 };
 
+const saveImage = () => {
+  cancelAnimationFrame(animationId);
+  hud.style.visibility = 'hidden';
+  renderer.render(scene, camera);
+  const dataURL = canvas.toDataURL('image/png');
+  hud.style.visibility = '';
+  animate();
+  const link = document.createElement('a');
+  link.download = `${state.surface ? domainKey(state.surface) : 'flaeche'}.png`;
+  link.href = dataURL;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+};
+
 const resetView = () => {
   const view = defaultView();
   applyView(view);
@@ -849,8 +866,9 @@ const resize = () => {
   camera.updateProjectionMatrix();
 };
 
+let animationId;
 const animate = () => {
-  requestAnimationFrame(animate);
+  animationId = requestAnimationFrame(animate);
   controls.update();
   renderer.render(scene, camera);
 };
@@ -867,6 +885,7 @@ const createSurfaceButton = data => {
 
 surfaceButtons.append(...surfaces.map(createSurfaceButton));
 resetButton.addEventListener("click", resetView);
+saveImageButton.addEventListener("click", saveImage);
 resetDomainButton.addEventListener("click", resetDomain);
 resetObjectPositionButton.addEventListener("click", resetObjectPosition);
 materialToggle.addEventListener("click", toggleMaterialMode);
@@ -882,7 +901,8 @@ panelResizer.addEventListener("pointermove", movePanelResize);
 panelResizer.addEventListener("pointerup", stopPanelResize);
 panelResizer.addEventListener("pointercancel", stopPanelResize);
 panelResizer.addEventListener("keydown", resizePanelWithKeyboard);
-new ResizeObserver(resize).observe(canvas);
+const resizeObserver = new ResizeObserver(resize);
+resizeObserver.observe(canvas);
 
 initPanelWidth();
 syncMaterialToggle();
