@@ -19,7 +19,7 @@ Fuer die Entwicklung ist `index.html` gedacht. Diese Variante verwendet ES-Modul
 Mit dem enthaltenen kleinen Node-Server:
 
 ```powershell
-node server.js
+npm start
 ```
 
 Danach im Browser oeffnen:
@@ -32,7 +32,7 @@ Der Server bindet lokal an `127.0.0.1`. Falls der Port belegt ist, kann er in Po
 
 ```powershell
 $env:PORT = "9000"
-node server.js
+npm start
 ```
 
 Alternativ funktioniert jeder statische Webserver, der das Projektverzeichnis ausliefert.
@@ -72,10 +72,10 @@ Die Formeln fuer `f` und `g` stehen in `main.js` direkt bei den Presets.
 - `index.html` enthaelt das Layout und die Import Map.
 - `main.js` berechnet die Weierstrass-Daten, erzeugt Three.js-Geometrien und steuert die UI.
 - `styles.css` enthaelt das responsive Layout und das resizable Panel.
-- `server.js` ist ein minimaler lokaler Static-File-Server.
+- `server.cjs` ist ein minimaler lokaler Static-File-Server.
+- `complex.js` ist ein ESM-Adapter, der `cops.js`, `tokenizer.js` und `complex.js` aus dem GitHub-Repo [algorithms-js](https://github.com/eb58/algorithms-js) laedt und `C$` exportiert.
 - `standalone.html` ist die direkt oeffenbare Einzeldatei.
 - `scripts/build-standalone.js` erzeugt `standalone.html` aus den Projektdateien.
-- `vendor/complex/C$.js` ist eine ES-Modul-Version der `C$`-Bibliothek.
 - `vendor/three/` enthaelt Three.js und OrbitControls lokal, damit die App ohne CDN laeuft.
 
 ## Neue Flaechen hinzufuegen

@@ -1,4 +1,7 @@
 {
+  "scripts": {
+    "start": "node server.cjs"
+  },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "eslint": "^10.5.0"

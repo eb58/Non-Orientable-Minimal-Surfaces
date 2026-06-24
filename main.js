@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
-import { C$ } from "./vendor/complex/C$.js";
+import { C$ } from "./complex.js";
 
 const TAU = Math.PI * 2;
 const SEAM_OVERLAP = 0.1;
