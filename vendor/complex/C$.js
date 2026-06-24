@@ -1,6 +1,6 @@
 const EPSILON = 1e-14;
 const asComplex = (re = 0, im = 0) => ({ re, im });
-const adj = c => ({ re: c.re === -0 ? 0 : c.re, im: c.im === -0 ? 0 : c.im });
+const adj = c => ({ re: Object.is(c.re, -0) ? 0 : c.re, im: Object.is(c.im, -0) ? 0 : c.im });
 const conj = c => adj({ re: c.re, im: -c.im });
 const neg = c => adj({ re: -c.re, im: -c.im });
 const add = (c1, c2) => adj({ re: c1.re + c2.re, im: c1.im + c2.im });
@@ -19,21 +19,21 @@ const div = (c1, c2) => {
   const den = c2.re ** 2 + c2.im ** 2;
   return adj({ re: (c1.re * c2.re + c1.im * c2.im) / den, im: (c1.im * c2.re - c1.re * c2.im) / den });
 };
-const ln = c => ({ re: Math.log(len(c)), im: Math.atan2(c.im, c.re) });
+const ln = c => adj({ re: Math.log(len(c)), im: Math.atan2(c.im, c.re) });
 const exp = c => adj({ re: Math.exp(c.re) * Math.cos(c.im), im: Math.exp(c.re) * Math.sin(c.im) });
 const sin = c => adj({ re: Math.sin(c.re) * Math.cosh(c.im), im: Math.cos(c.re) * Math.sinh(c.im) });
 const cos = c => adj({ re: Math.cos(c.re) * Math.cosh(c.im), im: -Math.sin(c.re) * Math.sinh(c.im) });
-const powN = (c, n) => n === 0
-  ? asComplex(1)
-  : n < 0
-    ? div(asComplex(1), powN(c, -n))
-    : n === 1
-      ? c
-      : n === 2
-        ? sqr(c)
-        : n === 3
-          ? cub(c)
-          : Array.from({ length: n - 1 }).reduce(acc => mul(acc, c), c);
+const powN = (c, n) => {
+  if (n === 0) return asComplex(1);
+  if (n === 1) return c;
+  if (n === 2) return sqr(c);
+  if (n === 3) return cub(c);
+  if (n === 4) return sqr(sqr(c));
+  if (n === 5) return mul(cub(c), sqr(c));
+  if (n === 6) return sqr(cub(c));
+  if (n < 0) return div(asComplex(1), powN(c, -n));
+  return Array.from({ length: n - 1 }).reduce(acc => mul(acc, c), c);
+};
 const pow = (c, n) => typeof n === "number" || n.im === 0 ? powN(c, typeof n === "number" ? n : n.re) : exp(mul(n, ln(c)));
 const equals = (c1, c2) => Math.abs(c1.re - c2.re) < EPSILON && Math.abs(c1.im - c2.im) < EPSILON;
 const toString = c => {
@@ -141,22 +141,32 @@ const binaryOpNode = (op, left, right) => ({ eval: (args, pos) => ops[op](left.e
 
 const parser = source => {
   const { peek, consume } = tokenizer(source);
-  const parseExpression = () => parseBinary(parseTerm, [TOKENS.plus, TOKENS.minus]);
-  const parseTerm = () => parseBinary(parseFactor, [TOKENS.times, TOKENS.divide]);
+  const is = (kind) => peek().symbol === kind;
+  const parseExpression = () => {
+    let node = parseTerm();
+    while (is(TOKENS.plus) || is(TOKENS.minus)) node = binaryOpNode(consume().symbol, node, parseTerm());
+    return node;
+  };
+  const parseTerm = () => {
+    let node = parseFactor();
+    while (is(TOKENS.times) || is(TOKENS.divide)) node = binaryOpNode(consume().symbol, node, parseFactor());
+    return node;
+  };
   const parseFactor = () => {
-    const node = parseOperand();
-    return peek().symbol === TOKENS.pow ? binaryOpNode(consume().symbol, node, parseFactor()) : node;
+    let node = parseOperand();
+    while (is(TOKENS.pow)) node = binaryOpNode(consume().symbol, node, parseFactor());
+    return node;
   };
-  const parseBinary = (next, symbols) => {
-    const parseRest = node => symbols.includes(peek().symbol) ? parseRest(binaryOpNode(consume().symbol, node, next())) : node;
-    return parseRest(next());
-  };
-  const parseOperand = () => peek().symbol === TOKENS.plus || peek().symbol === TOKENS.minus
+  const parseOperand = () => is(TOKENS.plus) || is(TOKENS.minus)
     ? unaryNode(consume().symbol, parseBase())
     : parseBase();
   const parseArguments = () => {
-    const expression = parseExpression();
-    return peek().symbol === TOKENS.comma ? (consume(), [expression, ...parseArguments()]) : [expression];
+    const expressions = [parseExpression()];
+    while (is(TOKENS.comma)) {
+      consume();
+      expressions.push(parseExpression());
+    }
+    return expressions;
   };
   const parseBase = () => {
     const token = peek();
@@ -167,14 +177,14 @@ const parser = source => {
       const funcName = consume().name;
       if (consume().symbol !== TOKENS.lparen) throw new Error(`Opening paren expected ${peek().strpos}`);
       const expressions = parseArguments();
-      if (peek().symbol !== TOKENS.rparen) throw new Error(`Closing bracket not found! Pos:${peek().strpos}`);
+      if (!is(TOKENS.rparen)) throw new Error(`Closing bracket not found! Pos:${peek().strpos}`);
       consume();
       return functionNode(funcName, expressions);
     }
     if (token.symbol === TOKENS.lparen) {
       consume();
       const node = parseExpression();
-      if (peek().symbol !== TOKENS.rparen) throw new Error(`Closing bracket not found! Pos:${token.strpos}`);
+      if (!is(TOKENS.rparen)) throw new Error(`Closing bracket not found! Pos:${token.strpos}`);
       consume();
       return node;
     }
@@ -188,7 +198,7 @@ const splitParam = source => {
   const idx = stripped.indexOf("=>");
   return idx < 0
     ? { params: [], expression: stripped }
-    : { params: stripped.slice(0, idx).replace(/[()]/g, "").split(","), expression: stripped.slice(idx + 2) };
+    : { params: stripped.slice(0, idx).replace(/[()]/g, "").split(",").filter(Boolean), expression: stripped.slice(idx + 2) };
 };
 
 export const C$ = (re, im) => {
@@ -201,7 +211,7 @@ export const C$ = (re, im) => {
   return params.length === 0
     ? ast.eval(im)
     : (...args) => {
-        if (args.length !== params.length) throw new Error("Anzahl der Argumente stimmt nicht mit der Anzahl der Variablen überein.");
-        return ast.eval(args, positions);
-      };
+      if (args.length !== params.length) throw new Error("Anzahl der Argumente stimmt nicht mit der Anzahl der Variablen überein.");
+      return ast.eval(args, positions);
+    };
 };

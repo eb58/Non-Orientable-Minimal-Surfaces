@@ -4,6 +4,7 @@ import { C$ } from "./vendor/complex/C$.js";
 
 const TAU = Math.PI * 2;
 const SEAM_OVERLAP = 0.1;
+const EXPORT_PIXEL_RATIO = 4;
 const center = C$("(za, ze) => (za + ze) / 2");
 const diff = C$("(za, ze) => ze - za");
 const phis = [
@@ -834,15 +835,59 @@ const resizePanelWithKeyboard = event => {
   setPanelWidth(currentWidth + (event.key === "ArrowLeft" ? 24 : -24));
 };
 
+const drawExportBackground = (context, width, height) => {
+  const diagonal = Math.hypot(width, height);
+  const linear = context.createLinearGradient(width * 0.12, 0, width * 0.88, height);
+  linear.addColorStop(0, "#1f303a");
+  linear.addColorStop(0.58, "#101a22");
+  linear.addColorStop(1, "#263b46");
+  context.fillStyle = linear;
+  context.fillRect(0, 0, width, height);
+
+  const glow = context.createRadialGradient(width * 0.44, height * 0.3, 0, width * 0.44, height * 0.3, diagonal * 0.34);
+  glow.addColorStop(0, "rgba(132, 169, 182, 0.38)");
+  glow.addColorStop(1, "rgba(132, 169, 182, 0)");
+  context.fillStyle = glow;
+  context.fillRect(0, 0, width, height);
+
+  const shade = context.createRadialGradient(width * 0.72, height * 0.76, 0, width * 0.72, height * 0.76, diagonal * 0.34);
+  shade.addColorStop(0, "rgba(30, 58, 70, 0.55)");
+  shade.addColorStop(1, "rgba(30, 58, 70, 0)");
+  context.fillStyle = shade;
+  context.fillRect(0, 0, width, height);
+};
+
+const exportCanvasDataURL = () => {
+  const exportCanvas = document.createElement("canvas");
+  exportCanvas.width = canvas.width;
+  exportCanvas.height = canvas.height;
+  const context = exportCanvas.getContext("2d");
+  drawExportBackground(context, exportCanvas.width, exportCanvas.height);
+  context.drawImage(canvas, 0, 0);
+  return exportCanvas.toDataURL("image/png");
+};
+
 const saveImage = () => {
   cancelAnimationFrame(animationId);
+  const size = renderer.getSize(new THREE.Vector2());
+  const pixelRatio = renderer.getPixelRatio();
+  const aspect = camera.aspect;
   hud.style.visibility = 'hidden';
+  renderer.setPixelRatio(EXPORT_PIXEL_RATIO);
+  renderer.setSize(size.x, size.y, false);
+  camera.aspect = size.x / size.y;
+  camera.updateProjectionMatrix();
   renderer.render(scene, camera);
-  const dataURL = canvas.toDataURL('image/png');
+  const dataURL = exportCanvasDataURL();
+  renderer.setPixelRatio(pixelRatio);
+  renderer.setSize(size.x, size.y, false);
+  camera.aspect = aspect;
+  camera.updateProjectionMatrix();
+  renderer.render(scene, camera);
   hud.style.visibility = '';
   animate();
   const link = document.createElement('a');
-  link.download = `${state.surface ? domainKey(state.surface) : 'flaeche'}.png`;
+  link.download = `${state.surface ? domainKey(state.surface) : 'flaeche'}-${EXPORT_PIXEL_RATIO}x.png`;
   link.href = dataURL;
   document.body.appendChild(link);
   link.click();
