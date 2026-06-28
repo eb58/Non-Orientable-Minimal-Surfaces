@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 import { C$ } from "./complex.js";
 
 const TAU = Math.PI * 2;
@@ -282,6 +283,7 @@ const surfaceButtons = document.querySelector("#surface-buttons");
 const surfaceParameters = document.querySelector("#surface-parameters");
 const surfaceParameterControls = document.querySelector("#surface-parameter-controls");
 const materialToggle = document.querySelector("#material-toggle");
+const materialModeLabel = document.querySelector("#material-mode-label");
 const resetDomainButton = document.querySelector("#reset-domain");
 const saveImageButton = document.querySelector("#save-image");
 const hud = document.querySelector(".hud");
@@ -310,7 +312,7 @@ const state = {
   parameters: mapFromStorage(storageState.parameters, validParameters),
   objectPositions: mapFromStorage(storageState.objectPositions, validObjectPosition),
   surfaceViews: mapFromStorage(storageState.surfaceViews, validSurfaceView),
-  materialMode: storageState.materialMode === "color" ? "color" : "copper",
+  materialMode: ["color", "mirror", "marble", "glass", "irid", "neon", "bronze", "email"].includes(storageState.materialMode) ? storageState.materialMode : "copper",
   objectDrag: null,
   persistenceFrame: 0,
   sliderFrame: 0
@@ -336,6 +338,10 @@ renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.NoToneMapping;
 renderer.toneMappingExposure = 1;
+
+const pmremGenerator = new THREE.PMREMGenerator(renderer);
+const envTexture = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
+pmremGenerator.dispose();
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(36, 1, 0.05, 100);
@@ -381,6 +387,69 @@ const copperMaterial = new THREE.MeshPhysicalMaterial({
   roughness: 0.31,
   clearcoat: 0.18,
   clearcoatRoughness: 0.48,
+  side: THREE.DoubleSide
+});
+const mirrorMaterial = new THREE.MeshPhysicalMaterial({
+  color: 0xdce8f2,
+  metalness: 1.0,
+  roughness: 0.04,
+  envMap: envTexture,
+  envMapIntensity: 3.0,
+  clearcoat: 1.0,
+  clearcoatRoughness: 0.02,
+  side: THREE.DoubleSide
+});
+const marbleMaterial = new THREE.MeshPhysicalMaterial({
+  vertexColors: true,
+  metalness: 0,
+  roughness: 0.1,
+  clearcoat: 1.0,
+  clearcoatRoughness: 0.08,
+  side: THREE.DoubleSide
+});
+const glassMaterial = new THREE.MeshPhysicalMaterial({
+  color: 0xffffff,
+  metalness: 0,
+  roughness: 0,
+  transmission: 1.0,
+  thickness: 2.0,
+  ior: 1.5,
+  envMap: envTexture,
+  envMapIntensity: 0.6,
+  side: THREE.DoubleSide
+});
+const iridMaterial = new THREE.MeshPhysicalMaterial({
+  color: 0xffffff,
+  metalness: 0,
+  roughness: 0.05,
+  transmission: 0.4,
+  iridescence: 1.0,
+  iridescenceIOR: 1.3,
+  iridescenceThicknessRange: [100, 400],
+  envMap: envTexture,
+  envMapIntensity: 1.5,
+  clearcoat: 1.0,
+  clearcoatRoughness: 0,
+  side: THREE.DoubleSide
+});
+const neonMaterial = new THREE.MeshBasicMaterial({
+  vertexColors: true,
+  side: THREE.DoubleSide
+});
+const bronzeMaterial = new THREE.MeshPhysicalMaterial({
+  vertexColors: true,
+  metalness: 0.75,
+  roughness: 0.55,
+  clearcoat: 0.12,
+  clearcoatRoughness: 0.45,
+  side: THREE.DoubleSide
+});
+const emailMaterial = new THREE.MeshPhysicalMaterial({
+  color: 0x1a3a8f,
+  metalness: 0,
+  roughness: 0.0,
+  clearcoat: 1.0,
+  clearcoatRoughness: 0.0,
   side: THREE.DoubleSide
 });
 const lineMaterial = new THREE.LineBasicMaterial({
@@ -453,7 +522,7 @@ const normalizePointGrids = pointGrids => {
   return pointGrids.map(points => points.map(row => row.map(normalizePoint)));
 };
 
-const surfacePalette = [0x009e9a, 0x0068ff, 0x7132ff, 0xe03aad, 0xff9d00].map(color => new THREE.Color(color));
+const surfacePalette = [0x6b1f0a, 0xb84020, 0xe87030, 0xf5b050, 0xfff5b0].map(color => new THREE.Color(color));
 const paletteColor = value => {
   const scaled = THREE.MathUtils.clamp(value, 0, 1) * (surfacePalette.length - 1);
   const index = Math.min(surfacePalette.length - 2, Math.floor(scaled));
@@ -469,8 +538,35 @@ const colorForPoint = point => {
   return paletteColor(value);
 };
 
-const colorAttribute = pointGrids => new THREE.Float32BufferAttribute(
-  pointGrids.flatMap(points => points.flatMap(row => row.flatMap(point => colorForPoint(point).toArray()))),
+const marbleTurb = (x, y, z) =>
+  Math.abs(Math.sin(4 * x - 3 * z)) * 0.5 +
+  Math.abs(Math.sin(9 * y + 5 * x)) * 0.25 +
+  Math.abs(Math.sin(15 * z - 7 * y)) * 0.125;
+
+const marbleBase = new THREE.Color(0xede8e0);
+const marbleVein = new THREE.Color(0x4a4a5c);
+const marbleColorForPoint = ([x, y, z]) => {
+  const t = (Math.sin((x + z * 1.5 + marbleTurb(x, y, z) * 6) * Math.PI) + 1) / 2;
+  return marbleBase.clone().lerp(marbleVein, t ** 3);
+};
+
+const neonPalette = [0xff00dd, 0x4400ff, 0x00ccff, 0x00ff88, 0xffff00].map(c => new THREE.Color(c));
+const neonColorForPoint = point => {
+  const scaled = THREE.MathUtils.clamp((point[2] + 1) / 2, 0, 1) * (neonPalette.length - 1);
+  const index = Math.min(neonPalette.length - 2, Math.floor(scaled));
+  return neonPalette[index].clone().lerp(neonPalette[index + 1], scaled - index);
+};
+
+const bronzeBase = new THREE.Color(0x7c5228);
+const patinaColor = new THREE.Color(0x4a9b7f);
+const bronzeColorForPoint = ([x, y, z]) => {
+  const height = THREE.MathUtils.clamp((z + 1) / 2, 0, 1);
+  const noise = (Math.sin(x * 7 + z * 5) + Math.sin(y * 11 - x * 3)) * 0.25 + 0.5;
+  return bronzeBase.clone().lerp(patinaColor, (height * 0.7 + noise * 0.3) ** 1.5);
+};
+
+const colorAttribute = (pointGrids, colorFn = colorForPoint) => new THREE.Float32BufferAttribute(
+  pointGrids.flatMap(points => points.flatMap(row => row.flatMap(point => colorFn(point).toArray()))),
   3
 );
 
@@ -540,7 +636,8 @@ const surfaceGeometry = data => {
   const geometry = new THREE.BufferGeometry();
   const lineGeometry = new THREE.BufferGeometry();
   geometry.setAttribute("position", new THREE.Float32BufferAttribute(pointGrids.flat(3), 3));
-  geometry.setAttribute("color", colorAttribute(pointGrids));
+  const colorFns = { marble: marbleColorForPoint, neon: neonColorForPoint, bronze: bronzeColorForPoint };
+  geometry.setAttribute("color", colorAttribute(pointGrids, colorFns[state.materialMode] ?? colorForPoint));
   geometry.setIndex(makeIndices(pointGrids));
   geometry.computeVertexNormals();
   if (state.materialMode === "copper") hammerGeometry(geometry);
@@ -556,19 +653,23 @@ const disposeSurface = () => {
 const renderSurface = data => {
   const geometries = surfaceGeometry(data);
   disposeSurface();
-  surfaceGroup.add(new THREE.Mesh(geometries.geometry, state.materialMode === "copper" ? copperMaterial : material));
-  if (state.materialMode !== "copper") surfaceGroup.add(new THREE.LineSegments(geometries.lineGeometry, lineMaterial));
+  const mats = { copper: copperMaterial, mirror: mirrorMaterial, marble: marbleMaterial, glass: glassMaterial, irid: iridMaterial, neon: neonMaterial, bronze: bronzeMaterial, email: emailMaterial, color: material };
+  surfaceGroup.add(new THREE.Mesh(geometries.geometry, mats[state.materialMode] ?? material));
+  if (state.materialMode === "color") surfaceGroup.add(new THREE.LineSegments(geometries.lineGeometry, lineMaterial));
 };
 
 const syncMaterialToggle = () => {
-  const copper = state.materialMode === "copper";
-  materialToggle.classList.toggle("active", copper);
-  materialToggle.setAttribute("aria-pressed", copper.toString());
-  materialToggle.textContent = copper ? "Farbverlauf anzeigen" : "Gedengeltes Kupfer";
+  const currentLabel = { copper: "Gedengeltes Kupfer", color: "Farbverlauf", mirror: "Spiegel", marble: "Marmor", glass: "Glas", irid: "Seifenblase", neon: "Neon", bronze: "Bronze", email: "Emaille" };
+  const nextLabel = { copper: "Farbverlauf", color: "Spiegel", mirror: "Marmor", marble: "Glas", glass: "Seifenblase", irid: "Neon", neon: "Bronze", bronze: "Emaille", email: "Gedengeltes Kupfer" };
+  materialModeLabel.textContent = currentLabel[state.materialMode];
+  materialToggle.classList.toggle("active", state.materialMode === "copper");
+  materialToggle.setAttribute("aria-pressed", (state.materialMode === "copper").toString());
+  materialToggle.textContent = "→ " + nextLabel[state.materialMode];
 };
 
 const toggleMaterialMode = () => {
-  state.materialMode = state.materialMode === "copper" ? "color" : "copper";
+  const nextMode = { copper: "color", color: "mirror", mirror: "marble", marble: "glass", glass: "irid", irid: "neon", neon: "bronze", bronze: "email", email: "copper" };
+  state.materialMode = nextMode[state.materialMode];
   syncMaterialToggle();
   scheduleSaveAppState();
   if (state.surface) renderSurface(currentData());

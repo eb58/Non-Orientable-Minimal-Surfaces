@@ -234,8 +234,17 @@ body.resizing-panel {
   background: #dfecef;
 }
 
+.material-mode-label {
+  display: block;
+  margin: 8px 0 3px;
+  color: #8a6a50;
+  font-size: 0.78em;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
 .mode-toggle {
-  margin: 8px 0 0;
+  margin: 0;
   border: 1px solid #9b6a38;
   background: linear-gradient(135deg, #7a421f, #c87732 48%, #5a2f1b);
   color: #fff7ef;
