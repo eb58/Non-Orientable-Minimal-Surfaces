@@ -54,6 +54,7 @@ node scripts/build-standalone.js
 - Objekt mit der Maus verschieben: `Ctrl` gedrueckt halten und im Viewer ziehen
 - Darstellung umschalten: Button `Gedengeltes Kupfer`
 - Optische Effekte: Bei `Glas` und `Seifenblase` lassen sich `Interferenz` und `Reflexion` unabhaengig ein- und ausschalten. Bei allen anderen Materialien sind die beiden Schalter deaktiviert.
+- Fancy Interferenz: Eine prozedurale Dickenkarte variiert die Duennschicht ueber die gesamte Flaeche und verteilt dadurch deutlich mehr Interferenzfarbzonen auf die sichtbare Figur. Der Schalter ist nur bei aktiver Interferenz verfuegbar.
 - Lampe positionieren: Im Bereich `Lampe und Optik` verschieben die Slider `x`, `y` und `z` die globale Lampe. Der leuchtende Kugelmarker zeigt ihre Position in der Szene und ist auch im Bildexport sichtbar.
 - Lampenposition zuruecksetzen: Button `Lampenposition zuruecksetzen`; Slider, Lampe und Marker kehren gemeinsam zur Standardposition zurueck.
 - Spektrum waehlen: In dieser Ausbaustufe steht ausschliesslich `Vollspektrum` zur Verfuegung. Es wird als neutrales weisses Licht angenaehert.

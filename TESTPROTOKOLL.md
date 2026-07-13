@@ -46,4 +46,14 @@ Stand: 2026-07-13. Umgebung: macOS, Node.js aus der lokalen Shell und Codex In-a
 
 ## Offene Abnahme
 
+### Nachtrag: Fancy Interferenz
+
+| Test | Tatsaechliches Ergebnis | Status |
+|---|---|---|
+| Schalter bei Glas und Seifenblase aktivieren | `Fancy Interferenz` ist bei beiden Optikmaterialien bedienbar und bei anderen Materialien deaktiviert. | bestanden |
+| Ortsabhaengige Dickenkarte visuell pruefen | Die prozedurale Dickenkarte verteilt deutlich sichtbare Farbzonen ueber die gesamte Catenoid-Ansicht. | bestanden |
+| Fancy-Modus bei Glas und Seifenblase vergleichen | Beide Materialien zeigen die raeumlich verteilte Interferenz; Transmission und Materialcharakter bleiben unterscheidbar. | bestanden |
+| Interferenz ausschalten | Fancy bleibt gewaehlt, wird deaktiviert dargestellt und beeinflusst das Material nicht; beim Wiedereinschalten wird es wieder angewandt. | bestanden |
+| Seite mit aktivem Fancy-Modus neu laden | Auswahl und Darstellung werden aus dem bestehenden Storage-Zustand wiederhergestellt; keine Konsolenwarnungen oder -fehler. | bestanden |
+
 Kein Test ist fehlgeschlagen. S2-T9 (gezielte Manipulation ungueltiger Local-Storage-Daten), S2-T11 (vollstaendiger reiner Tastaturdurchlauf) und S3-T5 (Oeffnen der erzeugten Download-Datei) bleiben wegen Grenzen der In-app-Browserumgebung blockiert. Der Exportpfad wurde ausgeloest und blieb konsolenfehlerfrei; der sichtbare Marker ist Teil derselben gerenderten `scene`, die unmittelbar vor `toDataURL()` exportiert wird.
