@@ -252,12 +252,15 @@ const surfaces = [
 ];
 
 const STORAGE_KEY = "minimalSurfaceStateV1";
+const DEFAULT_LAMP_POSITION = { x: -0.6, y: -0.7, z: 1.0 };
 const finiteNumberArray = (value, length) => Array.isArray(value)
   && value.length === length
   && value.every(Number.isFinite);
 const validDomain = value => finiteNumberArray(value?.uRange, 2) && finiteNumberArray(value?.vRange, 2);
 const validParameters = value => value && typeof value === "object" && Object.values(value).every(Number.isFinite);
 const validObjectPosition = value => ["x", "y", "z"].every(axis => Number.isFinite(value?.[axis]));
+const validLampPosition = value => value && typeof value === "object" && !Array.isArray(value)
+  && ["x", "y", "z"].every(axis => Number.isFinite(value[axis]));
 const validSurfaceView = value => finiteNumberArray(value?.camera, 3) && finiteNumberArray(value?.target, 3);
 const readStorageState = () => {
   try {
@@ -288,6 +291,11 @@ const resetDomainButton = document.querySelector("#reset-domain");
 const saveImageButton = document.querySelector("#save-image");
 const hud = document.querySelector(".hud");
 const resetObjectPositionButton = document.querySelector("#reset-object-position");
+const spectrum = document.querySelector("#spectrum");
+const interferenceControl = document.querySelector("#interference-enabled");
+const fancyInterferenceControl = document.querySelector("#fancy-interference-enabled");
+const reflectionControl = document.querySelector("#reflection-enabled");
+const resetLampPositionButton = document.querySelector("#reset-lamp-position");
 const domainControls = {
   uMin: document.querySelector("#u-min"),
   uMax: document.querySelector("#u-max"),
@@ -306,6 +314,8 @@ const domainLabels = {
 const objectAxes = ["x", "y", "z"];
 const objectControls = Object.fromEntries(objectAxes.map(axis => [axis, document.querySelector(`#object-${axis}`)]));
 const objectOutputs = Object.fromEntries(objectAxes.map(axis => [axis, document.querySelector(`#object-${axis}-value`)]));
+const lampControls = Object.fromEntries(objectAxes.map(axis => [axis, document.querySelector(`#lamp-${axis}`)]));
+const lampOutputs = Object.fromEntries(objectAxes.map(axis => [axis, document.querySelector(`#lamp-${axis}-value`)]));
 const state = {
   surface: null,
   domains: mapFromStorage(storageState.domains, validDomain),
@@ -313,6 +323,10 @@ const state = {
   objectPositions: mapFromStorage(storageState.objectPositions, validObjectPosition),
   surfaceViews: mapFromStorage(storageState.surfaceViews, validSurfaceView),
   materialMode: ["color", "mirror", "marble", "glass", "irid", "neon", "bronze", "email"].includes(storageState.materialMode) ? storageState.materialMode : "copper",
+  lampPosition: validLampPosition(storageState.lampPosition) ? { ...storageState.lampPosition } : { ...DEFAULT_LAMP_POSITION },
+  interferenceEnabled: typeof storageState.interferenceEnabled === "boolean" ? storageState.interferenceEnabled : true,
+  fancyInterferenceEnabled: typeof storageState.fancyInterferenceEnabled === "boolean" ? storageState.fancyInterferenceEnabled : false,
+  reflectionEnabled: typeof storageState.reflectionEnabled === "boolean" ? storageState.reflectionEnabled : true,
   objectDrag: null,
   persistenceFrame: 0,
   sliderFrame: 0
@@ -321,6 +335,10 @@ const state = {
 const saveAppState = () => localStorage.setItem(STORAGE_KEY, JSON.stringify({
   activeSurface: state.surface ? domainKey(state.surface) : storageState.activeSurface,
   materialMode: state.materialMode,
+  lampPosition: state.lampPosition,
+  interferenceEnabled: state.interferenceEnabled,
+  fancyInterferenceEnabled: state.fancyInterferenceEnabled,
+  reflectionEnabled: state.reflectionEnabled,
   domains: Object.fromEntries(state.domains),
   parameters: Object.fromEntries(state.parameters),
   objectPositions: Object.fromEntries(state.objectPositions),
@@ -432,6 +450,49 @@ const iridMaterial = new THREE.MeshPhysicalMaterial({
   clearcoatRoughness: 0,
   side: THREE.DoubleSide
 });
+glassMaterial.iridescence = 1.0;
+glassMaterial.iridescenceIOR = 1.3;
+glassMaterial.iridescenceThicknessRange = [100, 400];
+const fancyThicknessTexture = (() => {
+  const size = 64;
+  const data = new Uint8Array(size * size * 4);
+  for (let y = 0; y < size; y += 1) {
+    for (let x = 0; x < size; x += 1) {
+      const u = x / (size - 1);
+      const v = y / (size - 1);
+      const thickness = clamp(0, 0.5 + 0.3 * Math.sin(TAU * (3 * u + 2 * v)) + 0.2 * Math.sin(TAU * (u - 4 * v)), 1);
+      const offset = (y * size + x) * 4;
+      data.set([255, Math.round(thickness * 255), 255, 255], offset);
+    }
+  }
+  const texture = new THREE.DataTexture(data, size, size);
+  texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+  texture.needsUpdate = true;
+  return texture;
+})();
+const opticalMaterials = [
+  { material: glassMaterial, iridescence: 1.0, envMapIntensity: 0.6, specularIntensity: 1.0, clearcoat: 0, transmission: 1.0 },
+  { material: iridMaterial, iridescence: 1.0, envMapIntensity: 1.5, specularIntensity: 1.0, clearcoat: 1.0, transmission: 0.4 }
+];
+const applyOpticalEffects = () => opticalMaterials.forEach(base => {
+  const fancyEnabled = state.interferenceEnabled && state.fancyInterferenceEnabled;
+  const thicknessMap = fancyEnabled ? fancyThicknessTexture : null;
+  const shaderChanged = Boolean(base.material.iridescence) !== state.interferenceEnabled
+    || Boolean(base.material.clearcoat) !== (state.reflectionEnabled && Boolean(base.clearcoat))
+    || Boolean(base.material.iridescenceThicknessMap) !== Boolean(thicknessMap);
+  base.material.iridescence = state.interferenceEnabled ? base.iridescence : 0;
+  base.material.iridescenceThicknessMap = thicknessMap;
+  base.material.iridescenceIOR = fancyEnabled ? 1.8 : 1.3;
+  base.material.iridescenceThicknessRange = fancyEnabled ? [100, 600] : [100, 400];
+  base.material.color.setHex(fancyEnabled ? 0x707070 : 0xffffff);
+  base.material.transmission = fancyEnabled ? 0.15 : base.transmission;
+  base.material.envMapIntensity = state.reflectionEnabled
+    ? base.envMapIntensity * (fancyEnabled ? 0.35 : 1)
+    : 0;
+  base.material.specularIntensity = state.reflectionEnabled ? base.specularIntensity : 0;
+  base.material.clearcoat = state.reflectionEnabled ? base.clearcoat : 0;
+  if (shaderChanged) base.material.needsUpdate = true;
+});
 const neonMaterial = new THREE.MeshBasicMaterial({
   vertexColors: true,
   side: THREE.DoubleSide
@@ -465,10 +526,13 @@ controls.maxDistance = 8;
 controls.enablePan = false;
 
 scene.add(surfaceGroup);
-scene.add(new THREE.HemisphereLight(0xf5fbff, 0x6b8794, 1.05));
-scene.add(((light) => { light.position.set(-2.6, -3.2, 4.4); return light; })(new THREE.DirectionalLight(0xffffff, 2.05)));
-scene.add(((light) => { light.position.set(3.2, 2.1, 2.5); return light; })(new THREE.DirectionalLight(0x9ee9ff, 0.8)));
-scene.add(((light) => { light.position.set(0.4, -1.2, 3.8); return light; })(new THREE.DirectionalLight(0xfff0c8, 0.9)));
+scene.add(new THREE.HemisphereLight(0xf5fbff, 0x6b8794, 0.45));
+const lamp = new THREE.PointLight(0xffffff, 4.5);
+const lampMarker = new THREE.Mesh(
+  new THREE.SphereGeometry(0.07, 20, 12),
+  new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 3, toneMapped: false })
+);
+scene.add(lamp, lampMarker);
 
 const weierstrass = data => z => {
   const fz = data.f(z);
@@ -636,6 +700,12 @@ const surfaceGeometry = data => {
   const geometry = new THREE.BufferGeometry();
   const lineGeometry = new THREE.BufferGeometry();
   geometry.setAttribute("position", new THREE.Float32BufferAttribute(pointGrids.flat(3), 3));
+  geometry.setAttribute("uv", new THREE.Float32BufferAttribute(pointGrids.flatMap(points =>
+    points.flatMap((row, rowIndex) => row.flatMap((_, columnIndex) => [
+      columnIndex / Math.max(1, row.length - 1),
+      rowIndex / Math.max(1, points.length - 1)
+    ]))
+  ), 2));
   const colorFns = { marble: marbleColorForPoint, neon: neonColorForPoint, bronze: bronzeColorForPoint };
   geometry.setAttribute("color", colorAttribute(pointGrids, colorFns[state.materialMode] ?? colorForPoint));
   geometry.setIndex(makeIndices(pointGrids));
@@ -665,6 +735,13 @@ const syncMaterialToggle = () => {
   materialToggle.classList.toggle("active", state.materialMode === "copper");
   materialToggle.setAttribute("aria-pressed", (state.materialMode === "copper").toString());
   materialToggle.textContent = "→ " + nextLabel[state.materialMode];
+  const opticalMode = state.materialMode === "glass" || state.materialMode === "irid";
+  interferenceControl.checked = state.interferenceEnabled;
+  fancyInterferenceControl.checked = state.fancyInterferenceEnabled;
+  reflectionControl.checked = state.reflectionEnabled;
+  interferenceControl.disabled = !opticalMode;
+  fancyInterferenceControl.disabled = !opticalMode || !state.interferenceEnabled;
+  reflectionControl.disabled = !opticalMode;
 };
 
 const toggleMaterialMode = () => {
@@ -842,6 +919,36 @@ const resetObjectPosition = () => {
   state.objectPositions.delete(domainKey(state.surface));
   syncObjectControls(state.surface);
   scheduleSaveAppState();
+};
+
+const syncLamp = () => {
+  objectAxes.forEach(axis => {
+    lampControls[axis].value = state.lampPosition[axis];
+    lampOutputs[axis].value = state.lampPosition[axis].toFixed(1);
+  });
+  lamp.position.set(state.lampPosition.x, state.lampPosition.y, state.lampPosition.z);
+  lampMarker.position.copy(lamp.position);
+};
+
+const updateLampPosition = () => {
+  state.lampPosition = Object.fromEntries(objectAxes.map(axis => [axis, Number(lampControls[axis].value)]));
+  syncLamp();
+  saveAppState();
+};
+
+const resetLampPosition = () => {
+  state.lampPosition = { ...DEFAULT_LAMP_POSITION };
+  syncLamp();
+  saveAppState();
+};
+
+const updateOpticalEffects = () => {
+  state.interferenceEnabled = interferenceControl.checked;
+  state.fancyInterferenceEnabled = fancyInterferenceControl.checked;
+  state.reflectionEnabled = reflectionControl.checked;
+  applyOpticalEffects();
+  syncMaterialToggle();
+  saveAppState();
 };
 
 const cameraBasis = () => {
@@ -1034,10 +1141,15 @@ resetButton.addEventListener("click", resetView);
 saveImageButton.addEventListener("click", saveImage);
 resetDomainButton.addEventListener("click", resetDomain);
 resetObjectPositionButton.addEventListener("click", resetObjectPosition);
+resetLampPositionButton.addEventListener("click", resetLampPosition);
 materialToggle.addEventListener("click", toggleMaterialMode);
+interferenceControl.addEventListener("change", updateOpticalEffects);
+fancyInterferenceControl.addEventListener("change", updateOpticalEffects);
+reflectionControl.addEventListener("change", updateOpticalEffects);
 controls.addEventListener("change", saveCurrentView);
 Object.values(domainControls).forEach(control => control.addEventListener("input", updateCurrentDomain));
 Object.values(objectControls).forEach(control => control.addEventListener("input", updateCurrentObjectPosition));
+Object.values(lampControls).forEach(control => control.addEventListener("input", updateLampPosition));
 canvas.addEventListener("pointerdown", startObjectDrag, { capture: true });
 canvas.addEventListener("pointermove", moveObjectDrag, { capture: true });
 canvas.addEventListener("pointerup", stopObjectDrag, { capture: true });
@@ -1051,6 +1163,9 @@ const resizeObserver = new ResizeObserver(resize);
 resizeObserver.observe(canvas);
 
 initPanelWidth();
+spectrum.value = "full-spectrum";
+applyOpticalEffects();
+syncLamp();
 syncMaterialToggle();
 resetView();
 setSurface(surfaces.find(surface => domainKey(surface) === storageState.activeSurface) || surfaces.find(surface => surface.name.startsWith('S41_7_5')));

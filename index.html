@@ -86,6 +86,43 @@
         </label>
         <button id="reset-object-position" type="button">Position zuruecksetzen</button>
       </section>
+      <section class="optics-controls" aria-label="Lampe und Optik">
+        <h2>Lampe und Optik</h2>
+        <label class="spectrum-control" for="spectrum">
+          <span>Spektrum</span>
+          <select id="spectrum">
+            <option value="full-spectrum">Vollspektrum</option>
+          </select>
+        </label>
+        <label class="effect-control" for="interference-enabled">
+          <input id="interference-enabled" type="checkbox" checked>
+          <span>Interferenz</span>
+        </label>
+        <label class="effect-control" for="fancy-interference-enabled">
+          <input id="fancy-interference-enabled" type="checkbox">
+          <span>Fancy Interferenz</span>
+        </label>
+        <label class="effect-control" for="reflection-enabled">
+          <input id="reflection-enabled" type="checkbox" checked>
+          <span>Reflexion</span>
+        </label>
+        <label>
+          <span>Lampe x</span>
+          <input id="lamp-x" type="range" min="-6" max="6" step="0.1">
+          <output id="lamp-x-value" for="lamp-x"></output>
+        </label>
+        <label>
+          <span>Lampe y</span>
+          <input id="lamp-y" type="range" min="-6" max="6" step="0.1">
+          <output id="lamp-y-value" for="lamp-y"></output>
+        </label>
+        <label>
+          <span>Lampe z</span>
+          <input id="lamp-z" type="range" min="-6" max="6" step="0.1">
+          <output id="lamp-z-value" for="lamp-z"></output>
+        </label>
+        <button id="reset-lamp-position" type="button">Lampenposition zurücksetzen</button>
+      </section>
       <small id="material-mode-label" class="material-mode-label">Gedengeltes Kupfer</small>
       <button id="material-toggle" class="mode-toggle" type="button" aria-pressed="false">Farbverlauf</button>
       <div id="surface-buttons" class="surface-buttons" aria-label="Minimalflächen"></div>

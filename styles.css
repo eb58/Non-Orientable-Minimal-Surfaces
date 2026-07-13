@@ -180,22 +180,26 @@ body.resizing-panel {
 
 .domain-controls,
 .surface-parameters,
-.object-controls {
+.object-controls,
+.optics-controls {
   display: grid;
   gap: 10px;
   margin: 22px 0 18px;
+  min-width: 0;
 }
 
 .domain-controls h2,
 .surface-parameters h2,
-.object-controls h2 {
+.object-controls h2,
+.optics-controls h2 {
   margin: 0 0 2px;
   font-size: 1rem;
 }
 
 .domain-controls label,
 .surface-parameters label,
-.object-controls label {
+.object-controls label,
+.optics-controls label:not(.effect-control):not(.spectrum-control) {
   display: grid;
   grid-template-columns: 58px minmax(0, 1fr) 56px;
   gap: 8px;
@@ -206,16 +210,71 @@ body.resizing-panel {
 
 .domain-controls input,
 .surface-parameters input,
-.object-controls input {
+.object-controls input,
+.optics-controls input[type="range"] {
+  min-width: 0;
   width: 100%;
   accent-color: #2f8da8;
 }
 
 .domain-controls output,
 .surface-parameters output,
-.object-controls output {
+.object-controls output,
+.optics-controls output {
   font-variant-numeric: tabular-nums;
   text-align: right;
+}
+
+.spectrum-control {
+  display: grid;
+  gap: 5px;
+  color: #2d4651;
+  font-size: 0.92rem;
+}
+
+.spectrum-control select {
+  min-width: 0;
+  width: 100%;
+  border: 1px solid #aebfc7;
+  border-radius: 6px;
+  background: #fff;
+  padding: 8px 10px;
+  color: #172026;
+  font: inherit;
+}
+
+.effect-control {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  width: fit-content;
+  max-width: 100%;
+  color: #2d4651;
+  font-size: 0.92rem;
+}
+
+.effect-control input {
+  width: 1rem;
+  height: 1rem;
+  margin: 0;
+  accent-color: #2f8da8;
+}
+
+.effect-control:has(input:disabled) {
+  color: #718189;
+  cursor: not-allowed;
+}
+
+.optics-controls :disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+button:focus-visible,
+.panel :is(input, select):focus-visible,
+.panel-resizer:focus-visible {
+  outline: 3px solid #2f8da8;
+  outline-offset: 2px;
 }
 
 .surface-parameters[hidden] {
@@ -223,14 +282,16 @@ body.resizing-panel {
 }
 
 #reset-domain,
-#reset-object-position {
+#reset-object-position,
+#reset-lamp-position {
   background: #edf4f7;
   color: #17343f;
   border: 1px solid #cfdde3;
 }
 
 #reset-domain:hover,
-#reset-object-position:hover {
+#reset-object-position:hover,
+#reset-lamp-position:hover {
   background: #dfecef;
 }
 
@@ -309,6 +370,8 @@ button:hover {
   .panel {
     border-left: 0;
     border-top: 1px solid #d0dbe0;
+    min-width: 0;
+    padding-inline: clamp(16px, 6vw, 28px);
   }
 
   .panel-toggle {

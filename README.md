@@ -53,9 +53,18 @@ node scripts/build-standalone.js
 - Objekt verschieben: Slider `x`, `y`, `z`
 - Objekt mit der Maus verschieben: `Ctrl` gedrueckt halten und im Viewer ziehen
 - Darstellung umschalten: Button `Gedengeltes Kupfer`
+- Optische Effekte: Bei `Glas` und `Seifenblase` lassen sich `Interferenz` und `Reflexion` unabhaengig ein- und ausschalten. Bei allen anderen Materialien sind die beiden Schalter deaktiviert.
+- Fancy Interferenz: Eine prozedurale Dickenkarte variiert die Duennschicht ueber die gesamte Flaeche und verteilt dadurch deutlich mehr Interferenzfarbzonen auf die sichtbare Figur. Der Schalter ist nur bei aktiver Interferenz verfuegbar.
+- Lampe positionieren: Im Bereich `Lampe und Optik` verschieben die Slider `x`, `y` und `z` die globale Lampe. Der leuchtende Kugelmarker zeigt ihre Position in der Szene und ist auch im Bildexport sichtbar.
+- Lampenposition zuruecksetzen: Button `Lampenposition zuruecksetzen`; Slider, Lampe und Marker kehren gemeinsam zur Standardposition zurueck.
+- Spektrum waehlen: In dieser Ausbaustufe steht ausschliesslich `Vollspektrum` zur Verfuegung. Es wird als neutrales weisses Licht angenaehert.
 - Seitenpanel skalieren: Griff zwischen Viewer und Seitenbereich ziehen
 
 Die Sliderwerte fuer Bereich, Flaechenparameter und Objektposition werden pro Flaeche separat gemerkt. Der Button `Bereich zuruecksetzen` setzt nur den Bereich der aktuell ausgewaehlten Flaeche zurueck. Kreisring-Flaechen starten mit einem kleinen Winkel-Overlap ueber `2pi`, damit an der Naht keine Luecke sichtbar bleibt.
+
+Die Lampenposition ist dagegen global und gilt beim Wechsel zwischen allen Flaechen und Materialien weiter. Lampenposition sowie die gewaehlten Interferenz- und Reflexionszustaende werden im Browser gespeichert und nach einem Neuladen wiederhergestellt. Bei aelteren, unvollstaendigen oder ungueltigen Speicherstaenden verwendet die App sichere Standardwerte.
+
+Bei Glas steht die Interferenz fuer eine duenne Beschichtung; massives Glas allein wuerde keine sichtbaren Duennschichtfarben erzeugen. Die Darstellung ist eine anschauliche Three.js-Naeherung. Sie simuliert weder eine physikalisch genaue spektrale Leistungsverteilung noch einzelne Wellenlaengen. Weitere Spektren, Wellenlaengenslider, monochromatische Lichtquellen, Schatten und direktes Ziehen der Lampe im Viewer sind derzeit nicht vorgesehen.
 
 ## Enthaltene Flaechen
 
