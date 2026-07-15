@@ -76,7 +76,8 @@ Die Formeln fuer `f` und `g` stehen in `math.js` direkt bei den Presets.
 - `main.js` verbindet State, Mathematik, Renderer und UI.
 - `styles.css` enthaelt das responsive Layout und das resizable Panel.
 - `server.cjs` ist ein minimaler lokaler Static-File-Server.
-- `complex.js` ist ein ESM-Adapter, der `cops.js`, `tokenizer.js` und `complex.js` aus dem GitHub-Repo [algorithms-js](https://github.com/eb58/algorithms-js) laedt und `C$` exportiert.
+- `complex.js` ist ein lokaler ESM-Adapter und exportiert `C$`.
+- `vendor/complex/` enthaelt die vendorte ESM-Fassung von `cops.js`, `tokenizer.js` und `complex.js` aus dem [algorithms-js-Repository](https://github.com/eb58/algorithms-js), Stand `0a67f09498691bc4c9ad03e5b220ffb064f56fe1`; die App benoetigt dafuer keinen Laufzeit-Netzwerkzugriff.
 - `standalone.html` ist die direkt oeffenbare Einzeldatei.
 - `scripts/build-standalone.js` erzeugt `standalone.html` aus den Projektdateien.
 - `vendor/three/` enthaelt Three.js und OrbitControls lokal, damit die App ohne CDN laeuft.
