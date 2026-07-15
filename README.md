@@ -37,7 +37,7 @@ npm start
 
 Alternativ funktioniert jeder statische Webserver, der das Projektverzeichnis ausliefert.
 
-Nach Aenderungen an `main.js`, `styles.css` oder den vendorten Bibliotheken wird die Standalone-Datei neu erzeugt mit:
+Nach Aenderungen an `main.js`, `math.js`, `renderer.js`, `ui.js`, `styles.css` oder den vendorten Bibliotheken wird die Standalone-Datei neu erzeugt mit:
 
 ```powershell
 node scripts/build-standalone.js
@@ -65,12 +65,15 @@ Die Sliderwerte fuer Bereich, Flaechenparameter und Objektposition werden pro Fl
 - Lopez Klein Bottle, die einmal punktierte minimale Kleinsche Flasche mit einem Ende; gerendert wird ein stetiger Zweig der orientierbaren Doppelflaeche
 - Catenoid
 
-Die Formeln fuer `f` und `g` stehen in `main.js` direkt bei den Presets.
+Die Formeln fuer `f` und `g` stehen in `math.js` direkt bei den Presets.
 
 ## Technische Struktur
 
 - `index.html` enthaelt das Layout und die Import Map.
-- `main.js` berechnet die Weierstrass-Daten, erzeugt Three.js-Geometrien und steuert die UI.
+- `math.js` enthaelt die komplexen Formeln, Flaechen-Presets und die Berechnung der Weierstrass-Punktgitter.
+- `renderer.js` kapselt die Three.js-Szene, Materialien, Geometrien, Kamera und Animation.
+- `ui.js` kapselt DOM-Elemente, Slider, Buttons, Panel und UI-Synchronisation.
+- `main.js` verbindet State, Mathematik, Renderer und UI.
 - `styles.css` enthaelt das responsive Layout und das resizable Panel.
 - `server.cjs` ist ein minimaler lokaler Static-File-Server.
 - `complex.js` ist ein ESM-Adapter, der `cops.js`, `tokenizer.js` und `complex.js` aus dem GitHub-Repo [algorithms-js](https://github.com/eb58/algorithms-js) laedt und `C$` exportiert.
@@ -80,7 +83,7 @@ Die Formeln fuer `f` und `g` stehen in `main.js` direkt bei den Presets.
 
 ## Neue Flaechen hinzufuegen
 
-Ein neues Preset wird in `main.js` im Array `surfaces` angelegt. Beispiel:
+Ein neues Preset wird in `math.js` im Array `surfaces` angelegt. Beispiel:
 
 ```js
 {

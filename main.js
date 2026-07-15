@@ -1,257 +1,14 @@
-import * as THREE from "three";
-import { OrbitControls } from "three/addons/controls/OrbitControls.js";
-import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
-import { C$ } from "./complex.js";
+import { surfaces } from "./math.js";
+import { createRenderer } from "./renderer.js";
+import { createUI } from "./ui.js";
 
-const TAU = Math.PI * 2;
-const SEAM_OVERLAP = 0.1;
-const EXPORT_PIXEL_RATIO = 4;
-const center = C$("(za, ze) => (za + ze) / 2");
-const diff = C$("(za, ze) => ze - za");
-const phis = [
-  C$("(f, g, dz) => f * (1 - g^2) / 2 * dz"),
-  C$("(f, g, dz) => i * f * (1 + g^2) / 2 * dz"),
-  C$("(f, g, dz) => f * g * dz")
-];
-
-const vAdd = (a, b) => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
-const vSub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
-const vLength = v => Math.hypot(v[0], v[1], v[2]) || 1;
-const finiteVector = v => v.every(Number.isFinite);
-const cNeg = z => ({ re: -z.re, im: -z.im });
-const cAvg = (a, b) => ({ re: (a.re + b.re) / 2, im: (a.im + b.im) / 2 });
-const cDistance = (a, b) => Math.hypot(a.re - b.re, a.im - b.im);
-const cNear = (value, target) => cDistance(value, target) <= cDistance(cNeg(value), target) ? value : cNeg(value);
-
-const range = (min, max, segments) => Array.from(
-  { length: segments + 1 },
-  (_, index) => min + (max - min) * index / segments
-);
-const clamp = (min, value, max) => Math.min(max, Math.max(min, value));
-const formatNumber = value => Number(value).toFixed(2);
-const sliderBounds = rangeValues => {
-  const span = rangeValues[1] - rangeValues[0];
-  const padding = Math.max(0.25, Math.abs(span) * 0.8);
-  return [rangeValues[0] - padding, rangeValues[1] + padding];
-};
+const STORAGE_KEY = "minimalSurfaceStateV1";
 const domainKey = surface => surface.name;
+const formatNumber = value => Number(value).toFixed(2);
 const defaultDomain = surface => ({
   uRange: [...surface.uRange],
   vRange: [...surface.vRange]
 });
-const domainFor = surface => state.domains.get(domainKey(surface)) || defaultDomain(surface);
-const normalizeParameters = (surface, values) => surface.normalizeParameters ? surface.normalizeParameters(values) : values;
-const defaultParameters = surface => Object.fromEntries(
-  Object.entries(surface.parameters || {}).map(([key, parameter]) => [key, parameter.value])
-);
-const parametersFor = surface => normalizeParameters(surface, state.parameters.get(domainKey(surface)) || defaultParameters(surface));
-const defaultObjectPosition = () => ({ x: 0, y: 0, z: 0.30 });
-const objectPositionFor = surface => state.objectPositions.get(domainKey(surface)) || defaultObjectPosition();
-const withParameters = surface => surface.withParameters ? surface.withParameters(parametersFor(surface)) : surface;
-const currentData = () => withDomain(withParameters(state.surface));
-const domainTextFor = data => data.parameter
-  ? `${formatNumber(data.uRange[0])} <= |z| <= ${formatNumber(data.uRange[1])}, ${formatNumber(data.vRange[0])} <= arg z <= ${formatNumber(data.vRange[1])}`
-  : `${formatNumber(data.uRange[0])} <= Re z <= ${formatNumber(data.uRange[1])}, ${formatNumber(data.vRange[0])} <= Im z <= ${formatNumber(data.vRange[1])}`;
-const withDomain = surface => {
-  const domain = domainFor(surface);
-  return {
-    ...surface,
-    uRange: [...domain.uRange],
-    vRange: [...domain.vRange],
-    domainText: domainTextFor({ ...surface, ...domain })
-  };
-};
-
-const annulus = (r1, r2, uSegments = 60, vSegments = 181) => ({
-  uRange: [r1, r2],
-  vRange: [0, TAU + SEAM_OVERLAP],
-  uSegments,
-  vSegments,
-  parameter: (radius, angle) => C$(radius * Math.cos(angle), radius * Math.sin(angle)),
-  domainText: `${r1} <= |z| <= ${r2}`
-});
-
-const zPowerText = n => n === 0 ? "1" : n === 1 ? "z" : `z^${n}`;
-const oddInRange = (value, min, max) => clamp(min, Math.round(value) | 1, max);
-const surfaceWithFormulas = ({ fText, gText, constants = {}, ...surface }) => ({
-  ...surface,
-  f: C$(fText, constants),
-  g: C$(gText, constants),
-  fText,
-  gText
-});
-
-const kusnerRadiusRange = p => {
-  const A = Math.sqrt(2 * p - 1);
-  const B = 2 * A / (p - 1);
-  const rootSpan = Math.sqrt(B ** 2 + 4);
-  const innerPole = ((rootSpan - B) / 2) ** (1 / p);
-  const outerPole = ((rootSpan + B) / 2) ** (1 / p);
-  const margin = Math.min(0.08, (outerPole - innerPole) * 0.22);
-  return [innerPole + margin, outerPole - margin];
-};
-
-const s41 = ({ name, m, n, r1 = 1, r2 = 1.2, uSegments = 58, vSegments = 221 }) => surfaceWithFormulas({
-  name,
-  ...annulus(r1, r2, uSegments, vSegments),
-  fText: `z => i * (${zPowerText(n)} + 1)^2 / z^${m + 1}`,
-  gText: `z => ${zPowerText(m - n)} * (${zPowerText(n)} - 1) / (${zPowerText(n)} + 1)`,
-  parameters: {
-    m: { label: "m", min: 3, max: 13, step: 2, value: m, format: value => Math.round(value).toString() },
-    n: { label: "n", min: 1, max: 11, step: 2, value: n, format: value => Math.round(value).toString() }
-  },
-  normalizeParameters: values => {
-    const nextM = oddInRange(values.m, 3, 13);
-    const nextN = oddInRange(values.n, 1, nextM - 2);
-    return { m: nextM, n: nextN };
-  },
-  withParameters: values => s41({ name, ...values, r1, r2, uSegments, vSegments })
-});
-
-const cobra = ({ name, m = 5, r1, r2, uSegments = 58, vSegments = 221 }) => surfaceWithFormulas({ // S39 
-  name,
-  ...annulus(r1, r2, uSegments, vSegments),
-  fText: `z => (z + 1)^2 * (z + i)^2 / z^${m + 1}`,
-  gText: `z => z^${m - 2} * (z - 1) * (z - i) / ((z + 1) * (z + i))`,
-  parameters: { m: { label: "m", min: 5, max: 11, step: 2, value: m, format: value => Math.round(value).toString() } },
-  withParameters: values => cobra({ name, m: Math.round(values.m), r1, r2, uSegments, vSegments })
-});
-
-const s42 = (r1 = 1.8, r2 = 3) => {
-  const a = Math.sqrt(-5 + 2 * Math.sqrt(15));
-  const gText = "z => z^3 * (z^2 - a^2) / ((a*z)^2 - 1)";
-  const fText = 'z => i * ((a*z)^2 - 1)^2 / (z^2 * (z - 1)^4 * (z + 1)^4)';
-
-  return surfaceWithFormulas({
-    name: "S42",
-    ...annulus(r1, r2, 70, 221),
-    fText,
-    gText,
-    constants: { a }
-  });
-};
-
-const kusner = ({ name = "Kusner", p = 3, r1, r2 }) => {
-  const A = Math.sqrt(2 * p - 1);
-  const B = 2 * A / (p - 1);
-  const zp = zPowerText(p);
-  const uSegments = 70 + Math.round(p * 4);
-  const vSegments = 241 + Math.round(p * 28);
-  const radiusRange = kusnerRadiusRange(p);
-
-  return surfaceWithFormulas({
-    name,
-    ...annulus(r1 ?? radiusRange[0], r2 ?? radiusRange[1], uSegments, vSegments),
-    fText: `z => i * (A * ${zp} + 1)^2 / (${zPowerText(2 * p)} + B * ${zp} - 1)^2`,
-    gText: `z => ${zPowerText(p - 1)} * (${zp} - A) / (A * ${zp} + 1)`,
-    constants: { A, B },
-    parameters: {
-      p: { label: "p", min: 3, max: 17, step: 2, value: p, format: value => Math.round(value).toString() }
-    },
-    normalizeParameters: values => ({ p: oddInRange(values.p, 3, 17) }),
-    resetDomainOnParameterChange: true,
-    withParameters: values => kusner({ name, p: values.p })
-  });
-};
-
-const lopezNodeGrid = (data, w) => {
-  const us = range(data.uRange[0], data.uRange[1], data.uSegments);
-  const vs = range(data.vRange[0], data.vRange[1], data.vSegments);
-  const zGrid = vs.map(angle => us.map(radius => data.parameter(radius, angle)));
-  const wGrid = zGrid.reduce((rows, zRow, row) => [
-    ...rows,
-    zRow.reduce((columns, z, column) => {
-      const principal = w(z);
-      const target = row > 0 && column > 0
-        ? cAvg(columns[column - 1], rows[row - 1][column])
-        : row > 0
-          ? rows[row - 1][column]
-          : column > 0
-            ? columns[column - 1]
-            : principal;
-      const value = cNear(principal, target);
-      return [...columns, value];
-    }, [])
-  ], []);
-  return { zGrid, wGrid };
-};
-
-const lopezSegmentDelta = (z0, w0, z1, w1, f, g, w) => {
-  const z = center(z0, z1);
-  const dz = diff(z0, z1);
-  const wz = cNear(w(z), cAvg(w0, w1));
-  const fz = f(z, wz);
-  const gz = g(z, wz);
-  const delta = phis.map(phi => phi(fz, gz, dz).re);
-  return finiteVector(delta) ? delta : [0, 0, 0];
-};
-
-const lopezSheetPoints = ({ zGrid, wGrid }, f, g, w) => {
-  const points = zGrid.map(row => row.map(() => [0, 0, 0]));
-
-  zGrid[0].slice(1).forEach((_, offset) => {
-    const column = offset + 1;
-    points[0][column] = vAdd(
-      points[0][column - 1],
-      lopezSegmentDelta(zGrid[0][column - 1], wGrid[0][column - 1], zGrid[0][column], wGrid[0][column], f, g, w)
-    );
-  });
-
-  zGrid.slice(1).forEach((_, offset) => {
-    const row = offset + 1;
-    zGrid[row].forEach((z, column) => {
-      points[row][column] = vAdd(
-        points[row - 1][column],
-        lopezSegmentDelta(zGrid[row - 1][column], wGrid[row - 1][column], z, wGrid[row][column], f, g, w)
-      );
-    });
-  });
-
-  return points;
-};
-
-const lopezPointGrids = (data, w, f, g) => [lopezSheetPoints(lopezNodeGrid(data, w), f, g, w)];
-
-const lopezKlein = () => {
-  const r = -0.392973;
-  const wText = "sqrt(z * (z - r) / (r * z + 1))";
-  const w = C$(`z => ${wText}`, { r });
-  const f = C$("(z, w) => i * (z + 1)^2 / (z^2 * w)");
-  const g = C$("(z, w) => w * (z - 1) / (z + 1)");
-
-  return surfaceWithFormulas({
-    name: "Lopez Klein Bottle",
-    ...annulus(0.405, 2.45, 76, 241),
-    vRange: [0.03, TAU + SEAM_OVERLAP],
-    fText: `z => i * (z + 1)^2 / (z^2 * ${wText})`,
-    gText: `z => ${wText} * (z - 1) / (z + 1)`,
-    constants: { r },
-    pointGrids: data => lopezPointGrids(data, w, f, g)
-  });
-};
-
-const catenoid = () => surfaceWithFormulas({
-  name: "Catenoid",
-  ...annulus(0.3, 3, 70, 180),
-  fText: "z => -2 / z^2",
-  gText: "z => z"
-});
-
-const surfaces = [
-  s41({ name: "S41_3_1 Twisted Catenoid", m: 3, n: 1, r1: 1.0, r2: 2.0 }),
-  s41({ name: "S41_5_1 UFO             ", m: 5, n: 1, r1: 1.1, r2: 1.3 }),
-  s41({ name: "S41_5_3 Trefoil         ", m: 5, n: 3, r1: 1.0, r2: 1.5 }),
-  s41({ name: "S41_5_3 Double Trefoil  ", m: 5, n: 3, r1: 1.1, r2: 1.5 }),
-  s41({ name: "S41_7_1                 ", m: 7, n: 1, r1: 1.1, r2: 1.2 }),
-  s41({ name: "S41_7_3                 ", m: 7, n: 3, r1: 1.1, r2: 1.2 }),
-  s41({ name: "S41_7_5                 ", m: 7, n: 5, r1: 1.1, r2: 1.3 }),
-  cobra({ name: "Cobra", m: 5, r1: 1, r2: 1.2 }),
-  kusner({ name: "Kusner" }),
-  lopezKlein(),
-  catenoid()
-];
-
-const STORAGE_KEY = "minimalSurfaceStateV1";
 const finiteNumberArray = (value, length) => Array.isArray(value)
   && value.length === length
   && value.every(Number.isFinite);
@@ -270,42 +27,6 @@ const mapFromStorage = (value, validValue) => new Map(
   Object.entries(value || {}).filter(([key, item]) => surfaces.some(surface => domainKey(surface) === key) && validValue(item))
 );
 const storageState = readStorageState();
-
-const canvas = document.querySelector("#surface");
-const app = document.querySelector(".app");
-const panelResizer = document.querySelector("#panel-resizer");
-const resetButton = document.querySelector("#reset-view");
-const surfaceName = document.querySelector("#surface-name");
-const formulaF = document.querySelector("#formula-f");
-const formulaG = document.querySelector("#formula-g");
-const domainInfo = document.querySelector("#domain-info");
-const surfaceButtons = document.querySelector("#surface-buttons");
-const surfaceParameters = document.querySelector("#surface-parameters");
-const surfaceParameterControls = document.querySelector("#surface-parameter-controls");
-const materialToggle = document.querySelector("#material-toggle");
-const materialModeLabel = document.querySelector("#material-mode-label");
-const resetDomainButton = document.querySelector("#reset-domain");
-const saveImageButton = document.querySelector("#save-image");
-const hud = document.querySelector(".hud");
-const resetObjectPositionButton = document.querySelector("#reset-object-position");
-const domainControls = {
-  uMin: document.querySelector("#u-min"),
-  uMax: document.querySelector("#u-max"),
-  vMax: document.querySelector("#v-max")
-};
-const domainOutputs = {
-  uMin: document.querySelector("#u-min-value"),
-  uMax: document.querySelector("#u-max-value"),
-  vMax: document.querySelector("#v-max-value")
-};
-const domainLabels = {
-  uMin: document.querySelector("#u-min-label"),
-  uMax: document.querySelector("#u-max-label"),
-  vMax: document.querySelector("#v-max-label")
-};
-const objectAxes = ["x", "y", "z"];
-const objectControls = Object.fromEntries(objectAxes.map(axis => [axis, document.querySelector(`#object-${axis}`)]));
-const objectOutputs = Object.fromEntries(objectAxes.map(axis => [axis, document.querySelector(`#object-${axis}-value`)]));
 const state = {
   surface: null,
   domains: mapFromStorage(storageState.domains, validDomain),
@@ -313,10 +34,39 @@ const state = {
   objectPositions: mapFromStorage(storageState.objectPositions, validObjectPosition),
   surfaceViews: mapFromStorage(storageState.surfaceViews, validSurfaceView),
   materialMode: ["color", "mirror", "marble", "glass", "irid", "neon", "bronze", "email"].includes(storageState.materialMode) ? storageState.materialMode : "copper",
-  objectDrag: null,
   persistenceFrame: 0,
   sliderFrame: 0
 };
+const services = { renderer: null, ui: null };
+
+const domainFor = surface => {
+  const domain = state.domains.get(domainKey(surface)) || defaultDomain(surface);
+  return {
+    uRange: [...domain.uRange],
+    vRange: [domain.vRange[0], Math.min(domain.vRange[1], surface.vRange[1])]
+  };
+};
+const normalizeParameters = (surface, values) => surface.normalizeParameters ? surface.normalizeParameters(values) : values;
+const defaultParameters = surface => Object.fromEntries(
+  Object.entries(surface.parameters || {}).map(([key, parameter]) => [key, parameter.value])
+);
+const parametersFor = surface => normalizeParameters(surface, state.parameters.get(domainKey(surface)) || defaultParameters(surface));
+const defaultObjectPosition = () => ({ x: 0, y: 0, z: 0.30 });
+const objectPositionFor = surface => state.objectPositions.get(domainKey(surface)) || defaultObjectPosition();
+const withParameters = surface => surface.withParameters ? surface.withParameters(parametersFor(surface)) : surface;
+const domainTextFor = data => data.parameter
+  ? `${formatNumber(data.uRange[0])} <= |z| <= ${formatNumber(data.uRange[1])}, ${formatNumber(data.vRange[0])} <= arg z <= ${formatNumber(data.vRange[1])}`
+  : `${formatNumber(data.uRange[0])} <= Re z <= ${formatNumber(data.uRange[1])}, ${formatNumber(data.vRange[0])} <= Im z <= ${formatNumber(data.vRange[1])}`;
+const withDomain = surface => {
+  const domain = domainFor(surface);
+  return {
+    ...surface,
+    uRange: [...domain.uRange],
+    vRange: [...domain.vRange],
+    domainText: domainTextFor({ ...surface, ...domain })
+  };
+};
+const currentData = () => withDomain(withParameters(state.surface));
 
 const saveAppState = () => localStorage.setItem(STORAGE_KEY, JSON.stringify({
   activeSurface: state.surface ? domainKey(state.surface) : storageState.activeSurface,
@@ -326,752 +76,128 @@ const saveAppState = () => localStorage.setItem(STORAGE_KEY, JSON.stringify({
   objectPositions: Object.fromEntries(state.objectPositions),
   surfaceViews: Object.fromEntries(state.surfaceViews)
 }));
-
 const scheduleSaveAppState = () => {
   cancelAnimationFrame(state.persistenceFrame);
   state.persistenceFrame = requestAnimationFrame(saveAppState);
 };
 
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, preserveDrawingBuffer: true });
-renderer.setClearColor(0x000000, 0);
-renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
-renderer.outputColorSpace = THREE.SRGBColorSpace;
-renderer.toneMapping = THREE.NoToneMapping;
-renderer.toneMappingExposure = 1;
-
-const pmremGenerator = new THREE.PMREMGenerator(renderer);
-const envTexture = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
-pmremGenerator.dispose();
-
-const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(36, 1, 0.05, 100);
-const controls = new OrbitControls(camera, renderer.domElement);
-const surfaceGroup = new THREE.Group();
-const defaultView = () => ({
-  camera: [1.95, -3.35, 1.45],
-  target: [0, 0, 0]
-});
-const currentView = () => ({
-  camera: camera.position.toArray(),
-  target: controls.target.toArray()
-});
-const viewFor = surface => {
-  const view = state.surfaceViews.get(domainKey(surface));
-  return finiteNumberArray(view?.camera, 3) && finiteNumberArray(view?.target, 3) ? view : defaultView();
-};
-const applyView = view => {
-  camera.position.fromArray(view.camera);
-  controls.target.fromArray(view.target);
-  controls.update();
-};
 const saveCurrentView = () => {
   if (!state.surface) return;
-  state.surfaceViews.set(domainKey(state.surface), currentView());
+  state.surfaceViews.set(domainKey(state.surface), services.renderer.currentView());
   scheduleSaveAppState();
 };
-
-const material = new THREE.MeshPhysicalMaterial({
-  color: 0xffffff,
-  vertexColors: true,
-  metalness: 0,
-  roughness: 0.46,
-  clearcoat: 0.42,
-  clearcoatRoughness: 0.38,
-  side: THREE.DoubleSide,
-  transparent: false,
-  opacity: 1
-});
-const copperMaterial = new THREE.MeshPhysicalMaterial({
-  color: 0xb76a32,
-  metalness: 0.82,
-  roughness: 0.31,
-  clearcoat: 0.18,
-  clearcoatRoughness: 0.48,
-  side: THREE.DoubleSide
-});
-const mirrorMaterial = new THREE.MeshPhysicalMaterial({
-  color: 0xdce8f2,
-  metalness: 1.0,
-  roughness: 0.04,
-  envMap: envTexture,
-  envMapIntensity: 3.0,
-  clearcoat: 1.0,
-  clearcoatRoughness: 0.02,
-  side: THREE.DoubleSide
-});
-const marbleMaterial = new THREE.MeshPhysicalMaterial({
-  vertexColors: true,
-  metalness: 0,
-  roughness: 0.1,
-  clearcoat: 1.0,
-  clearcoatRoughness: 0.08,
-  side: THREE.DoubleSide
-});
-const glassMaterial = new THREE.MeshPhysicalMaterial({
-  color: 0xffffff,
-  metalness: 0,
-  roughness: 0,
-  transmission: 1.0,
-  thickness: 2.0,
-  ior: 1.5,
-  envMap: envTexture,
-  envMapIntensity: 0.6,
-  side: THREE.DoubleSide
-});
-const iridMaterial = new THREE.MeshPhysicalMaterial({
-  color: 0xffffff,
-  metalness: 0,
-  roughness: 0.05,
-  transmission: 0.4,
-  iridescence: 1.0,
-  iridescenceIOR: 1.3,
-  iridescenceThicknessRange: [100, 400],
-  envMap: envTexture,
-  envMapIntensity: 1.5,
-  clearcoat: 1.0,
-  clearcoatRoughness: 0,
-  side: THREE.DoubleSide
-});
-const neonMaterial = new THREE.MeshBasicMaterial({
-  vertexColors: true,
-  side: THREE.DoubleSide
-});
-const bronzeMaterial = new THREE.MeshPhysicalMaterial({
-  vertexColors: true,
-  metalness: 0.75,
-  roughness: 0.55,
-  clearcoat: 0.12,
-  clearcoatRoughness: 0.45,
-  side: THREE.DoubleSide
-});
-const emailMaterial = new THREE.MeshPhysicalMaterial({
-  color: 0x1a3a8f,
-  metalness: 0,
-  roughness: 0.0,
-  clearcoat: 1.0,
-  clearcoatRoughness: 0.0,
-  side: THREE.DoubleSide
-});
-const lineMaterial = new THREE.LineBasicMaterial({
-  color: 0x172433,
-  transparent: true,
-  opacity: 0.11
-});
-
-controls.enableDamping = true;
-controls.dampingFactor = 0.08;
-controls.minDistance = 1.4;
-controls.maxDistance = 8;
-controls.enablePan = false;
-
-scene.add(surfaceGroup);
-scene.add(new THREE.HemisphereLight(0xf5fbff, 0x6b8794, 1.05));
-scene.add(((light) => { light.position.set(-2.6, -3.2, 4.4); return light; })(new THREE.DirectionalLight(0xffffff, 2.05)));
-scene.add(((light) => { light.position.set(3.2, 2.1, 2.5); return light; })(new THREE.DirectionalLight(0x9ee9ff, 0.8)));
-scene.add(((light) => { light.position.set(0.4, -1.2, 3.8); return light; })(new THREE.DirectionalLight(0xfff0c8, 0.9)));
-
-const weierstrass = data => z => {
-  const fz = data.f(z);
-  const gz = data.g(z);
-  return dz => phis.map(phi => phi(fz, gz, dz).re);
-};
-
-const pointFor = (u, v, data) => data.parameter ? data.parameter(u, v) : C$(u, v);
-
-const segmentDelta = (z0, z1, data) => {
-  const dz = diff(z0, z1);
-  const delta = weierstrass(data)(center(z0, z1))(dz);
-  return finiteVector(delta) ? delta : [0, 0, 0];
-};
-
-const buildPointGrid = data => {
-  const us = range(data.uRange[0], data.uRange[1], data.uSegments);
-  const vs = range(data.vRange[0], data.vRange[1], data.vSegments);
-  const points = vs.map(() => us.map(() => [0, 0, 0]));
-
-  us.slice(1).forEach((_, offset) => {
-    const column = offset + 1;
-    const z0 = pointFor(us[column - 1], vs[0], data);
-    const z1 = pointFor(us[column], vs[0], data);
-    points[0][column] = vAdd(points[0][column - 1], segmentDelta(z0, z1, data));
-  });
-
-  vs.slice(1).forEach((_, offset) => {
-    const row = offset + 1;
-    us.forEach((u, column) => {
-      const z0 = pointFor(u, vs[row - 1], data);
-      const z1 = pointFor(u, vs[row], data);
-      points[row][column] = vAdd(points[row - 1][column], segmentDelta(z0, z1, data));
-    });
-  });
-
-  return points;
-};
-
-const pointGridsFor = data => data.pointGrids ? data.pointGrids(data) : [buildPointGrid(data)];
-
-const normalizePointGrids = pointGrids => {
-  const allPoints = pointGrids.flat(2).filter(finiteVector);
-  const safePoints = allPoints.length > 0 ? allPoints : [[0, 0, 0]];
-  const center = [0, 1, 2].map(axis =>
-    safePoints.reduce((sum, point) => sum + point[axis], 0) / safePoints.length
-  );
-  const centered = safePoints.map(point => vSub(point, center));
-  const radius = Math.max(...centered.map(vLength)) || 1;
-  const normalizePoint = point => finiteVector(point) ? vSub(point, center).map(value => value / radius) : [0, 0, 0];
-  return pointGrids.map(points => points.map(row => row.map(normalizePoint)));
-};
-
-const surfacePalette = [0x6b1f0a, 0xb84020, 0xe87030, 0xf5b050, 0xfff5b0].map(color => new THREE.Color(color));
-const paletteColor = value => {
-  const scaled = THREE.MathUtils.clamp(value, 0, 1) * (surfacePalette.length - 1);
-  const index = Math.min(surfacePalette.length - 2, Math.floor(scaled));
-  return surfacePalette[index].clone().lerp(surfacePalette[index + 1], scaled - index);
-};
-
-const colorForPoint = point => {
-  const height = THREE.MathUtils.clamp((point[2] + 1) / 2, 0, 1);
-  const radial = THREE.MathUtils.clamp(Math.hypot(point[0], point[1]), 0, 1);
-  const angle = (Math.atan2(point[1], point[0]) + TAU) / TAU;
-  const fold = (Math.sin(angle * TAU * 2 + point[2] * 3) + 1) / 2;
-  const value = 0.56 * height + 0.3 * radial + 0.14 * fold;
-  return paletteColor(value);
-};
-
-const marbleTurb = (x, y, z) =>
-  Math.abs(Math.sin(4 * x - 3 * z)) * 0.5 +
-  Math.abs(Math.sin(9 * y + 5 * x)) * 0.25 +
-  Math.abs(Math.sin(15 * z - 7 * y)) * 0.125;
-
-const marbleBase = new THREE.Color(0xede8e0);
-const marbleVein = new THREE.Color(0x4a4a5c);
-const marbleColorForPoint = ([x, y, z]) => {
-  const t = (Math.sin((x + z * 1.5 + marbleTurb(x, y, z) * 6) * Math.PI) + 1) / 2;
-  return marbleBase.clone().lerp(marbleVein, t ** 3);
-};
-
-const neonPalette = [0xff00dd, 0x4400ff, 0x00ccff, 0x00ff88, 0xffff00].map(c => new THREE.Color(c));
-const neonColorForPoint = point => {
-  const scaled = THREE.MathUtils.clamp((point[2] + 1) / 2, 0, 1) * (neonPalette.length - 1);
-  const index = Math.min(neonPalette.length - 2, Math.floor(scaled));
-  return neonPalette[index].clone().lerp(neonPalette[index + 1], scaled - index);
-};
-
-const bronzeBase = new THREE.Color(0x7c5228);
-const patinaColor = new THREE.Color(0x4a9b7f);
-const bronzeColorForPoint = ([x, y, z]) => {
-  const height = THREE.MathUtils.clamp((z + 1) / 2, 0, 1);
-  const noise = (Math.sin(x * 7 + z * 5) + Math.sin(y * 11 - x * 3)) * 0.25 + 0.5;
-  return bronzeBase.clone().lerp(patinaColor, (height * 0.7 + noise * 0.3) ** 1.5);
-};
-
-const colorAttribute = (pointGrids, colorFn = colorForPoint) => new THREE.Float32BufferAttribute(
-  pointGrids.flatMap(points => points.flatMap(row => row.flatMap(point => colorFn(point).toArray()))),
-  3
-);
-
-const makeGridIndices = (points, offset = 0) => {
-  const columns = points[0].length;
-  return points.slice(0, -1).flatMap((row, rowIndex) =>
-    row.slice(0, -1).flatMap((_, column) => {
-      const p00 = offset + rowIndex * columns + column;
-      const p10 = p00 + 1;
-      const p01 = p00 + columns;
-      const p11 = p01 + 1;
-      return [p00, p10, p11, p00, p11, p01];
-    })
-  );
-};
-
-const makeIndices = pointGrids => pointGrids.reduce(
-  (state, points) => ({
-    offset: state.offset + points.length * points[0].length,
-    indices: [...state.indices, ...makeGridIndices(points, state.offset)]
-  }),
-  { offset: 0, indices: [] }
-).indices;
-
-const makeGridLinePositions = points => {
-  const rowStep = Math.max(1, Math.round((points.length - 1) / 26));
-  const columnStep = Math.max(1, Math.round((points[0].length - 1) / 24));
-  const horizontal = points
-    .filter((_, row) => row % rowStep === 0 || row === points.length - 1)
-    .flatMap(row => row.slice(0, -1).flatMap((point, column) => [...point, ...row[column + 1]]));
-  const vertical = points[0]
-    .filter((_, column) => column % columnStep === 0 || column === points[0].length - 1)
-    .flatMap((_, column) => points.slice(0, -1).flatMap((row, rowIndex) => [...row[column], ...points[rowIndex + 1][column]]));
-  return [...horizontal, ...vertical];
-};
-
-const makeLinePositions = pointGrids => pointGrids.flatMap(makeGridLinePositions);
-
-const hammeredValue = (x, y, z) => {
-  const wave = Math.sin(128 * x + 47 * y) + Math.sin(101 * y - 83 * z) + Math.sin(89 * z + 113 * x);
-  return Math.max(0, Math.sin(wave * 1.8 + x * 37 - y * 29));
-};
-
-const hammerGeometry = geometry => {
-  geometry.computeVertexNormals();
-  const positions = geometry.attributes.position;
-  const normals = geometry.attributes.normal;
-  Array.from({ length: positions.count }).forEach((_, index) => {
-    const x = positions.getX(index);
-    const y = positions.getY(index);
-    const z = positions.getZ(index);
-    const dent = hammeredValue(x, y, z) ** 2.6;
-    const lift = 0.0038 * dent - 0.0013 * (1 - dent);
-    positions.setXYZ(
-      index,
-      x + normals.getX(index) * lift,
-      y + normals.getY(index) * lift,
-      z + normals.getZ(index) * lift
-    );
-  });
-  positions.needsUpdate = true;
-  geometry.computeVertexNormals();
-};
-
-const surfaceGeometry = data => {
-  const pointGrids = normalizePointGrids(pointGridsFor(data));
-  const geometry = new THREE.BufferGeometry();
-  const lineGeometry = new THREE.BufferGeometry();
-  geometry.setAttribute("position", new THREE.Float32BufferAttribute(pointGrids.flat(3), 3));
-  const colorFns = { marble: marbleColorForPoint, neon: neonColorForPoint, bronze: bronzeColorForPoint };
-  geometry.setAttribute("color", colorAttribute(pointGrids, colorFns[state.materialMode] ?? colorForPoint));
-  geometry.setIndex(makeIndices(pointGrids));
-  geometry.computeVertexNormals();
-  if (state.materialMode === "copper") hammerGeometry(geometry);
-  lineGeometry.setAttribute("position", new THREE.Float32BufferAttribute(makeLinePositions(pointGrids), 3));
-  return { geometry, lineGeometry };
-};
-
-const disposeSurface = () => {
-  surfaceGroup.children.forEach(child => child.geometry.dispose());
-  surfaceGroup.clear();
-};
-
-const renderSurface = data => {
-  const geometries = surfaceGeometry(data);
-  disposeSurface();
-  const mats = { copper: copperMaterial, mirror: mirrorMaterial, marble: marbleMaterial, glass: glassMaterial, irid: iridMaterial, neon: neonMaterial, bronze: bronzeMaterial, email: emailMaterial, color: material };
-  surfaceGroup.add(new THREE.Mesh(geometries.geometry, mats[state.materialMode] ?? material));
-  if (state.materialMode === "color") surfaceGroup.add(new THREE.LineSegments(geometries.lineGeometry, lineMaterial));
-};
-
-const syncMaterialToggle = () => {
-  const currentLabel = { copper: "Gedengeltes Kupfer", color: "Farbverlauf", mirror: "Spiegel", marble: "Marmor", glass: "Glas", irid: "Seifenblase", neon: "Neon", bronze: "Bronze", email: "Emaille" };
-  const nextLabel = { copper: "Farbverlauf", color: "Spiegel", mirror: "Marmor", marble: "Glas", glass: "Seifenblase", irid: "Neon", neon: "Bronze", bronze: "Emaille", email: "Gedengeltes Kupfer" };
-  materialModeLabel.textContent = currentLabel[state.materialMode];
-  materialToggle.classList.toggle("active", state.materialMode === "copper");
-  materialToggle.setAttribute("aria-pressed", (state.materialMode === "copper").toString());
-  materialToggle.textContent = "→ " + nextLabel[state.materialMode];
-};
-
-const toggleMaterialMode = () => {
-  const nextMode = { copper: "color", color: "mirror", mirror: "marble", marble: "glass", glass: "irid", irid: "neon", neon: "bronze", bronze: "email", email: "copper" };
-  state.materialMode = nextMode[state.materialMode];
-  syncMaterialToggle();
-  scheduleSaveAppState();
-  if (state.surface) renderSurface(currentData());
-};
-
-const updateDomainInfo = data => {
-  surfaceName.textContent = data.name;
-  formulaF.textContent = data.fText;
-  formulaG.textContent = data.gText;
-  domainInfo.textContent = data.domainText;
-  [...surfaceButtons.children].forEach(button => button.classList.toggle("active", button.dataset.surface === data.name));
-};
-
-const applyObjectPosition = position => surfaceGroup.position.set(position.x, position.y, position.z);
-
-const syncObjectOutputs = position => objectAxes.forEach(axis => {
-  objectOutputs[axis].value = formatNumber(position[axis]);
-});
-
-const syncObjectControls = surface => {
-  const position = objectPositionFor(surface);
-  objectAxes.forEach(axis => {
-    objectControls[axis].value = formatNumber(position[axis]);
-  });
-  syncObjectOutputs(position);
-  applyObjectPosition(position);
-};
-
 const setObjectPosition = position => {
   if (!state.surface) return;
   state.objectPositions.set(domainKey(state.surface), position);
-  objectAxes.forEach(axis => {
-    objectControls[axis].value = formatNumber(position[axis]);
-  });
-  syncObjectOutputs(position);
-  applyObjectPosition(position);
+  services.ui.syncObjectPosition(position);
+  services.renderer.setObjectPosition(position);
   scheduleSaveAppState();
 };
-
 const setSurface = surface => {
   state.surface = surface;
   const data = currentData();
-  renderSurface(data);
-  updateDomainInfo(data);
-  syncDomainControls(data);
-  syncParameterControls(surface);
-  syncObjectControls(surface);
-  applyView(viewFor(surface));
+  services.renderer.renderSurface(data);
+  services.ui.updateDomainInfo(data);
+  services.ui.syncDomainControls(surface, domainFor(surface));
+  services.ui.syncParameterControls(surface, parametersFor(surface));
+  services.ui.syncObjectControls(surface, objectPositionFor(surface));
+  services.renderer.applyView(state.surfaceViews.get(domainKey(surface)) || services.renderer.defaultView());
+  services.renderer.setObjectPosition(objectPositionFor(surface));
   scheduleSaveAppState();
 };
-
-const configureSlider = (control, bounds, value, step = 0.01) => {
-  control.min = formatNumber(bounds[0]);
-  control.max = formatNumber(bounds[1]);
-  control.step = step;
-  control.value = formatNumber(value);
-};
-
-const syncDomainOutputs = domain => {
-  domainOutputs.uMin.value = formatNumber(domain.uRange[0]);
-  domainOutputs.uMax.value = formatNumber(domain.uRange[1]);
-  domainOutputs.vMax.value = formatNumber(domain.vRange[1]);
-};
-
-const syncDomainControls = surface => {
-  const domain = domainFor(surface);
-  const uBounds = surface.parameter
-    ? [Math.max(0.01, sliderBounds(surface.uRange)[0]), sliderBounds(surface.uRange)[1]]
-    : sliderBounds(surface.uRange);
-  const vBounds = surface.parameter
-    ? [surface.vRange[0] + 0.01, TAU * 2]
-    : [surface.vRange[0] + 0.01, sliderBounds(surface.vRange)[1]];
-  domainLabels.uMin.textContent = surface.parameter ? "r min" : "u min";
-  domainLabels.uMax.textContent = surface.parameter ? "r max" : "u max";
-  domainLabels.vMax.textContent = surface.parameter ? "w max" : "v max";
-  configureSlider(domainControls.uMin, uBounds, domain.uRange[0]);
-  configureSlider(domainControls.uMax, uBounds, domain.uRange[1]);
-  configureSlider(domainControls.vMax, vBounds, domain.vRange[1]);
-  syncDomainOutputs(domain);
-};
-
-const parameterText = (parameter, value) => parameter.format ? parameter.format(value) : formatNumber(value);
-
-const createParameterControl = ([key, parameter], values) => {
-  const label = document.createElement("label");
-  const title = document.createElement("span");
-  const input = document.createElement("input");
-  const output = document.createElement("output");
-  input.type = "range";
-  input.min = parameter.min;
-  input.max = parameter.max;
-  input.step = parameter.step || 1;
-  input.value = values[key];
-  input.dataset.parameter = key;
-  title.textContent = parameter.label || key;
-  output.value = parameterText(parameter, values[key]);
-  label.append(title, input, output);
-  return label;
-};
-
-const syncParameterControls = surface => {
-  const entries = Object.entries(surface.parameters || {});
-  const values = parametersFor(surface);
-  surfaceParameters.hidden = entries.length === 0;
-  surfaceParameterControls.replaceChildren(...entries.map(entry => createParameterControl(entry, values)));
-  [...surfaceParameterControls.querySelectorAll("input")].forEach(control => control.addEventListener("input", updateCurrentParameters));
-};
-
-const sortedRange = (min, max) => {
-  const values = [Number(min), Number(max)].sort((a, b) => a - b);
-  return values[0] === values[1] ? [values[0], values[1] + 0.01] : values;
-};
-
-const updateCurrentDomain = () => {
+const updateCurrentDomain = ({ uMin, uMax, vMax }) => {
   if (!state.surface) return;
   const currentDomain = domainFor(state.surface);
+  const sortedRange = (min, max) => {
+    const values = [Number(min), Number(max)].sort((a, b) => a - b);
+    return values[0] === values[1] ? [values[0], values[1] + 0.01] : values;
+  };
   const domain = {
-    uRange: sortedRange(domainControls.uMin.value, domainControls.uMax.value),
-    vRange: sortedRange(currentDomain.vRange[0], domainControls.vMax.value)
+    uRange: sortedRange(uMin, uMax),
+    vRange: sortedRange(currentDomain.vRange[0], vMax)
   };
   state.domains.set(domainKey(state.surface), domain);
-  syncDomainOutputs(domain);
+  services.ui.syncDomainOutputs(domain);
   scheduleSaveAppState();
   cancelAnimationFrame(state.sliderFrame);
   state.sliderFrame = requestAnimationFrame(() => {
     const data = currentData();
-    renderSurface(data);
-    updateDomainInfo(data);
+    services.renderer.renderSurface(data);
+    services.ui.updateDomainInfo(data);
   });
 };
-
-const updateCurrentParameters = () => {
+const updateCurrentParameters = values => {
   if (!state.surface) return;
-  const values = normalizeParameters(state.surface, Object.fromEntries(
-    [...surfaceParameterControls.querySelectorAll("input")].map(control => [control.dataset.parameter, Number(control.value)])
-  ));
-  const parameters = state.surface.parameters || {};
-  state.parameters.set(domainKey(state.surface), values);
+  const normalized = normalizeParameters(state.surface, values);
+  state.parameters.set(domainKey(state.surface), normalized);
   if (state.surface.resetDomainOnParameterChange) state.domains.delete(domainKey(state.surface));
   scheduleSaveAppState();
-  [...surfaceParameterControls.querySelectorAll("input")].forEach(control => {
-    const value = values[control.dataset.parameter];
-    control.value = value;
-    control.nextElementSibling.value = parameterText(parameters[control.dataset.parameter], value);
-  });
-  const data = currentData();
-  renderSurface(data);
-  updateDomainInfo(data);
-  syncDomainControls(data);
+  services.ui.syncParameterValues(state.surface, normalized);
+  const parameterizedSurface = withParameters(state.surface);
+  const data = withDomain(parameterizedSurface);
+  services.renderer.renderSurface(data);
+  services.ui.updateDomainInfo(data);
+  services.ui.syncDomainControls(parameterizedSurface, domainFor(parameterizedSurface));
 };
-
 const resetDomain = () => {
   if (!state.surface) return;
   state.domains.delete(domainKey(state.surface));
   scheduleSaveAppState();
   const data = currentData();
-  syncDomainControls(data);
-  renderSurface(data);
-  updateDomainInfo(data);
+  services.ui.syncDomainControls(state.surface, domainFor(state.surface));
+  services.renderer.renderSurface(data);
+  services.ui.updateDomainInfo(data);
 };
-
-const updateCurrentObjectPosition = () => {
-  if (!state.surface) return;
-  const position = Object.fromEntries(objectAxes.map(axis => [axis, Number(objectControls[axis].value)]));
-  setObjectPosition(position);
-};
-
 const resetObjectPosition = () => {
   if (!state.surface) return;
   state.objectPositions.delete(domainKey(state.surface));
-  syncObjectControls(state.surface);
+  const position = objectPositionFor(state.surface);
+  services.ui.syncObjectPosition(position);
+  services.renderer.setObjectPosition(position);
   scheduleSaveAppState();
 };
-
-const cameraBasis = () => {
-  const forward = new THREE.Vector3();
-  camera.getWorldDirection(forward);
-  const right = new THREE.Vector3().crossVectors(forward, camera.up).normalize();
-  const up = new THREE.Vector3().crossVectors(right, forward).normalize();
-  return { right, up };
+const toggleMaterialMode = () => {
+  const nextMode = { copper: "color", color: "mirror", mirror: "marble", marble: "glass", glass: "irid", irid: "neon", neon: "bronze", bronze: "email", email: "copper" };
+  state.materialMode = nextMode[state.materialMode];
+  services.ui.syncMaterialToggle(state.materialMode);
+  scheduleSaveAppState();
+  if (state.surface) services.renderer.renderSurface(currentData());
 };
-
-const objectDragScale = () => {
-  const distance = Math.max(0.1, camera.position.distanceTo(surfaceGroup.position));
-  const height = 2 * distance * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
-  return height / Math.max(1, canvas.getBoundingClientRect().height);
-};
-
-const startObjectDrag = event => {
-  if (!event.ctrlKey || !state.surface) return;
-  event.preventDefault();
-  event.stopImmediatePropagation();
-  canvas.setPointerCapture(event.pointerId);
-  controls.enabled = false;
-  canvas.classList.add("dragging-object");
-  state.objectDrag = {
-    pointerId: event.pointerId,
-    x: event.clientX,
-    y: event.clientY,
-    start: objectPositionFor(state.surface),
-    scale: objectDragScale()
-  };
-};
-
-const moveObjectDrag = event => {
-  if (!state.objectDrag || event.pointerId !== state.objectDrag.pointerId) return;
-  event.preventDefault();
-  event.stopImmediatePropagation();
-  const { right, up } = cameraBasis();
-  const dx = (event.clientX - state.objectDrag.x) * state.objectDrag.scale;
-  const dy = (event.clientY - state.objectDrag.y) * state.objectDrag.scale;
-  const delta = right.multiplyScalar(dx).add(up.multiplyScalar(-dy));
-  setObjectPosition({
-    x: clamp(-1.5, state.objectDrag.start.x + delta.x, 1.5),
-    y: clamp(-1.5, state.objectDrag.start.y + delta.y, 1.5),
-    z: clamp(-1.5, state.objectDrag.start.z + delta.z, 1.5)
-  });
-};
-
-const stopObjectDrag = event => {
-  if (!state.objectDrag || event.pointerId !== state.objectDrag.pointerId) return;
-  event.preventDefault();
-  event.stopImmediatePropagation();
-  if (canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId);
-  state.objectDrag = null;
-  controls.enabled = true;
-  canvas.classList.remove("dragging-object");
-};
-
-const setPanelWidth = width => {
-  const maxWidth = Math.max(320, window.innerWidth - 360);
-  const nextWidth = clamp(300, width, maxWidth);
-  app.style.setProperty("--panel-width", `${Math.round(nextWidth)}px`);
-  localStorage.setItem("minimalSurfacePanelWidth", Math.round(nextWidth).toString());
-  resize();
-};
-
-const initPanelWidth = () => {
-  const storedWidth = Number(localStorage.getItem("minimalSurfacePanelWidth"));
-  if (Number.isFinite(storedWidth) && storedWidth > 0) setPanelWidth(storedWidth);
-};
-
-const startPanelResize = event => {
-  panelResizer.setPointerCapture(event.pointerId);
-  document.body.classList.add("resizing-panel");
-};
-
-const movePanelResize = event => {
-  if (!document.body.classList.contains("resizing-panel")) return;
-  setPanelWidth(window.innerWidth - event.clientX);
-};
-
-const stopPanelResize = event => {
-  if (panelResizer.hasPointerCapture(event.pointerId)) panelResizer.releasePointerCapture(event.pointerId);
-  document.body.classList.remove("resizing-panel");
-};
-
-const resizePanelWithKeyboard = event => {
-  if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
-  event.preventDefault();
-  const currentWidth = panelResizer.getBoundingClientRect().right
-    ? document.querySelector(".panel").getBoundingClientRect().width
-    : 410;
-  setPanelWidth(currentWidth + (event.key === "ArrowLeft" ? 24 : -24));
-};
-
-const drawExportBackground = (context, width, height) => {
-  const diagonal = Math.hypot(width, height);
-  const linear = context.createLinearGradient(width * 0.12, 0, width * 0.88, height);
-  linear.addColorStop(0, "#1f303a");
-  linear.addColorStop(0.58, "#101a22");
-  linear.addColorStop(1, "#263b46");
-  context.fillStyle = linear;
-  context.fillRect(0, 0, width, height);
-
-  const glow = context.createRadialGradient(width * 0.44, height * 0.3, 0, width * 0.44, height * 0.3, diagonal * 0.34);
-  glow.addColorStop(0, "rgba(132, 169, 182, 0.38)");
-  glow.addColorStop(1, "rgba(132, 169, 182, 0)");
-  context.fillStyle = glow;
-  context.fillRect(0, 0, width, height);
-
-  const shade = context.createRadialGradient(width * 0.72, height * 0.76, 0, width * 0.72, height * 0.76, diagonal * 0.34);
-  shade.addColorStop(0, "rgba(30, 58, 70, 0.55)");
-  shade.addColorStop(1, "rgba(30, 58, 70, 0)");
-  context.fillStyle = shade;
-  context.fillRect(0, 0, width, height);
-};
-
-const exportCanvasDataURL = () => {
-  const exportCanvas = document.createElement("canvas");
-  exportCanvas.width = canvas.width;
-  exportCanvas.height = canvas.height;
-  const context = exportCanvas.getContext("2d");
-  drawExportBackground(context, exportCanvas.width, exportCanvas.height);
-  context.drawImage(canvas, 0, 0);
-  return exportCanvas.toDataURL("image/png");
-};
-
-const saveImage = () => {
-  cancelAnimationFrame(animationId);
-  const size = renderer.getSize(new THREE.Vector2());
-  const pixelRatio = renderer.getPixelRatio();
-  const aspect = camera.aspect;
-  hud.style.visibility = 'hidden';
-  renderer.setPixelRatio(EXPORT_PIXEL_RATIO);
-  renderer.setSize(size.x, size.y, false);
-  camera.aspect = size.x / size.y;
-  camera.updateProjectionMatrix();
-  renderer.render(scene, camera);
-  const dataURL = exportCanvasDataURL();
-  renderer.setPixelRatio(pixelRatio);
-  renderer.setSize(size.x, size.y, false);
-  camera.aspect = aspect;
-  camera.updateProjectionMatrix();
-  renderer.render(scene, camera);
-  hud.style.visibility = '';
-  animate();
-  const link = document.createElement('a');
-  link.download = `${state.surface ? domainKey(state.surface) : 'flaeche'}-${EXPORT_PIXEL_RATIO}x.png`;
-  link.href = dataURL;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-};
-
 const resetView = () => {
-  const view = defaultView();
-  applyView(view);
+  const view = services.renderer.defaultView();
+  services.renderer.applyView(view);
   if (!state.surface) return;
   state.surfaceViews.set(domainKey(state.surface), view);
   scheduleSaveAppState();
 };
+const saveImage = () => services.renderer.saveImage(state.surface ? domainKey(state.surface) : "flaeche");
 
-const resize = () => {
-  const rect = canvas.getBoundingClientRect();
-  const width = Math.max(1, rect.width);
-  const height = Math.max(1, rect.height);
-  renderer.setSize(width, height, false);
-  camera.aspect = width / height;
-  camera.updateProjectionMatrix();
-};
-
-let animationId;
-const animate = () => {
-  animationId = requestAnimationFrame(animate);
-  controls.update();
-  renderer.render(scene, camera);
-};
-
-const createSurfaceButton = data => {
-  const button = document.createElement("button");
-  button.type = "button";
-  button.className = "surface-option";
-  button.dataset.surface = data.name;
-  button.textContent = data.name;
-  button.addEventListener("click", () => setSurface(data));
-  return button;
-};
-
-surfaceButtons.append(...surfaces.map(createSurfaceButton));
-resetButton.addEventListener("click", resetView);
-saveImageButton.addEventListener("click", saveImage);
-resetDomainButton.addEventListener("click", resetDomain);
-resetObjectPositionButton.addEventListener("click", resetObjectPosition);
-materialToggle.addEventListener("click", toggleMaterialMode);
-controls.addEventListener("change", saveCurrentView);
-Object.values(domainControls).forEach(control => control.addEventListener("input", updateCurrentDomain));
-Object.values(objectControls).forEach(control => control.addEventListener("input", updateCurrentObjectPosition));
-canvas.addEventListener("pointerdown", startObjectDrag, { capture: true });
-canvas.addEventListener("pointermove", moveObjectDrag, { capture: true });
-canvas.addEventListener("pointerup", stopObjectDrag, { capture: true });
-canvas.addEventListener("pointercancel", stopObjectDrag, { capture: true });
-panelResizer.addEventListener("pointerdown", startPanelResize);
-panelResizer.addEventListener("pointermove", movePanelResize);
-panelResizer.addEventListener("pointerup", stopPanelResize);
-panelResizer.addEventListener("pointercancel", stopPanelResize);
-panelResizer.addEventListener("keydown", resizePanelWithKeyboard);
-const resizeObserver = new ResizeObserver(resize);
-resizeObserver.observe(canvas);
-
-initPanelWidth();
-syncMaterialToggle();
-resetView();
-setSurface(surfaces.find(surface => domainKey(surface) === storageState.activeSurface) || surfaces.find(surface => surface.name.startsWith('S41_7_5')));
-resize();
-animate();
-
-const panelToggle = document.getElementById('panel-toggle');
-const isMobile = () => globalThis.matchMedia('(max-width: 820px)').matches;
-
-const updatePanelToggle = () => {
-  const collapsed = app.classList.contains('panel-collapsed');
-  panelToggle.textContent = isMobile() ? (collapsed ? '∧' : '∨') : (collapsed ? '‹' : '›');
-  panelToggle.setAttribute('aria-expanded', String(!collapsed));
-};
-
-if (isMobile()) app.classList.add('panel-collapsed');
-updatePanelToggle();
-
-panelToggle.addEventListener('click', () => {
-  app.classList.toggle('panel-collapsed');
-  updatePanelToggle();
+services.renderer = createRenderer({
+  canvas: document.querySelector("#surface"),
+  hud: document.querySelector(".hud"),
+  getMaterialMode: () => state.materialMode,
+  getSurface: () => state.surface,
+  getObjectPosition: objectPositionFor,
+  onObjectPositionChange: setObjectPosition,
+  onViewChange: saveCurrentView
+});
+services.ui = createUI({
+  surfaces,
+  getObjectPosition: objectPositionFor,
+  onSurfaceChange: setSurface,
+  onResetView: resetView,
+  onSaveImage: saveImage,
+  onResetDomain: resetDomain,
+  onResetObjectPosition: resetObjectPosition,
+  onMaterialToggle: toggleMaterialMode,
+  onDomainChange: updateCurrentDomain,
+  onParametersChange: updateCurrentParameters,
+  onObjectPositionChange: setObjectPosition,
+  onPanelResize: services.renderer.resize
 });
 
-window.addEventListener('resize', updatePanelToggle);
+services.ui.syncMaterialToggle(state.materialMode);
+resetView();
+setSurface(surfaces.find(surface => domainKey(surface) === storageState.activeSurface) || surfaces.find(surface => surface.name.startsWith("S41_7_5")));
+services.renderer.resize();
+services.renderer.animate();
