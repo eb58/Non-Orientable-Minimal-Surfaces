@@ -174,10 +174,6 @@ body.resizing-panel {
   display: none;
 }
 
-.touch-zoom-hint {
-  display: none;
-}
-
 .panel {
   background: #ffffff;
   color: #172026;
@@ -558,9 +554,5 @@ button:hover {
 
   .desktop-zoom-hint {
     display: none;
-  }
-
-  .touch-zoom-hint {
-    display: inline;
   }
 }
