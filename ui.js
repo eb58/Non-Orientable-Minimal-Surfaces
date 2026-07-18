@@ -100,7 +100,8 @@ export const createUI = ({
 
   const parameterText = (parameter, value) => parameter.format ? parameter.format(value) : formatNumber(value);
   const readParameterControls = () => Object.fromEntries(
-    [...surfaceParameterControls.querySelectorAll("input")].map(control => [control.dataset.parameter, Number(control.value)])
+    [...surfaceParameterControls.querySelectorAll("input[data-parameter]")]
+      .map(control => [control.dataset.parameter, Number(control.value)])
   );
   const createParameterControl = ([key, parameter], values) => {
     const label = document.createElement("label");
@@ -122,8 +123,11 @@ export const createUI = ({
     const entries = Object.entries(surface.parameters || {});
     surfaceParameters.hidden = false;
     resetParametersButton.hidden = entries.length === 0;
-    surfaceParameterControls.replaceChildren(...entries.map(entry => createParameterControl(entry, values)));
-    [...surfaceParameterControls.querySelectorAll("input")].forEach(control =>
+    surfaceParameterControls.replaceChildren(
+      ...entries.map(entry => createParameterControl(entry, values)),
+      hammerFactorRow
+    );
+    [...surfaceParameterControls.querySelectorAll("input[data-parameter]")].forEach(control =>
       control.addEventListener("input", () => onParametersChange(readParameterControls()))
     );
   };

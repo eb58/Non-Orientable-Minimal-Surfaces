@@ -47,22 +47,24 @@
       </dl>
       <section class="domain-controls" aria-label="Parameterbereich">
         <h2>Parameterbereich</h2>
-        <dd id="domain-info"></dd>
-        <label>
-          <span id="u-min-label">u min</span>
-          <input id="u-min" type="range" step="0.01">
-          <output id="u-min-value"></output>
-        </label>
-        <label>
-          <span id="u-max-label">u max</span>
-          <input id="u-max" type="range" step="0.01">
-          <output id="u-max-value"></output>
-        </label>
-        <label>
-          <span id="v-max-label">v max</span>
-          <input id="v-max" type="range" step="0.01">
-          <output id="v-max-value"></output>
-        </label>
+        <div id="domain-info"></div>
+        <div id="domain-slider-controls">
+          <label>
+            <span id="u-min-label">u min</span>
+            <input id="u-min" type="range" step="0.01">
+            <output id="u-min-value"></output>
+          </label>
+          <label>
+            <span id="u-max-label">u max</span>
+            <input id="u-max" type="range" step="0.01">
+            <output id="u-max-value"></output>
+          </label>
+          <label>
+            <span id="v-max-label">v max</span>
+            <input id="v-max" type="range" step="0.01">
+            <output id="v-max-value"></output>
+          </label>
+        </div>
         <button id="reset-domain" type="button">Zurücksetzen</button>
       </section>
       <section id="surface-parameters" class="surface-parameters" aria-label="Flächenparameter" hidden>
