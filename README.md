@@ -54,6 +54,16 @@ Die Formeln fuer `f` und `g` stehen in `math.js` direkt bei den Presets.
 - `vendor/complex/` enthaelt die vendorte ESM-Fassung von `cops.js`, `tokenizer.js` und `complex.js` aus dem [algorithms-js-Repository](https://github.com/eb58/algorithms-js), Stand `b7e1b2a3ea1a81219b9bb806b9e9590c988223f9`; die App benoetigt dafuer keinen Laufzeit-Netzwerkzugriff.
 - `vendor/three/` enthaelt Three.js und OrbitControls lokal, damit die App ohne CDN laeuft.
 
+## Tests
+
+Die Logikmodule (`math.js`, `materials.js`, `backgrounds.js`, `complex.js`) haben eine Testsuite auf Basis des eingebauten Node-Test-Runners, keine zusaetzliche Abhaengigkeit noetig.
+
+```text
+npm test
+```
+
+Ein Pre-Commit-Hook (`.githooks/pre-commit`, aktiviert ueber `git config core.hooksPath .githooks`) fuehrt die Suite vor jedem Commit aus und bricht bei Fehlern ab.
+
 ## Neue Flaechen hinzufuegen
 
 Ein neues Preset wird in `math.js` im Array `surfaces` angelegt. Beispiel:
