@@ -12,35 +12,10 @@ und rendert sie mit Three.js als frei drehbares WebGL-Modell.
 
 ## Start
 
-Zum einfachen Anschauen kann `standalone.html` direkt im Browser geoeffnet werden. Diese Datei enthaelt CSS, Three.js, OrbitControls, die `C$`-Bibliothek und den App-Code inline und funktioniert dadurch auch per `file://`.
-
-Fuer die Entwicklung ist `index.html` gedacht. Diese Variante verwendet ES-Module. Darum sollte sie ueber einen lokalen HTTP-Server geoeffnet werden, nicht direkt per `file://`. Es gibt keine npm-Abhaengigkeiten; Node.js reicht zum Starten.
-
-Mit dem enthaltenen kleinen Node-Server:
-
-```powershell
-npm start
-```
-
-Danach im Browser oeffnen:
+Die App verwendet ES-Module und sollte ueber einen lokalen HTTP-Server geoeffnet werden, nicht direkt per `file://`. Zum Beispiel mit der VS-Code-Erweiterung Live Server:
 
 ```text
-http://127.0.0.1:8765/
-```
-
-Der Server bindet lokal an `127.0.0.1`. Falls der Port belegt ist, kann er in PowerShell so geaendert werden:
-
-```powershell
-$env:PORT = "9000"
-npm start
-```
-
-Alternativ funktioniert jeder statische Webserver, der das Projektverzeichnis ausliefert.
-
-Nach Aenderungen an `main.js`, `math.js`, `renderer.js`, `ui.js`, `styles.css` oder den vendorten Bibliotheken wird die Standalone-Datei neu erzeugt mit:
-
-```powershell
-node scripts/build-standalone.js
+http://127.0.0.1:5500/index.html
 ```
 
 ## Bedienung
@@ -75,11 +50,8 @@ Die Formeln fuer `f` und `g` stehen in `math.js` direkt bei den Presets.
 - `ui.js` kapselt DOM-Elemente, Slider, Buttons, Panel und UI-Synchronisation.
 - `main.js` verbindet State, Mathematik, Renderer und UI.
 - `styles.css` enthaelt das responsive Layout und das resizable Panel.
-- `server.cjs` ist ein minimaler lokaler Static-File-Server.
 - `complex.js` ist ein lokaler ESM-Adapter und exportiert `C$`.
-- `vendor/complex/` enthaelt die vendorte ESM-Fassung von `cops.js`, `tokenizer.js` und `complex.js` aus dem [algorithms-js-Repository](https://github.com/eb58/algorithms-js), Stand `0a67f09498691bc4c9ad03e5b220ffb064f56fe1`; die App benoetigt dafuer keinen Laufzeit-Netzwerkzugriff.
-- `standalone.html` ist die direkt oeffenbare Einzeldatei.
-- `scripts/build-standalone.js` erzeugt `standalone.html` aus den Projektdateien.
+- `vendor/complex/` enthaelt die vendorte ESM-Fassung von `cops.js`, `tokenizer.js` und `complex.js` aus dem [algorithms-js-Repository](https://github.com/eb58/algorithms-js), Stand `b7e1b2a3ea1a81219b9bb806b9e9590c988223f9`; die App benoetigt dafuer keinen Laufzeit-Netzwerkzugriff.
 - `vendor/three/` enthaelt Three.js und OrbitControls lokal, damit die App ohne CDN laeuft.
 
 ## Neue Flaechen hinzufuegen

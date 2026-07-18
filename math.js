@@ -94,7 +94,7 @@ const s42 = (r1 = 1.8, r2 = 3) => {
   });
 };
 
-const kusner = ({ name = "Kusner", p = 3, r1, r2 }) => {
+const kusner = ({ name = "Kusner", p = 5, r1, r2 }) => {
   const A = Math.sqrt(2 * p - 1);
   const B = 2 * A / (p - 1);
   const zp = zPowerText(p);
@@ -200,6 +200,25 @@ const catenoid = () => surfaceWithFormulas({
   gText: "z => z"
 });
 
+const enneper = () => surfaceWithFormulas({
+  name: "Enneper",
+  ...annulus(0.02, 1.5, 60, 180),
+  fText: "z => 1",
+  gText: "z => z"
+});
+
+const richmond = ({ name = "Richmond", n = 2, r1 = 0.25, r2 = 1.5, uSegments = 60, vSegments = 180 } = {}) => surfaceWithFormulas({
+  name,
+  ...annulus(r1, r2, uSegments, vSegments),
+  fText: "z => 1 / z^2",
+  gText: `z => z^${n}`,
+  parameters: {
+    n: { label: "n", min: 1, max: 6, step: 1, value: n, format: value => Math.round(value).toString() }
+  },
+  normalizeParameters: values => ({ n: clamp(1, Math.round(values.n), 6) }),
+  withParameters: values => richmond({ name, n: values.n, r1, r2, uSegments, vSegments })
+});
+
 export const surfaces = [
   s41({ name: "S41_3_1 Twisted Catenoid", m: 3, n: 1, r1: 1.0, r2: 2.0 }),
   s41({ name: "S41_5_1 UFO             ", m: 5, n: 1, r1: 1.0, r2: 1.3 }),
@@ -209,7 +228,9 @@ export const surfaces = [
   cobra({ name: "Cobra", m: 5, r1: 1, r2: 1.2 }),
   kusner({ name: "Kusner" }),
   lopezKlein(),
-  catenoid()
+  catenoid(),
+  enneper(),
+  richmond()
 ];
 
 const weierstrass = data => z => {

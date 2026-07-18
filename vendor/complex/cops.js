@@ -1,68 +1,52 @@
 const EPSILON = 1e-14;
-
+const isComplex = value => value && typeof value === "object" && Number.isFinite(value.re) && Number.isFinite(value.im);
+const asComplex = (value, name = "value") => {
+  if (typeof value === "number" && Number.isFinite(value)) return { re: value, im: 0 };
+  if (isComplex(value)) return value;
+  throw new TypeError(`${name} must be a finite number or complex value`);
+};
 const adj = c => ({ re: c.re === -0 ? 0 : c.re, im: c.im === -0 ? 0 : c.im });
-const conj = c => adj({ re: c.re, im: -c.im });
-const neg = c => adj({ re: -c.re, im: -c.im });
-const add = (c1, c2) => adj({ re: c1.re + c2.re, im: c1.im + c2.im });
-const sub = (c1, c2) => adj({ re: c1.re - c2.re, im: c1.im - c2.im });
-const sqr = c => adj({ re: c.re ** 2 - c.im ** 2, im: 2 * c.re * c.im });
-const cub = c => adj({ re: c.re ** 3 - 3 * c.re * c.im ** 2, im: 3 * c.re ** 2 * c.im - c.im ** 3 });
-const mul = (c1, c2) => adj({ re: c1.re * c2.re - c1.im * c2.im, im: c1.re * c2.im + c1.im * c2.re });
-const len = c => Math.sqrt(c.re ** 2 + c.im ** 2);
-const sqrt = c => {
-  const radius = len(c);
-  const re = Math.sqrt(Math.max(0, (radius + c.re) / 2));
-  const im = (c.im < 0 ? -1 : 1) * Math.sqrt(Math.max(0, (radius - c.re) / 2));
-  return adj({ re, im });
-};
-const ln = c => ({ re: Math.log(len(c)), im: Math.atan2(c.im, c.re) });
-const exp = c => adj({ re: Math.exp(c.re) * Math.cos(c.im), im: Math.exp(c.re) * Math.sin(c.im) });
-const sin = c => adj({ re: Math.sin(c.re) * Math.cosh(c.im), im: Math.cos(c.re) * Math.sinh(c.im) });
-const cos = c => adj({ re: Math.cos(c.re) * Math.cosh(c.im), im: -Math.sin(c.re) * Math.sinh(c.im) });
-const pow = (c, n) => (typeof n === "number" || n.im === 0 ? powN(c, typeof n === "number" ? n : n.re) : exp(mul(n, ln(c))));
-
-const div = (c1, c2) => {
-  const den = c2.re ** 2 + c2.im ** 2;
-  return adj({ re: (c1.re * c2.re + c1.im * c2.im) / den, im: (c1.im * c2.re - c1.re * c2.im) / den });
-};
-
+const zero = () => ({ re: 0, im: 0 });
+const one = () => ({ re: 1, im: 0 });
+const conj = c => { const z = asComplex(c); return adj({ re: z.re, im: -z.im }); };
+const neg = c => { const z = asComplex(c); return adj({ re: -z.re, im: -z.im }); };
+const add = (c1, c2) => { const a = asComplex(c1, "left operand"); const b = asComplex(c2, "right operand"); return adj({ re: a.re + b.re, im: a.im + b.im }); };
+const sub = (c1, c2) => { const a = asComplex(c1, "left operand"); const b = asComplex(c2, "right operand"); return adj({ re: a.re - b.re, im: a.im - b.im }); };
+const sqr = c => { const z = asComplex(c); return adj({ re: z.re ** 2 - z.im ** 2, im: 2 * z.re * z.im }); };
+const cub = c => { const z = asComplex(c); return adj({ re: z.re ** 3 - 3 * z.re * z.im ** 2, im: 3 * z.re ** 2 * z.im - z.im ** 3 }); };
+const mul = (c1, c2) => { const a = asComplex(c1, "left operand"); const b = asComplex(c2, "right operand"); return adj({ re: a.re * b.re - a.im * b.im, im: a.re * b.im + a.im * b.re }); };
+const len = c => { const z = asComplex(c); return Math.hypot(z.re, z.im); };
+const abs = len;
+const arg = c => { const z = asComplex(c); return Math.atan2(z.im, z.re); };
+const real = c => asComplex(c).re;
+const imag = c => asComplex(c).im;
+const sqrt = c => { const z = asComplex(c); const radius = len(z); const re = Math.sqrt(Math.max(0, (radius + z.re) / 2)); const im = (z.im < 0 ? -1 : 1) * Math.sqrt(Math.max(0, (radius - z.re) / 2)); return adj({ re, im }); };
+const ln = c => { const z = asComplex(c); if (z.re === 0 && z.im === 0) throw new RangeError("Logarithm of zero is undefined"); return adj({ re: Math.log(len(z)), im: Math.atan2(z.im, z.re) }); };
+const exp = c => { const z = asComplex(c); return adj({ re: Math.exp(z.re) * Math.cos(z.im), im: Math.exp(z.re) * Math.sin(z.im) }); };
+const sin = c => { const z = asComplex(c); return adj({ re: Math.sin(z.re) * Math.cosh(z.im), im: Math.cos(z.re) * Math.sinh(z.im) }); };
+const cos = c => { const z = asComplex(c); return adj({ re: Math.cos(z.re) * Math.cosh(z.im), im: -Math.sin(z.re) * Math.sinh(z.im) }); };
+const sinh = c => { const z = asComplex(c); return adj({ re: Math.sinh(z.re) * Math.cos(z.im), im: Math.cosh(z.re) * Math.sin(z.im) }); };
+const cosh = c => { const z = asComplex(c); return adj({ re: Math.cosh(z.re) * Math.cos(z.im), im: Math.sinh(z.re) * Math.sin(z.im) }); };
+const div = (c1, c2) => { const a = asComplex(c1, "dividend"); const b = asComplex(c2, "divisor"); const den = b.re ** 2 + b.im ** 2; if (den === 0) throw new RangeError("Division by zero"); return adj({ re: (a.re * b.re + a.im * b.im) / den, im: (a.im * b.re - a.re * b.im) / den }); };
+const positivePow = (c, n) => { if (n === 0) return one(); const squared = sqr(c); return n % 2 === 0 ? positivePow(squared, n / 2) : mul(c, positivePow(squared, Math.floor(n / 2))); };
 const powN = (c, n) => {
-  if (n === 0) return { re: 1, im: 0 };
-  if (n === 1) return c;
-  if (n === 2) return sqr(c);
-  if (n === 3) return cub(c);
-  if (n === 4) return sqr(sqr(c));
-  if (n === 5) return mul(cub(c), sqr(c));
-  if (n === 6) return sqr(cub(c));
-  return Array.from({ length: n - 1 }).reduce(acc => mul(acc, c), c);
+  if (!Number.isFinite(n)) throw new RangeError("Exponent must be finite");
+  if (c.re === 0 && c.im === 0) { if (n < 0) throw new RangeError("Zero cannot be raised to a negative power"); if (n === 0 || n > 0) return n === 0 ? one() : zero(); }
+  if (n === 0) return one();
+  if (!Number.isSafeInteger(n)) return exp(mul({ re: n, im: 0 }, ln(c)));
+  return n < 0 ? div(one(), positivePow(c, -n)) : positivePow(c, n);
 };
+const pow = (c, n) => { const base = asComplex(c, "base"); const exponent = asComplex(n, "exponent"); if (exponent.im === 0) return powN(base, exponent.re); if (base.re === 0 && base.im === 0) throw new RangeError("Zero cannot be raised to a complex power"); return exp(mul(exponent, ln(base))); };
+const tan = c => div(sin(c), cos(c));
+const asin = c => { const z = asComplex(c); return neg(mul({ re: 0, im: 1 }, ln(add(mul({ re: 0, im: 1 }, z), sqrt(sub(one(), sqr(z))))))); };
+const acos = c => sub({ re: Math.PI / 2, im: 0 }, asin(c));
+const atan = c => { const z = asComplex(c); const i = { re: 0, im: 1 }; return mul({ re: 0, im: -0.5 }, sub(ln(add(one(), mul(i, z))), ln(sub(one(), mul(i, z))))); };
+const tanh = c => div(sinh(c), cosh(c));
+const asinh = c => { const z = asComplex(c); return ln(add(z, sqrt(add(sqr(z), one())))); };
+const acosh = c => { const z = asComplex(c); return ln(add(z, mul(sqrt(add(z, one())), sqrt(sub(z, one()))))); };
+const atanh = c => { const z = asComplex(c); return mul({ re: 0.5, im: 0 }, sub(ln(add(one(), z)), ln(sub(one(), z)))); };
+const polar = (radius, angle) => { if (!Number.isFinite(radius) || !Number.isFinite(angle)) throw new TypeError("Polar coordinates must be finite numbers"); if (radius < 0) throw new RangeError("Polar radius must not be negative"); return adj({ re: radius * Math.cos(angle), im: radius * Math.sin(angle) }); };
+const equals = (c1, c2, epsilon = EPSILON) => { const a = asComplex(c1, "left operand"); const b = asComplex(c2, "right operand"); if (!Number.isFinite(epsilon) || epsilon < 0) throw new RangeError("Tolerance must be a non-negative finite number"); const scale = Math.max(1, len(a), len(b)); return Math.hypot(a.re - b.re, a.im - b.im) <= epsilon * scale; };
+const toString = c => { const z = adj(asComplex(c)); if (z.im === 0) return z.re.toString(); const imaginary = Math.abs(z.im) === 1 ? "i" : `${Math.abs(z.im)}i`; if (z.re === 0) return z.im < 0 ? `-${imaginary}` : imaginary; return `${z.re}${z.im < 0 ? "-" : "+"}${imaginary}`; };
 
-const equals = (c1, c2) => Math.abs(c1.re - c2.re) < EPSILON && Math.abs(c1.im - c2.im) < EPSILON;
-const toString = c => {
-  if (c.im === 0) return c.re.toString();
-  const ii = c.im === 1 ? "i" : `${c.im}i`;
-  return c.re === 0 ? ii : `${c.re}${c.im < 0 ? "" : "+"}${ii}`;
-};
-
-export const cops = {
-  i: { re: 0, im: 1 },
-  pi: { re: Math.PI, im: 0 },
-  e: { re: Math.E, im: 0 },
-  neg,
-  conj,
-  add,
-  sub,
-  mul,
-  div,
-  sqr,
-  cub,
-  len,
-  sqrt,
-  ln,
-  pow,
-  sin,
-  cos,
-  exp,
-  equals,
-  toString
-};
+export const cops = { i: { re: 0, im: 1 }, pi: { re: Math.PI, im: 0 }, e: { re: Math.E, im: 0 }, neg, conj, add, sub, mul, div, sqr, cub, len, abs, arg, real, imag, sqrt, ln, exp, sin, cos, tan, sinh, cosh, tanh, asin, acos, atan, asinh, acosh, atanh, polar, pow, equals, toString };
