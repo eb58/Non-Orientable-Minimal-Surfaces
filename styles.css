@@ -142,10 +142,15 @@ body.resizing-panel {
   line-height: 1;
   z-index: 10;
   min-width: unset;
+  transition: background 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .panel-toggle:hover {
   background: rgba(47, 141, 168, 0.95);
+}
+
+.panel-toggle:active {
+  transform: translateY(-50%) scale(0.94);
 }
 
 .viewer-nav {
@@ -191,6 +196,10 @@ body.resizing-panel {
 .viewer-nav-button:focus-visible {
   outline: 0;
   box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.6), 0 4px 14px rgba(5, 12, 20, 0.35);
+}
+
+.viewer-nav-material {
+  background: linear-gradient(135deg, #7a421f, #c87732 55%, #5a2f1b);
 }
 
 .viewer-nav-background {
@@ -580,11 +589,23 @@ button:hover {
     left: 50%;
     bottom: 0;
     transform: translateX(-50%);
-    width: 44px;
-    height: 22px;
-    border-radius: 6px 6px 0 0;
-    border: 1px solid rgba(204, 226, 235, 0.2);
+    width: 64px;
+    height: 26px;
+    border-radius: 999px 999px 0 0;
+    border: 1px solid rgba(204, 226, 235, 0.24);
     border-bottom: none;
+    background: linear-gradient(180deg, rgba(47, 141, 168, 0.95), rgba(19, 48, 60, 0.95));
+    box-shadow: 0 -6px 14px rgba(5, 12, 20, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.28);
+    font-size: 0.95rem;
+    font-weight: 700;
+  }
+
+  .panel-toggle:hover {
+    background: linear-gradient(180deg, rgba(66, 166, 194, 0.98), rgba(24, 62, 78, 0.98));
+  }
+
+  .panel-toggle:active {
+    transform: translateX(-50%) scale(0.94);
   }
 
   .app.panel-collapsed .panel {

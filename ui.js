@@ -55,6 +55,7 @@ export const createUI = ({
   const backgroundNext = document.querySelector("#background-next");
   const backgroundModeControl = document.querySelector(".background-mode-control");
   const backgroundModeLabel = document.querySelector("#background-mode-label");
+  const viewerMaterialCycle = document.querySelector("#material-cycle");
   const viewerBackgroundCycle = document.querySelector("#background-cycle");
   const viewerSurfaceCycle = document.querySelector("#surface-cycle");
   const viewer = document.querySelector(".viewer");
@@ -279,6 +280,7 @@ export const createUI = ({
     backgroundAt(backgroundModeControl.dataset.background, 1).id
   ));
   viewerSurfaceCycle.addEventListener("click", () => onSurfaceStep(1));
+  viewerMaterialCycle.addEventListener("click", () => onMaterialStep(1));
   panelResizer.addEventListener("pointerdown", startPanelResize);
   panelResizer.addEventListener("pointermove", movePanelResize);
   panelResizer.addEventListener("pointerup", stopPanelResize);
