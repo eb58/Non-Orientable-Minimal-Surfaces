@@ -24,7 +24,7 @@ http://127.0.0.1:5500/index.html
 - Zoom: Mausrad oder Trackpad-Scroll
 - Ansicht zuruecksetzen: Button `Ansicht zuruecksetzen`
 - Parameterbereich aendern: Slider `r min`, `r max`, `w max`
-- Flächenparameter ändern: bei S41 steuern die Slider `m` und `n` die Exponenten, bei Cobra steuert `m` den Exponenten, bei Kusner steuert `p` die Familie
+- Flächenparameter ändern: bei S41 steuern die Slider `m` und `n` die Exponenten, bei Cobra steuert `m` den Exponenten, bei Kusner steuert `p` die Familie und bei Katenoid–Helikoid der Winkel den Übergang
 - Objekt verschieben: Slider `x`, `y`, `z`
 - Objekt verschieben: am Desktop `Ctrl` gedrueckt halten und ziehen, auf Touchscreens mit zwei Fingern ziehen
 - Darstellung umschalten: mit den Pfeilen links und rechts neben dem Modus-Badge
@@ -38,7 +38,7 @@ Die Sliderwerte für Bereich, Flächenparameter und Objektposition werden pro Fl
 - Cobra mit einstellbarem Parameter `m`
 - Kusner-Familie mit einstellbarem ungeraden Parameter `p`; hoehere `p`-Werte werden mit dichterem Mesh und passendem Radiusbereich zwischen den Polradien gerendert
 - Lopez Klein Bottle, die einmal punktierte minimale Kleinsche Flasche mit einem Ende; gerendert wird ein stetiger Zweig der orientierbaren Doppelflaeche
-- Catenoid
+- Katenoid–Helikoid-Familie mit einem Assoziationswinkel von `0°` bis `90°`
 
 Die Formeln fuer `f` und `g` stehen in `math.js` direkt bei den Presets.
 

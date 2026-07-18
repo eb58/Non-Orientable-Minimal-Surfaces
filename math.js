@@ -193,12 +193,22 @@ const lopezKlein = () => {
   });
 };
 
-const catenoid = () => surfaceWithFormulas({
-  name: "Catenoid",
-  ...annulus(0.3, 3, 70, 180),
-  fText: "z => -2 / z**2",
-  gText: "z => z"
-});
+const catenoidHelicoid = ({ angle = 0, r1 = 0.3, r2 = 3, uSegments = 70, vSegments = 180 } = {}) => {
+  const normalizedAngle = clamp(0, Number(angle), 90);
+  const alpha = normalizedAngle * Math.PI / 180;
+  return surfaceWithFormulas({
+    name: "Katenoid–Helikoid",
+    ...annulus(r1, r2, uSegments, vSegments),
+    fText: "z => -2 * exp(i * alpha) / z**2",
+    gText: "z => z",
+    constants: { alpha },
+    parameters: {
+      angle: { label: "Winkel", min: 0, max: 90, step: 1, value: normalizedAngle, format: value => `${Math.round(value)}°` }
+    },
+    normalizeParameters: values => ({ angle: clamp(0, Number(values.angle), 90) }),
+    withParameters: values => catenoidHelicoid({ angle: values.angle, r1, r2, uSegments, vSegments })
+  });
+};
 
 const enneper = () => surfaceWithFormulas({
   name: "Enneper",
@@ -228,7 +238,7 @@ export const surfaces = [
   cobra({ name: "Cobra", m: 5, r1: 1, r2: 1.2 }),
   kusner({ name: "Kusner" }),
   lopezKlein(),
-  catenoid(),
+  catenoidHelicoid(),
   enneper(),
   richmond()
 ];

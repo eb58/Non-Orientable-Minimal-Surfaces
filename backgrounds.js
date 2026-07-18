@@ -8,8 +8,3 @@ export const BACKGROUNDS = [
 ];
 
 export const BACKGROUND_IDS = BACKGROUNDS.map(({ id }) => id);
-
-export const adjacentBackground = (background, offset) => {
-  const index = Math.max(0, BACKGROUND_IDS.indexOf(background));
-  return BACKGROUND_IDS[(index + offset + BACKGROUND_IDS.length) % BACKGROUND_IDS.length];
-};

@@ -1,9 +1,13 @@
 import { TAU, clamp } from "./math.js";
 import { MATERIAL_MODE_LABELS, adjacentMaterialMode } from "./materials.js";
-import { BACKGROUNDS, adjacentBackground } from "./backgrounds.js";
+import { BACKGROUNDS } from "./backgrounds.js";
 
 const formatNumber = value => Number(value).toFixed(2);
 const formatDomainNumber = value => Number(value).toFixed(3);
+const backgroundAt = (background, offset = 0) => {
+  const index = Math.max(0, BACKGROUNDS.findIndex(({ id }) => id === background));
+  return BACKGROUNDS[(index + offset + BACKGROUNDS.length) % BACKGROUNDS.length];
+};
 const sliderBounds = rangeValues => {
   const span = rangeValues[1] - rangeValues[0];
   const padding = Math.max(0.25, Math.abs(span) * 0.8);
@@ -183,16 +187,16 @@ export const createUI = ({
   };
   const updateCurrentHammerFactor = () => onHammerFactorChange(Number(hammerFactorControl.value));
   const syncBackground = background => {
-    const previousBackground = adjacentBackground(background, -1);
-    const nextBackground = adjacentBackground(background, 1);
-    const labelFor = id => BACKGROUNDS.find(item => item.id === id)?.label || id;
-    backgroundModeLabel.textContent = labelFor(background);
-    backgroundModeControl.dataset.background = background;
-    backgroundPrevious.title = `Zurück zu ${labelFor(previousBackground)}`;
-    backgroundPrevious.setAttribute("aria-label", `Vorheriger Hintergrund: ${labelFor(previousBackground)}`);
-    backgroundNext.title = `Weiter zu ${labelFor(nextBackground)}`;
-    backgroundNext.setAttribute("aria-label", `Nächster Hintergrund: ${labelFor(nextBackground)}`);
-    viewer.dataset.background = background;
+    const current = backgroundAt(background);
+    const previous = backgroundAt(background, -1);
+    const next = backgroundAt(background, 1);
+    backgroundModeLabel.textContent = current.label;
+    backgroundModeControl.dataset.background = current.id;
+    backgroundPrevious.title = `Zurück zu ${previous.label}`;
+    backgroundPrevious.setAttribute("aria-label", `Vorheriger Hintergrund: ${previous.label}`);
+    backgroundNext.title = `Weiter zu ${next.label}`;
+    backgroundNext.setAttribute("aria-label", `Nächster Hintergrund: ${next.label}`);
+    viewer.dataset.background = current.id;
   };
 
   const updateCurrentDomain = () => onDomainChange({
@@ -263,10 +267,10 @@ export const createUI = ({
   Object.values(objectControls).filter(Boolean).forEach(control => control.addEventListener("input", updateCurrentObjectPosition));
   hammerFactorControl.addEventListener("input", updateCurrentHammerFactor);
   backgroundPrevious.addEventListener("click", () => onBackgroundChange(
-    adjacentBackground(backgroundModeControl.dataset.background, -1)
+    backgroundAt(backgroundModeControl.dataset.background, -1).id
   ));
   backgroundNext.addEventListener("click", () => onBackgroundChange(
-    adjacentBackground(backgroundModeControl.dataset.background, 1)
+    backgroundAt(backgroundModeControl.dataset.background, 1).id
   ));
   panelResizer.addEventListener("pointerdown", startPanelResize);
   panelResizer.addEventListener("pointermove", movePanelResize);
