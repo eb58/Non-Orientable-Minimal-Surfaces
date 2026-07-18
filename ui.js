@@ -131,7 +131,6 @@ export const createUI = ({
   const syncParameterControls = (surface, values) => {
     const entries = Object.entries(surface.parameters || {});
     surfaceParameters.hidden = false;
-    resetParametersButton.hidden = entries.length === 0;
     surfaceParameterControls.replaceChildren(
       ...entries.map(entry => createParameterControl(entry, values)),
       hammerFactorRow

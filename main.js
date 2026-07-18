@@ -164,13 +164,15 @@ const resetDomain = () => {
   services.ui.updateDomainInfo(data);
 };
 const resetParameters = () => {
-  if (!state.surface?.parameters) return;
+  if (!state.surface) return;
   state.parameters.delete(domainKey(state.surface));
+  state.hammerFactors.delete(domainKey(state.surface));
   if (state.surface.resetDomainOnParameterChange) state.domains.delete(domainKey(state.surface));
   const values = parametersFor(state.surface);
   const parameterizedSurface = withParameters(state.surface);
   const data = withDomain(parameterizedSurface);
   services.ui.syncParameterControls(state.surface, values);
+  services.ui.syncHammerFactor(hammerFactorFor(state.surface));
   services.ui.syncDomainControls(parameterizedSurface, domainFor(parameterizedSurface));
   services.renderer.renderSurface(data);
   services.ui.updateDomainInfo(data);
