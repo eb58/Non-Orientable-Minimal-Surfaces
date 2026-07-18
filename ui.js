@@ -29,6 +29,7 @@ export const createUI = ({
   onObjectPositionChange,
   onHammerFactorChange,
   onBackgroundChange,
+  onSurfaceStep,
   onPanelResize
 }) => {
   const canvas = document.querySelector("#surface");
@@ -54,6 +55,8 @@ export const createUI = ({
   const backgroundNext = document.querySelector("#background-next");
   const backgroundModeControl = document.querySelector(".background-mode-control");
   const backgroundModeLabel = document.querySelector("#background-mode-label");
+  const viewerBackgroundCycle = document.querySelector("#background-cycle");
+  const viewerSurfaceCycle = document.querySelector("#surface-cycle");
   const viewer = document.querySelector(".viewer");
   const resetDomainButton = document.querySelector("#reset-domain");
   const saveImageButton = document.querySelector("#save-image");
@@ -272,6 +275,10 @@ export const createUI = ({
   backgroundNext.addEventListener("click", () => onBackgroundChange(
     backgroundAt(backgroundModeControl.dataset.background, 1).id
   ));
+  viewerBackgroundCycle.addEventListener("click", () => onBackgroundChange(
+    backgroundAt(backgroundModeControl.dataset.background, 1).id
+  ));
+  viewerSurfaceCycle.addEventListener("click", () => onSurfaceStep(1));
   panelResizer.addEventListener("pointerdown", startPanelResize);
   panelResizer.addEventListener("pointermove", movePanelResize);
   panelResizer.addEventListener("pointerup", stopPanelResize);

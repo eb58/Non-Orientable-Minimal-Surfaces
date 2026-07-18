@@ -148,6 +148,59 @@ body.resizing-panel {
   background: rgba(47, 141, 168, 0.95);
 }
 
+.viewer-nav {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.viewer-nav-button {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  min-width: unset;
+  height: 46px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 50%;
+  padding: 0;
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(5, 12, 20, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(8px);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+}
+
+.viewer-nav-button svg {
+  width: 22px;
+  height: 22px;
+}
+
+.viewer-nav-button:hover {
+  transform: translateY(-2px) scale(1.06);
+  filter: brightness(1.08);
+  box-shadow: 0 8px 20px rgba(5, 12, 20, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.viewer-nav-button:active {
+  transform: translateY(0) scale(0.96);
+}
+
+.viewer-nav-button:focus-visible {
+  outline: 0;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.6), 0 4px 14px rgba(5, 12, 20, 0.35);
+}
+
+.viewer-nav-background {
+  background: linear-gradient(135deg, #123f52, #2f8da8 55%, #14313d);
+}
+
+.viewer-nav-surface {
+  background: linear-gradient(135deg, #3a2359, #8b5fbf 55%, #2b1a44);
+}
+
 .hud {
   position: absolute;
   left: 18px;
@@ -380,10 +433,6 @@ body.resizing-panel {
 .material-mode-control[data-mode="glass"] {
   background: linear-gradient(135deg, #387f97, #c4edf2 50%, #37748b);
   color: #123440;
-}
-
-.material-mode-control[data-mode="neon"] {
-  background: linear-gradient(135deg, #44175b, #d3228c 50%, #1b647f);
 }
 
 .material-mode-control[data-mode="bronze"] {

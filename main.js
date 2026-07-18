@@ -184,6 +184,11 @@ const resetObjectPosition = () => {
   services.renderer.setObjectPosition(position);
   scheduleSaveAppState();
 };
+const stepSurface = offset => {
+  if (!state.surface) return;
+  const index = surfaces.findIndex(surface => domainKey(surface) === domainKey(state.surface));
+  setSurface(surfaces[(index + offset + surfaces.length) % surfaces.length]);
+};
 const stepMaterialMode = offset => {
   state.materialMode = adjacentMaterialMode(state.materialMode, offset);
   services.ui.syncMaterialSelector(state.materialMode);
@@ -237,6 +242,7 @@ services.ui = createUI({
   onObjectPositionChange: setObjectPosition,
   onHammerFactorChange: updateHammerFactor,
   onBackgroundChange: updateBackground,
+  onSurfaceStep: stepSurface,
   onPanelResize: services.renderer.resize
 });
 

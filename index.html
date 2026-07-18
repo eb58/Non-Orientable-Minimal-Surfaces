@@ -22,6 +22,24 @@
     <section class="viewer" aria-label="Minimalfläche">
       <canvas id="surface"></canvas>
       <button class="panel-toggle" id="panel-toggle" aria-label="Steuerung ein-/ausblenden">›</button>
+      <div class="viewer-nav">
+        <button id="background-cycle" class="viewer-nav-button viewer-nav-background" type="button"
+          title="Nächster Hintergrund" aria-label="Nächster Hintergrund">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <rect x="3.5" y="5" width="17" height="14" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.6" />
+            <circle cx="8.5" cy="10" r="1.6" fill="currentColor" />
+            <path d="m4 16.5 4.7-4.7a1 1 0 0 1 1.4 0l3.4 3.4m2-2 1.5-1.5a1 1 0 0 1 1.4 0l1.6 1.6" fill="none"
+              stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </button>
+        <button id="surface-cycle" class="viewer-nav-button viewer-nav-surface" type="button" title="Nächste Fläche"
+          aria-label="Nächste Fläche">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M3 8.5c2.4-3.2 4.9-3.2 7 0s4.6 3.2 7 0M3 15.5c2.4-3.2 4.9-3.2 7 0s4.6 3.2 7 0" fill="none"
+              stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
+          </svg>
+        </button>
+      </div>
       <div class="hud">
         <strong id="surface-name">Catenoid</strong>
         <span>Ziehen: Drehen</span>
@@ -35,7 +53,7 @@
     <aside class="panel">
       <h1>Weierstrass-Darstellung</h1>
       <p>
-        Die Fläche wird <code>Re ∫ (f(1 - g²)/2, i f(1 + g²)/2, fg) dz</code> berechnet.
+        <code>Re ∫ (f(1 - g²)/2, i f(1 + g²)/2, fg) dz</code>
       </p>
       <dl>
         <dt>Aktuelle Fläche</dt>
@@ -44,6 +62,25 @@
         <dt>f</dt>
         <dd><code id="formula-f"></code></dd>
       </dl>
+      <div class="material-mode-control" role="group" aria-label="Darstellungsmodus">
+        <button id="material-previous" class="mode-step" type="button" aria-label="Vorheriger Darstellungsmodus">
+          <span aria-hidden="true">&#9664;</span>
+        </button>
+        <output id="material-mode-label" class="material-mode-badge" aria-live="polite">Kupfer</output>
+        <button id="material-next" class="mode-step" type="button" aria-label="Nächster Darstellungsmodus">
+          <span aria-hidden="true">&#9654;</span>
+        </button>
+      </div>
+      <div class="background-mode-control" role="group" aria-label="Hintergrund">
+        <button id="background-previous" class="mode-step" type="button" aria-label="Vorheriger Hintergrund">
+          <span aria-hidden="true">&#9664;</span>
+        </button>
+        <output id="background-mode-label" class="background-mode-badge" aria-live="polite">Weltraum</output>
+        <button id="background-next" class="mode-step" type="button" aria-label="Nächster Hintergrund">
+          <span aria-hidden="true">&#9654;</span>
+        </button>
+      </div>
+      <div id="surface-buttons" class="surface-buttons" aria-label="Minimalflächen"></div>
       <section class="domain-controls" aria-label="Parameterbereich">
         <h2>Parameterbereich</h2>
         <div id="domain-info"></div>
@@ -76,25 +113,6 @@
         </label>
         <button id="reset-parameters" type="button">Zurücksetzen</button>
       </section>
-      <div class="material-mode-control" role="group" aria-label="Darstellungsmodus">
-        <button id="material-previous" class="mode-step" type="button" aria-label="Vorheriger Darstellungsmodus">
-          <span aria-hidden="true">&#9664;</span>
-        </button>
-        <output id="material-mode-label" class="material-mode-badge" aria-live="polite">Kupfer</output>
-        <button id="material-next" class="mode-step" type="button" aria-label="Nächster Darstellungsmodus">
-          <span aria-hidden="true">&#9654;</span>
-        </button>
-      </div>
-      <div class="background-mode-control" role="group" aria-label="Hintergrund">
-        <button id="background-previous" class="mode-step" type="button" aria-label="Vorheriger Hintergrund">
-          <span aria-hidden="true">&#9664;</span>
-        </button>
-        <output id="background-mode-label" class="background-mode-badge" aria-live="polite">Weltraum</output>
-        <button id="background-next" class="mode-step" type="button" aria-label="Nächster Hintergrund">
-          <span aria-hidden="true">&#9654;</span>
-        </button>
-      </div>
-      <div id="surface-buttons" class="surface-buttons" aria-label="Minimalflächen"></div>
       <button id="reset-view" type="button">Ansicht zurücksetzen</button>
       <button id="save-image" type="button">Bild speichern</button>
     </aside>

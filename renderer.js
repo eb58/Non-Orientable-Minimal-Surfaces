@@ -108,10 +108,6 @@ export const createRenderer = ({
     clearcoatRoughness: 0,
     side: THREE.DoubleSide
   });
-  const neonMaterial = new THREE.MeshBasicMaterial({
-    vertexColors: true,
-    side: THREE.DoubleSide
-  });
   const bronzeMaterial = new THREE.MeshPhysicalMaterial({
     vertexColors: true,
     metalness: 0.75,
@@ -181,13 +177,6 @@ export const createRenderer = ({
   const marbleColorForPoint = ([x, y, z]) => {
     const t = (Math.sin((x + z * 1.5 + marbleTurb(x, y, z) * 6) * Math.PI) + 1) / 2;
     return marbleBase.clone().lerp(marbleVein, t ** 3);
-  };
-
-  const neonPalette = [0xff00dd, 0x4400ff, 0x00ccff, 0x00ff88, 0xffff00].map(c => new THREE.Color(c));
-  const neonColorForPoint = point => {
-    const scaled = THREE.MathUtils.clamp((point[2] + 1) / 2, 0, 1) * (neonPalette.length - 1);
-    const index = Math.min(neonPalette.length - 2, Math.floor(scaled));
-    return neonPalette[index].clone().lerp(neonPalette[index + 1], scaled - index);
   };
 
   const bronzeBase = new THREE.Color(0x7c5228);
@@ -267,7 +256,7 @@ export const createRenderer = ({
     const lineGeometry = new THREE.BufferGeometry();
     const materialMode = getMaterialMode();
     geometry.setAttribute("position", new THREE.Float32BufferAttribute(pointGrids.flat(3), 3));
-    const colorFns = { marble: marbleColorForPoint, neon: neonColorForPoint, bronze: bronzeColorForPoint, gold: goldColorForPoint };
+    const colorFns = { marble: marbleColorForPoint, bronze: bronzeColorForPoint, gold: goldColorForPoint };
     geometry.setAttribute("color", colorAttribute(pointGrids, colorFns[materialMode] ?? colorForPoint));
     geometry.setIndex(makeIndices(pointGrids));
     geometry.computeVertexNormals();
@@ -282,7 +271,7 @@ export const createRenderer = ({
   const renderSurface = data => {
     const geometries = surfaceGeometry(data);
     disposeSurface();
-    const mats = { copper: copperMaterial, mirror: mirrorMaterial, marble: marbleMaterial, glass: glassMaterial, irid: iridMaterial, neon: neonMaterial, bronze: bronzeMaterial, gold: goldMaterial, email: emailMaterial, color: material };
+    const mats = { copper: copperMaterial, mirror: mirrorMaterial, marble: marbleMaterial, glass: glassMaterial, irid: iridMaterial, bronze: bronzeMaterial, gold: goldMaterial, email: emailMaterial, color: material };
     surfaceGroup.add(new THREE.Mesh(geometries.geometry, mats[getMaterialMode()] ?? material));
     if (getMaterialMode() === "color") surfaceGroup.add(new THREE.LineSegments(geometries.lineGeometry, lineMaterial));
   };
