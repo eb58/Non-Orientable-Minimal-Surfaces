@@ -50,7 +50,7 @@ const kusnerRadiusRange = p => {
   const rootSpan = Math.sqrt(B ** 2 + 4);
   const innerPole = ((rootSpan - B) / 2) ** (1 / p);
   const outerPole = ((rootSpan + B) / 2) ** (1 / p);
-  const margin = Math.min(0.08, (outerPole - innerPole) * 0.22);
+  const margin = Math.min(0.24, (outerPole - innerPole) * 0.38);
   return [innerPole + margin, outerPole - margin];
 };
 

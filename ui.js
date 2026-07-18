@@ -3,6 +3,7 @@ import { MATERIAL_MODE_LABELS, adjacentMaterialMode } from "./materials.js";
 import { BACKGROUNDS, adjacentBackground } from "./backgrounds.js";
 
 const formatNumber = value => Number(value).toFixed(2);
+const formatDomainNumber = value => Number(value).toFixed(3);
 const sliderBounds = rangeValues => {
   const span = rangeValues[1] - rangeValues[0];
   const padding = Math.max(0.25, Math.abs(span) * 0.8);
@@ -72,15 +73,15 @@ export const createUI = ({
   const objectOutputs = Object.fromEntries(objectAxes.map(axis => [axis, document.querySelector(`#object-${axis}-value`)]));
 
   const configureSlider = (control, bounds, value, step = 0.01) => {
-    control.min = formatNumber(bounds[0]);
-    control.max = formatNumber(bounds[1]);
+    control.min = formatDomainNumber(bounds[0]);
+    control.max = formatDomainNumber(bounds[1]);
     control.step = step;
-    control.value = formatNumber(value);
+    control.value = formatDomainNumber(value);
   };
   const syncDomainOutputs = domain => {
-    domainOutputs.uMin.value = formatNumber(domain.uRange[0]);
-    domainOutputs.uMax.value = formatNumber(domain.uRange[1]);
-    domainOutputs.vMax.value = formatNumber(domain.vRange[1]);
+    domainOutputs.uMin.value = formatDomainNumber(domain.uRange[0]);
+    domainOutputs.uMax.value = formatDomainNumber(domain.uRange[1]);
+    domainOutputs.vMax.value = formatDomainNumber(domain.vRange[1]);
   };
   const syncDomainControls = (surface, domain) => {
     const uBounds = surface.parameter

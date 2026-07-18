@@ -6,7 +6,7 @@ import { BACKGROUND_IDS } from "./backgrounds.js";
 
 const STORAGE_KEY = "minimalSurfaceStateV1";
 const domainKey = surface => surface.name;
-const formatNumber = value => Number(value).toFixed(2);
+const formatNumber = value => Number(value).toFixed(3);
 const defaultDomain = surface => ({
   uRange: [...surface.uRange],
   vRange: [...surface.vRange]
