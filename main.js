@@ -2,6 +2,7 @@ import { surfaces } from "./math.js";
 import { createRenderer } from "./renderer.js";
 import { createUI } from "./ui.js";
 import { MATERIAL_MODES, adjacentMaterialMode } from "./materials.js";
+import { BACKGROUND_IDS } from "./backgrounds.js";
 
 const STORAGE_KEY = "minimalSurfaceStateV1";
 const domainKey = surface => surface.name;
@@ -17,6 +18,7 @@ const validDomain = value => finiteNumberArray(value?.uRange, 2) && finiteNumber
 const validParameters = value => value && typeof value === "object" && Object.values(value).every(Number.isFinite);
 const validObjectPosition = value => ["x", "y", "z"].every(axis => Number.isFinite(value?.[axis]));
 const validSurfaceView = value => finiteNumberArray(value?.camera, 3) && finiteNumberArray(value?.target, 3);
+const validHammerFactor = value => Number.isFinite(value) && value >= 0 && value <= 2;
 const readStorageState = () => {
   try {
     return JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
@@ -28,14 +30,21 @@ const mapFromStorage = (value, validValue) => new Map(
   Object.entries(value || {}).filter(([key, item]) => surfaces.some(surface => domainKey(surface) === key) && validValue(item))
 );
 const storageState = readStorageState();
+const storedHammerFactors = mapFromStorage(storageState.hammerFactors, validHammerFactor);
+if (!storedHammerFactors.size
+  && validHammerFactor(storageState.hammerFactor)
+  && surfaces.some(surface => domainKey(surface) === storageState.activeSurface)) {
+  storedHammerFactors.set(storageState.activeSurface, storageState.hammerFactor);
+}
 const state = {
   surface: null,
   domains: mapFromStorage(storageState.domains, validDomain),
   parameters: mapFromStorage(storageState.parameters, validParameters),
   objectPositions: mapFromStorage(storageState.objectPositions, validObjectPosition),
   surfaceViews: mapFromStorage(storageState.surfaceViews, validSurfaceView),
+  hammerFactors: storedHammerFactors,
   materialMode: MATERIAL_MODES.includes(storageState.materialMode) ? storageState.materialMode : "copper",
-  hammerFactor: Number.isFinite(storageState.hammerFactor) ? storageState.hammerFactor : 1,
+  background: BACKGROUND_IDS.includes(storageState.background) ? storageState.background : "space",
   persistenceFrame: 0,
   sliderFrame: 0
 };
@@ -55,6 +64,7 @@ const defaultParameters = surface => Object.fromEntries(
 const parametersFor = surface => normalizeParameters(surface, state.parameters.get(domainKey(surface)) || defaultParameters(surface));
 const defaultObjectPosition = () => ({ x: 0, y: 0, z: 0.30 });
 const objectPositionFor = surface => state.objectPositions.get(domainKey(surface)) || defaultObjectPosition();
+const hammerFactorFor = surface => state.hammerFactors.get(domainKey(surface)) ?? 1;
 const withParameters = surface => surface.withParameters ? surface.withParameters(parametersFor(surface)) : surface;
 const domainTextFor = data => data.parameter
   ? `${formatNumber(data.uRange[0])} <= |z| <= ${formatNumber(data.uRange[1])}, ${formatNumber(data.vRange[0])} <= arg z <= ${formatNumber(data.vRange[1])}`
@@ -73,7 +83,8 @@ const currentData = () => withDomain(withParameters(state.surface));
 const saveAppState = () => localStorage.setItem(STORAGE_KEY, JSON.stringify({
   activeSurface: state.surface ? domainKey(state.surface) : storageState.activeSurface,
   materialMode: state.materialMode,
-  hammerFactor: state.hammerFactor,
+  background: state.background,
+  hammerFactors: Object.fromEntries(state.hammerFactors),
   domains: Object.fromEntries(state.domains),
   parameters: Object.fromEntries(state.parameters),
   objectPositions: Object.fromEntries(state.objectPositions),
@@ -99,6 +110,7 @@ const setObjectPosition = position => {
 const setSurface = surface => {
   state.surface = surface;
   const data = currentData();
+  services.ui.syncHammerFactor(hammerFactorFor(surface));
   services.renderer.renderSurface(data);
   services.ui.updateDomainInfo(data);
   services.ui.syncDomainControls(surface, domainFor(surface));
@@ -179,9 +191,17 @@ const stepMaterialMode = offset => {
   if (state.surface) services.renderer.renderSurface(currentData());
 };
 const updateHammerFactor = factor => {
-  state.hammerFactor = factor;
+  if (!state.surface || !validHammerFactor(factor)) return;
+  state.hammerFactors.set(domainKey(state.surface), factor);
+  services.ui.syncHammerFactor(factor);
   scheduleSaveAppState();
   if (state.surface) services.renderer.renderSurface(currentData());
+};
+const updateBackground = background => {
+  if (!BACKGROUND_IDS.includes(background)) return;
+  state.background = background;
+  services.ui.syncBackground(background);
+  scheduleSaveAppState();
 };
 const resetView = () => {
   const view = services.renderer.defaultView();
@@ -196,7 +216,7 @@ services.renderer = createRenderer({
   canvas: document.querySelector("#surface"),
   hud: document.querySelector(".hud"),
   getMaterialMode: () => state.materialMode,
-  getHammerFactor: () => state.hammerFactor,
+  getHammerFactor: () => state.surface ? hammerFactorFor(state.surface) : 1,
   getSurface: () => state.surface,
   getObjectPosition: objectPositionFor,
   onObjectPositionChange: setObjectPosition,
@@ -216,11 +236,12 @@ services.ui = createUI({
   onParametersChange: updateCurrentParameters,
   onObjectPositionChange: setObjectPosition,
   onHammerFactorChange: updateHammerFactor,
+  onBackgroundChange: updateBackground,
   onPanelResize: services.renderer.resize
 });
 
 services.ui.syncMaterialSelector(state.materialMode);
-services.ui.syncHammerFactor(state.hammerFactor);
+services.ui.syncBackground(state.background);
 resetView();
 setSurface(surfaces.find(surface => domainKey(surface) === storageState.activeSurface) || surfaces.find(surface => surface.name.startsWith("S41_7_5")));
 services.renderer.resize();

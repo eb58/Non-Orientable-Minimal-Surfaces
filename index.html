@@ -68,6 +68,11 @@
       <section id="surface-parameters" class="surface-parameters" aria-label="Flächenparameter" hidden>
         <h2>Flächenparameter</h2>
         <div id="surface-parameter-controls"></div>
+        <label id="hammer-factor-row" class="hammer-factor-row">
+          <span>Dengelfaktor</span>
+          <input id="hammer-factor" type="range" min="0" max="2" step="0.05">
+          <output id="hammer-factor-value"></output>
+        </label>
         <button id="reset-parameters" type="button">Zurücksetzen</button>
       </section>
       <div class="material-mode-control" role="group" aria-label="Darstellungsmodus">
@@ -79,11 +84,15 @@
           <span aria-hidden="true">&#9654;</span>
         </button>
       </div>
-      <label id="hammer-factor-row" class="hammer-factor-row">
-        <span>Dengelfaktor</span>
-        <input id="hammer-factor" type="range" min="0" max="2" step="0.05">
-        <output id="hammer-factor-value"></output>
-      </label>
+      <div class="background-mode-control" role="group" aria-label="Hintergrund">
+        <button id="background-previous" class="mode-step" type="button" aria-label="Vorheriger Hintergrund">
+          <span aria-hidden="true">&#9664;</span>
+        </button>
+        <output id="background-mode-label" class="background-mode-badge" aria-live="polite">Weltraum</output>
+        <button id="background-next" class="mode-step" type="button" aria-label="Nächster Hintergrund">
+          <span aria-hidden="true">&#9654;</span>
+        </button>
+      </div>
       <div id="surface-buttons" class="surface-buttons" aria-label="Minimalflächen"></div>
       <button id="reset-view" type="button">Ansicht zurücksetzen</button>
       <button id="save-image" type="button">Bild speichern</button>

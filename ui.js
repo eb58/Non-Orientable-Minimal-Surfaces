@@ -1,5 +1,6 @@
 import { TAU, clamp } from "./math.js";
 import { MATERIAL_MODE_LABELS, adjacentMaterialMode } from "./materials.js";
+import { BACKGROUNDS, adjacentBackground } from "./backgrounds.js";
 
 const formatNumber = value => Number(value).toFixed(2);
 const sliderBounds = rangeValues => {
@@ -22,6 +23,7 @@ export const createUI = ({
   onParametersChange,
   onObjectPositionChange,
   onHammerFactorChange,
+  onBackgroundChange,
   onPanelResize
 }) => {
   const canvas = document.querySelector("#surface");
@@ -43,6 +45,11 @@ export const createUI = ({
   const hammerFactorRow = document.querySelector("#hammer-factor-row");
   const hammerFactorControl = document.querySelector("#hammer-factor");
   const hammerFactorOutput = document.querySelector("#hammer-factor-value");
+  const backgroundPrevious = document.querySelector("#background-previous");
+  const backgroundNext = document.querySelector("#background-next");
+  const backgroundModeControl = document.querySelector(".background-mode-control");
+  const backgroundModeLabel = document.querySelector("#background-mode-label");
+  const viewer = document.querySelector(".viewer");
   const resetDomainButton = document.querySelector("#reset-domain");
   const saveImageButton = document.querySelector("#save-image");
   const domainControls = {
@@ -113,7 +120,8 @@ export const createUI = ({
   };
   const syncParameterControls = (surface, values) => {
     const entries = Object.entries(surface.parameters || {});
-    surfaceParameters.hidden = entries.length === 0;
+    surfaceParameters.hidden = false;
+    resetParametersButton.hidden = entries.length === 0;
     surfaceParameterControls.replaceChildren(...entries.map(entry => createParameterControl(entry, values)));
     [...surfaceParameterControls.querySelectorAll("input")].forEach(control =>
       control.addEventListener("input", () => onParametersChange(readParameterControls()))
@@ -169,6 +177,18 @@ export const createUI = ({
     hammerFactorOutput.value = formatNumber(factor);
   };
   const updateCurrentHammerFactor = () => onHammerFactorChange(Number(hammerFactorControl.value));
+  const syncBackground = background => {
+    const previousBackground = adjacentBackground(background, -1);
+    const nextBackground = adjacentBackground(background, 1);
+    const labelFor = id => BACKGROUNDS.find(item => item.id === id)?.label || id;
+    backgroundModeLabel.textContent = labelFor(background);
+    backgroundModeControl.dataset.background = background;
+    backgroundPrevious.title = `Zurück zu ${labelFor(previousBackground)}`;
+    backgroundPrevious.setAttribute("aria-label", `Vorheriger Hintergrund: ${labelFor(previousBackground)}`);
+    backgroundNext.title = `Weiter zu ${labelFor(nextBackground)}`;
+    backgroundNext.setAttribute("aria-label", `Nächster Hintergrund: ${labelFor(nextBackground)}`);
+    viewer.dataset.background = background;
+  };
 
   const updateCurrentDomain = () => onDomainChange({
     uMin: domainControls.uMin.value,
@@ -237,6 +257,12 @@ export const createUI = ({
   Object.values(domainControls).forEach(control => control.addEventListener("input", updateCurrentDomain));
   Object.values(objectControls).filter(Boolean).forEach(control => control.addEventListener("input", updateCurrentObjectPosition));
   hammerFactorControl.addEventListener("input", updateCurrentHammerFactor);
+  backgroundPrevious.addEventListener("click", () => onBackgroundChange(
+    adjacentBackground(backgroundModeControl.dataset.background, -1)
+  ));
+  backgroundNext.addEventListener("click", () => onBackgroundChange(
+    adjacentBackground(backgroundModeControl.dataset.background, 1)
+  ));
   panelResizer.addEventListener("pointerdown", startPanelResize);
   panelResizer.addEventListener("pointermove", movePanelResize);
   panelResizer.addEventListener("pointerup", stopPanelResize);
@@ -260,6 +286,7 @@ export const createUI = ({
     syncObjectControls,
     syncObjectPosition,
     syncMaterialSelector,
-    syncHammerFactor
+    syncHammerFactor,
+    syncBackground
   };
 };

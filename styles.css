@@ -49,9 +49,38 @@ a {
   overflow: hidden;
   height: 100%;
   background:
-    radial-gradient(circle at 44% 30%, rgba(132, 169, 182, 0.38), rgba(132, 169, 182, 0) 34%),
-    radial-gradient(circle at 72% 76%, rgba(30, 58, 70, 0.55), rgba(30, 58, 70, 0) 34%),
-    linear-gradient(145deg, #1f303a 0%, #101a22 58%, #263b46 100%);
+    linear-gradient(145deg, rgba(5, 12, 20, 0.24), rgba(5, 12, 20, 0.08)),
+    url("./backgrounds/background-space.png") center / cover no-repeat;
+}
+
+.viewer[data-background="park"] {
+  background-image:
+    linear-gradient(145deg, rgba(8, 18, 12, 0.2), rgba(8, 18, 12, 0.06)),
+    url("./backgrounds/background-park.png");
+}
+
+.viewer[data-background="mountains"] {
+  background-image:
+    linear-gradient(145deg, rgba(7, 16, 26, 0.24), rgba(7, 16, 26, 0.08)),
+    url("./backgrounds/background-mountains.png");
+}
+
+.viewer[data-background="aurora"] {
+  background-image:
+    linear-gradient(145deg, rgba(3, 10, 24, 0.2), rgba(3, 10, 24, 0.08)),
+    url("./backgrounds/background-aurora.png");
+}
+
+.viewer[data-background="underwater"] {
+  background-image:
+    linear-gradient(145deg, rgba(2, 17, 28, 0.2), rgba(2, 17, 28, 0.08)),
+    url("./backgrounds/background-underwater.png");
+}
+
+.viewer[data-background="theater"] {
+  background-image:
+    linear-gradient(145deg, rgba(22, 5, 7, 0.2), rgba(22, 5, 7, 0.08)),
+    url("./backgrounds/background-theater.png");
 }
 
 #surface {
@@ -241,10 +270,18 @@ body.resizing-panel {
 }
 
 .domain-controls label,
-.surface-parameters label,
 .object-controls label {
   display: grid;
   grid-template-columns: 58px minmax(0, 1fr) 56px;
+  gap: 8px;
+  align-items: center;
+  color: #2d4651;
+  font-size: 0.92rem;
+}
+
+.surface-parameters label {
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr) 56px;
   gap: 8px;
   align-items: center;
   color: #2d4651;
@@ -287,7 +324,8 @@ body.resizing-panel {
   background: #dfecef;
 }
 
-.material-mode-control {
+.material-mode-control,
+.background-mode-control {
   display: grid;
   grid-template-columns: 42px minmax(0, 1fr) 42px;
   min-height: 42px;
@@ -299,6 +337,10 @@ body.resizing-panel {
   background: linear-gradient(135deg, #7a421f, #c87732 48%, #5a2f1b);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28), 0 3px 10px rgba(23, 52, 63, 0.12);
   color: #fff;
+}
+
+.background-mode-control {
+  background: linear-gradient(135deg, #123f52, #2f8da8 48%, #14313d);
 }
 
 .material-mode-control[data-mode="color"],
@@ -338,7 +380,8 @@ body.resizing-panel {
   background: linear-gradient(135deg, #522315, #bd5428 48%, #402e28);
 }
 
-.material-mode-badge {
+.material-mode-badge,
+.background-mode-badge {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -379,12 +422,14 @@ body.resizing-panel {
 
 .hammer-factor-row {
   display: grid;
-  grid-template-columns: 88px minmax(0, 1fr) 42px;
+  grid-template-columns: 88px minmax(0, 1fr) 56px;
+  grid-column: 1;
   gap: 8px;
   align-items: center;
-  margin: 10px 0 4px;
+  margin: 0;
   color: #2d4651;
   font-size: 0.92rem;
+  white-space: nowrap;
 }
 
 .hammer-factor-row input {
@@ -394,7 +439,7 @@ body.resizing-panel {
 
 .hammer-factor-row output {
   font-variant-numeric: tabular-nums;
-  text-align: right;
+  text-align: left;
 }
 
 .hammer-factor-row[hidden] {

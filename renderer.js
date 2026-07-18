@@ -88,10 +88,10 @@ export const createRenderer = ({
     metalness: 0,
     roughness: 0,
     transmission: 1.0,
-    thickness: 2.0,
-    ior: 1.5,
+    thickness: 0.45,
+    ior: 1.38,
     envMap: envTexture,
-    envMapIntensity: 0.6,
+    envMapIntensity: 0.38,
     side: THREE.DoubleSide
   });
   const iridMaterial = new THREE.MeshPhysicalMaterial({
