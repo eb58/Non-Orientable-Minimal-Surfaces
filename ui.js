@@ -1,4 +1,5 @@
 import { TAU, clamp } from "./math.js";
+import { MATERIAL_MODE_LABELS, adjacentMaterialMode } from "./materials.js";
 
 const formatNumber = value => Number(value).toFixed(2);
 const sliderBounds = rangeValues => {
@@ -14,11 +15,13 @@ export const createUI = ({
   onResetView,
   onSaveImage,
   onResetDomain,
+  onResetParameters,
   onResetObjectPosition,
-  onMaterialToggle,
+  onMaterialStep,
   onDomainChange,
   onParametersChange,
   onObjectPositionChange,
+  onHammerFactorChange,
   onPanelResize
 }) => {
   const canvas = document.querySelector("#surface");
@@ -32,11 +35,16 @@ export const createUI = ({
   const surfaceButtons = document.querySelector("#surface-buttons");
   const surfaceParameters = document.querySelector("#surface-parameters");
   const surfaceParameterControls = document.querySelector("#surface-parameter-controls");
-  const materialToggle = document.querySelector("#material-toggle");
+  const resetParametersButton = document.querySelector("#reset-parameters");
+  const materialPrevious = document.querySelector("#material-previous");
+  const materialNext = document.querySelector("#material-next");
+  const materialModeControl = document.querySelector(".material-mode-control");
   const materialModeLabel = document.querySelector("#material-mode-label");
+  const hammerFactorRow = document.querySelector("#hammer-factor-row");
+  const hammerFactorControl = document.querySelector("#hammer-factor");
+  const hammerFactorOutput = document.querySelector("#hammer-factor-value");
   const resetDomainButton = document.querySelector("#reset-domain");
   const saveImageButton = document.querySelector("#save-image");
-  const resetObjectPositionButton = document.querySelector("#reset-object-position");
   const domainControls = {
     uMin: document.querySelector("#u-min"),
     uMax: document.querySelector("#u-max"),
@@ -128,28 +136,39 @@ export const createUI = ({
     [...surfaceButtons.children].forEach(button => button.classList.toggle("active", button.dataset.surface === data.name));
   };
   const syncObjectOutputs = position => objectAxes.forEach(axis => {
+    if (!objectOutputs[axis]) return;
     objectOutputs[axis].value = formatNumber(position[axis]);
   });
   const syncObjectControls = (surface, position = getObjectPosition(surface)) => {
     objectAxes.forEach(axis => {
+      if (!objectControls[axis]) return;
       objectControls[axis].value = formatNumber(position[axis]);
     });
     syncObjectOutputs(position);
   };
   const syncObjectPosition = position => {
     objectAxes.forEach(axis => {
+      if (!objectControls[axis]) return;
       objectControls[axis].value = formatNumber(position[axis]);
     });
     syncObjectOutputs(position);
   };
-  const syncMaterialToggle = mode => {
-    const currentLabel = { copper: "Gedengeltes Kupfer", color: "Farbverlauf", mirror: "Spiegel", marble: "Marmor", glass: "Glas", irid: "Seifenblase", neon: "Neon", bronze: "Bronze", email: "Emaille" };
-    const nextLabel = { copper: "Farbverlauf", color: "Spiegel", mirror: "Marmor", marble: "Glas", glass: "Seifenblase", irid: "Neon", neon: "Bronze", bronze: "Emaille", email: "Gedengeltes Kupfer" };
-    materialModeLabel.textContent = currentLabel[mode];
-    materialToggle.classList.toggle("active", mode === "copper");
-    materialToggle.setAttribute("aria-pressed", (mode === "copper").toString());
-    materialToggle.textContent = "\u2192 " + nextLabel[mode];
+  const syncMaterialSelector = mode => {
+    const previousLabel = MATERIAL_MODE_LABELS[adjacentMaterialMode(mode, -1)];
+    const nextLabel = MATERIAL_MODE_LABELS[adjacentMaterialMode(mode, 1)];
+    materialModeLabel.textContent = MATERIAL_MODE_LABELS[mode];
+    materialModeControl.dataset.mode = mode;
+    materialPrevious.title = `Zurück zu ${previousLabel}`;
+    materialPrevious.setAttribute("aria-label", `Vorheriger Darstellungsmodus: ${previousLabel}`);
+    materialNext.title = `Weiter zu ${nextLabel}`;
+    materialNext.setAttribute("aria-label", `Nächster Darstellungsmodus: ${nextLabel}`);
+    hammerFactorRow.hidden = false;
   };
+  const syncHammerFactor = factor => {
+    hammerFactorControl.value = formatNumber(factor);
+    hammerFactorOutput.value = formatNumber(factor);
+  };
+  const updateCurrentHammerFactor = () => onHammerFactorChange(Number(hammerFactorControl.value));
 
   const updateCurrentDomain = () => onDomainChange({
     uMin: domainControls.uMin.value,
@@ -212,10 +231,12 @@ export const createUI = ({
   resetButton.addEventListener("click", onResetView);
   saveImageButton.addEventListener("click", onSaveImage);
   resetDomainButton.addEventListener("click", onResetDomain);
-  resetObjectPositionButton.addEventListener("click", onResetObjectPosition);
-  materialToggle.addEventListener("click", onMaterialToggle);
+  resetParametersButton.addEventListener("click", onResetParameters);
+  materialPrevious.addEventListener("click", () => onMaterialStep(-1));
+  materialNext.addEventListener("click", () => onMaterialStep(1));
   Object.values(domainControls).forEach(control => control.addEventListener("input", updateCurrentDomain));
-  Object.values(objectControls).forEach(control => control.addEventListener("input", updateCurrentObjectPosition));
+  Object.values(objectControls).filter(Boolean).forEach(control => control.addEventListener("input", updateCurrentObjectPosition));
+  hammerFactorControl.addEventListener("input", updateCurrentHammerFactor);
   panelResizer.addEventListener("pointerdown", startPanelResize);
   panelResizer.addEventListener("pointermove", movePanelResize);
   panelResizer.addEventListener("pointerup", stopPanelResize);
@@ -238,6 +259,7 @@ export const createUI = ({
     updateDomainInfo,
     syncObjectControls,
     syncObjectPosition,
-    syncMaterialToggle
+    syncMaterialSelector,
+    syncHammerFactor
   };
 };

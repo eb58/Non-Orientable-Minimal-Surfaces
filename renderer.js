@@ -9,6 +9,7 @@ export const createRenderer = ({
   canvas,
   hud,
   getMaterialMode,
+  getHammerFactor,
   getSurface,
   getObjectPosition,
   onObjectPositionChange,
@@ -119,6 +120,16 @@ export const createRenderer = ({
     clearcoatRoughness: 0.45,
     side: THREE.DoubleSide
   });
+  const goldMaterial = new THREE.MeshPhysicalMaterial({
+    vertexColors: true,
+    metalness: 0.9,
+    roughness: 0.35,
+    clearcoat: 0.15,
+    clearcoatRoughness: 0.3,
+    envMap: envTexture,
+    envMapIntensity: 1.2,
+    side: THREE.DoubleSide
+  });
   const emailMaterial = new THREE.MeshPhysicalMaterial({
     color: 0x1a3a8f,
     metalness: 0,
@@ -187,6 +198,14 @@ export const createRenderer = ({
     return bronzeBase.clone().lerp(patinaColor, (height * 0.7 + noise * 0.3) ** 1.5);
   };
 
+  const goldBase = new THREE.Color(0xd4a017);
+  const goldHighlight = new THREE.Color(0xfff2b0);
+  const goldColorForPoint = ([x, y, z]) => {
+    const height = THREE.MathUtils.clamp((z + 1) / 2, 0, 1);
+    const noise = (Math.sin(x * 7 + z * 5) + Math.sin(y * 11 - x * 3)) * 0.25 + 0.5;
+    return goldBase.clone().lerp(goldHighlight, (height * 0.5 + noise * 0.5) ** 2);
+  };
+
   const colorAttribute = (pointGrids, colorFn = colorForPoint) => new THREE.Float32BufferAttribute(
     pointGrids.flatMap(points => points.flatMap(row => row.flatMap(point => colorFn(point).toArray()))),
     3
@@ -226,7 +245,7 @@ export const createRenderer = ({
     const wave = Math.sin(128 * x + 47 * y) + Math.sin(101 * y - 83 * z) + Math.sin(89 * z + 113 * x);
     return Math.max(0, Math.sin(wave * 1.8 + x * 37 - y * 29));
   };
-  const hammerGeometry = geometry => {
+  const hammerGeometry = (geometry, factor = 1) => {
     geometry.computeVertexNormals();
     const positions = geometry.attributes.position;
     const normals = geometry.attributes.normal;
@@ -235,7 +254,7 @@ export const createRenderer = ({
       const y = positions.getY(index);
       const z = positions.getZ(index);
       const dent = hammeredValue(x, y, z) ** 2.6;
-      const lift = 0.0038 * dent - 0.0013 * (1 - dent);
+      const lift = factor * (0.0038 * dent - 0.0013 * (1 - dent));
       positions.setXYZ(index, x + normals.getX(index) * lift, y + normals.getY(index) * lift, z + normals.getZ(index) * lift);
     });
     positions.needsUpdate = true;
@@ -248,11 +267,11 @@ export const createRenderer = ({
     const lineGeometry = new THREE.BufferGeometry();
     const materialMode = getMaterialMode();
     geometry.setAttribute("position", new THREE.Float32BufferAttribute(pointGrids.flat(3), 3));
-    const colorFns = { marble: marbleColorForPoint, neon: neonColorForPoint, bronze: bronzeColorForPoint };
+    const colorFns = { marble: marbleColorForPoint, neon: neonColorForPoint, bronze: bronzeColorForPoint, gold: goldColorForPoint };
     geometry.setAttribute("color", colorAttribute(pointGrids, colorFns[materialMode] ?? colorForPoint));
     geometry.setIndex(makeIndices(pointGrids));
     geometry.computeVertexNormals();
-    if (materialMode === "copper") hammerGeometry(geometry);
+    hammerGeometry(geometry, getHammerFactor());
     lineGeometry.setAttribute("position", new THREE.Float32BufferAttribute(makeLinePositions(pointGrids), 3));
     return { geometry, lineGeometry };
   };
@@ -263,7 +282,7 @@ export const createRenderer = ({
   const renderSurface = data => {
     const geometries = surfaceGeometry(data);
     disposeSurface();
-    const mats = { copper: copperMaterial, mirror: mirrorMaterial, marble: marbleMaterial, glass: glassMaterial, irid: iridMaterial, neon: neonMaterial, bronze: bronzeMaterial, email: emailMaterial, color: material };
+    const mats = { copper: copperMaterial, mirror: mirrorMaterial, marble: marbleMaterial, glass: glassMaterial, irid: iridMaterial, neon: neonMaterial, bronze: bronzeMaterial, gold: goldMaterial, email: emailMaterial, color: material };
     surfaceGroup.add(new THREE.Mesh(geometries.geometry, mats[getMaterialMode()] ?? material));
     if (getMaterialMode() === "color") surfaceGroup.add(new THREE.LineSegments(geometries.lineGeometry, lineMaterial));
   };
@@ -282,7 +301,44 @@ export const createRenderer = ({
     return height / Math.max(1, canvas.getBoundingClientRect().height);
   };
   const objectDrag = { current: null };
+  const touchPointers = new Map();
+  const touchCenter = () => [...touchPointers.values()].reduce((center, point) => ({
+    x: center.x + point.x / touchPointers.size,
+    y: center.y + point.y / touchPointers.size
+  }), { x: 0, y: 0 });
+  const touchDistance = () => {
+    const points = [...touchPointers.values()];
+    return Math.hypot(points[0].x - points[1].x, points[0].y - points[1].y);
+  };
+  const stopTouchObjectDrag = event => {
+    touchPointers.forEach((_, pointerId) => {
+      if (canvas.hasPointerCapture(pointerId)) canvas.releasePointerCapture(pointerId);
+    });
+    touchPointers.clear();
+    objectDrag.current = null;
+    controls.enabled = true;
+    canvas.classList.remove("dragging-object");
+    event.stopImmediatePropagation();
+  };
   const startObjectDrag = event => {
+    if (event.pointerType === "touch") {
+      touchPointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+      if (touchPointers.size !== 2 || !getSurface()) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      touchPointers.forEach((_, pointerId) => canvas.setPointerCapture(pointerId));
+      controls.enabled = false;
+      canvas.classList.add("dragging-object");
+      objectDrag.current = {
+        mode: "touch",
+        center: touchCenter(),
+        start: getObjectPosition(getSurface()),
+        scale: objectDragScale(),
+        distance: touchDistance(),
+        cameraOffset: camera.position.clone().sub(controls.target)
+      };
+      return;
+    }
     if (!event.ctrlKey || !getSurface()) return;
     event.preventDefault();
     event.stopImmediatePropagation();
@@ -290,6 +346,7 @@ export const createRenderer = ({
     controls.enabled = false;
     canvas.classList.add("dragging-object");
     objectDrag.current = {
+      mode: "mouse",
       pointerId: event.pointerId,
       x: event.clientX,
       y: event.clientY,
@@ -298,6 +355,33 @@ export const createRenderer = ({
     };
   };
   const moveObjectDrag = event => {
+    if (event.pointerType === "touch") {
+      if (!touchPointers.has(event.pointerId)) return;
+      touchPointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+      if (!["touch", "touch-zoom"].includes(objectDrag.current?.mode)) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      const distance = touchDistance();
+      if (Math.abs(distance / objectDrag.current.distance - 1) > 0.04) objectDrag.current.mode = "touch-zoom";
+      if (objectDrag.current.mode === "touch-zoom") {
+        const zoomScale = THREE.MathUtils.clamp(objectDrag.current.distance / distance, 0.25, 4);
+        camera.position.copy(controls.target).addScaledVector(objectDrag.current.cameraOffset, zoomScale);
+        camera.lookAt(controls.target);
+        onViewChange();
+        return;
+      }
+      const { right, up } = cameraBasis();
+      const center = touchCenter();
+      const dx = (center.x - objectDrag.current.center.x) * objectDrag.current.scale;
+      const dy = (center.y - objectDrag.current.center.y) * objectDrag.current.scale;
+      const delta = right.multiplyScalar(dx).add(up.multiplyScalar(-dy));
+      onObjectPositionChange({
+        x: THREE.MathUtils.clamp(objectDrag.current.start.x + delta.x, -1.5, 1.5),
+        y: THREE.MathUtils.clamp(objectDrag.current.start.y + delta.y, -1.5, 1.5),
+        z: THREE.MathUtils.clamp(objectDrag.current.start.z + delta.z, -1.5, 1.5)
+      });
+      return;
+    }
     if (!objectDrag.current || event.pointerId !== objectDrag.current.pointerId) return;
     event.preventDefault();
     event.stopImmediatePropagation();
@@ -312,6 +396,11 @@ export const createRenderer = ({
     });
   };
   const stopObjectDrag = event => {
+    if (event.pointerType === "touch") {
+      touchPointers.delete(event.pointerId);
+      if (objectDrag.current?.mode === "touch") stopTouchObjectDrag(event);
+      return;
+    }
     if (!objectDrag.current || event.pointerId !== objectDrag.current.pointerId) return;
     event.preventDefault();
     event.stopImmediatePropagation();

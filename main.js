@@ -1,6 +1,7 @@
 import { surfaces } from "./math.js";
 import { createRenderer } from "./renderer.js";
 import { createUI } from "./ui.js";
+import { MATERIAL_MODES, adjacentMaterialMode } from "./materials.js";
 
 const STORAGE_KEY = "minimalSurfaceStateV1";
 const domainKey = surface => surface.name;
@@ -33,7 +34,8 @@ const state = {
   parameters: mapFromStorage(storageState.parameters, validParameters),
   objectPositions: mapFromStorage(storageState.objectPositions, validObjectPosition),
   surfaceViews: mapFromStorage(storageState.surfaceViews, validSurfaceView),
-  materialMode: ["color", "mirror", "marble", "glass", "irid", "neon", "bronze", "email"].includes(storageState.materialMode) ? storageState.materialMode : "copper",
+  materialMode: MATERIAL_MODES.includes(storageState.materialMode) ? storageState.materialMode : "copper",
+  hammerFactor: Number.isFinite(storageState.hammerFactor) ? storageState.hammerFactor : 1,
   persistenceFrame: 0,
   sliderFrame: 0
 };
@@ -71,6 +73,7 @@ const currentData = () => withDomain(withParameters(state.surface));
 const saveAppState = () => localStorage.setItem(STORAGE_KEY, JSON.stringify({
   activeSurface: state.surface ? domainKey(state.surface) : storageState.activeSurface,
   materialMode: state.materialMode,
+  hammerFactor: state.hammerFactor,
   domains: Object.fromEntries(state.domains),
   parameters: Object.fromEntries(state.parameters),
   objectPositions: Object.fromEntries(state.objectPositions),
@@ -148,6 +151,19 @@ const resetDomain = () => {
   services.renderer.renderSurface(data);
   services.ui.updateDomainInfo(data);
 };
+const resetParameters = () => {
+  if (!state.surface?.parameters) return;
+  state.parameters.delete(domainKey(state.surface));
+  if (state.surface.resetDomainOnParameterChange) state.domains.delete(domainKey(state.surface));
+  const values = parametersFor(state.surface);
+  const parameterizedSurface = withParameters(state.surface);
+  const data = withDomain(parameterizedSurface);
+  services.ui.syncParameterControls(state.surface, values);
+  services.ui.syncDomainControls(parameterizedSurface, domainFor(parameterizedSurface));
+  services.renderer.renderSurface(data);
+  services.ui.updateDomainInfo(data);
+  scheduleSaveAppState();
+};
 const resetObjectPosition = () => {
   if (!state.surface) return;
   state.objectPositions.delete(domainKey(state.surface));
@@ -156,10 +172,14 @@ const resetObjectPosition = () => {
   services.renderer.setObjectPosition(position);
   scheduleSaveAppState();
 };
-const toggleMaterialMode = () => {
-  const nextMode = { copper: "color", color: "mirror", mirror: "marble", marble: "glass", glass: "irid", irid: "neon", neon: "bronze", bronze: "email", email: "copper" };
-  state.materialMode = nextMode[state.materialMode];
-  services.ui.syncMaterialToggle(state.materialMode);
+const stepMaterialMode = offset => {
+  state.materialMode = adjacentMaterialMode(state.materialMode, offset);
+  services.ui.syncMaterialSelector(state.materialMode);
+  scheduleSaveAppState();
+  if (state.surface) services.renderer.renderSurface(currentData());
+};
+const updateHammerFactor = factor => {
+  state.hammerFactor = factor;
   scheduleSaveAppState();
   if (state.surface) services.renderer.renderSurface(currentData());
 };
@@ -176,6 +196,7 @@ services.renderer = createRenderer({
   canvas: document.querySelector("#surface"),
   hud: document.querySelector(".hud"),
   getMaterialMode: () => state.materialMode,
+  getHammerFactor: () => state.hammerFactor,
   getSurface: () => state.surface,
   getObjectPosition: objectPositionFor,
   onObjectPositionChange: setObjectPosition,
@@ -188,15 +209,18 @@ services.ui = createUI({
   onResetView: resetView,
   onSaveImage: saveImage,
   onResetDomain: resetDomain,
+  onResetParameters: resetParameters,
   onResetObjectPosition: resetObjectPosition,
-  onMaterialToggle: toggleMaterialMode,
+  onMaterialStep: stepMaterialMode,
   onDomainChange: updateCurrentDomain,
   onParametersChange: updateCurrentParameters,
   onObjectPositionChange: setObjectPosition,
+  onHammerFactorChange: updateHammerFactor,
   onPanelResize: services.renderer.resize
 });
 
-services.ui.syncMaterialToggle(state.materialMode);
+services.ui.syncMaterialSelector(state.materialMode);
+services.ui.syncHammerFactor(state.hammerFactor);
 resetView();
 setSurface(surfaces.find(surface => domainKey(surface) === storageState.activeSurface) || surfaces.find(surface => surface.name.startsWith("S41_7_5")));
 services.renderer.resize();

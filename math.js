@@ -202,11 +202,9 @@ const catenoid = () => surfaceWithFormulas({
 
 export const surfaces = [
   s41({ name: "S41_3_1 Twisted Catenoid", m: 3, n: 1, r1: 1.0, r2: 2.0 }),
-  s41({ name: "S41_5_1 UFO             ", m: 5, n: 1, r1: 1.1, r2: 1.3 }),
+  s41({ name: "S41_5_1 UFO             ", m: 5, n: 1, r1: 1.0, r2: 1.3 }),
   s41({ name: "S41_5_3 Trefoil         ", m: 5, n: 3, r1: 1.0, r2: 1.5 }),
   s41({ name: "S41_5_3 Double Trefoil  ", m: 5, n: 3, r1: 1.1, r2: 1.5 }),
-  s41({ name: "S41_7_1                 ", m: 7, n: 1, r1: 1.1, r2: 1.2 }),
-  s41({ name: "S41_7_3                 ", m: 7, n: 3, r1: 1.1, r2: 1.2 }),
   s41({ name: "S41_7_5                 ", m: 7, n: 5, r1: 1.1, r2: 1.3 }),
   cobra({ name: "Cobra", m: 5, r1: 1, r2: 1.2 }),
   kusner({ name: "Kusner" }),

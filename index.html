@@ -25,8 +25,10 @@
       <div class="hud">
         <strong id="surface-name">Catenoid</strong>
         <span>Ziehen: Drehen</span>
-        <span>Ctrl+Ziehen: Verschieben</span>
-        <span>Mausrad: Zoom</span>
+        <span class="desktop-object-hint">Ctrl+Ziehen: Verschieben</span>
+        <span class="touch-object-hint">Zwei Finger: Verschieben</span>
+        <span class="desktop-zoom-hint">Mausrad: Zoom</span>
+        <span class="touch-zoom-hint">Pinch: Zoom</span>
       </div>
     </section>
     <div id="panel-resizer" class="panel-resizer" role="separator" aria-label="Seitenbereich skalieren"
@@ -61,33 +63,27 @@
           <input id="v-max" type="range" step="0.01">
           <output id="v-max-value"></output>
         </label>
-        <button id="reset-domain" type="button">Bereich zurücksetzen</button>
+        <button id="reset-domain" type="button">Zurücksetzen</button>
       </section>
-      <section id="surface-parameters" class="surface-parameters" aria-label="Flaechenparameter" hidden>
-        <h2>Flaechenparameter</h2>
+      <section id="surface-parameters" class="surface-parameters" aria-label="Flächenparameter" hidden>
+        <h2>Flächenparameter</h2>
         <div id="surface-parameter-controls"></div>
+        <button id="reset-parameters" type="button">Zurücksetzen</button>
       </section>
-      <section class="object-controls" aria-label="Objekt verschieben">
-        <h2>Objekt verschieben</h2>
-        <label>
-          <span>x</span>
-          <input id="object-x" type="range" min="-1.5" max="1.5" step="0.01">
-          <output id="object-x-value"></output>
-        </label>
-        <label>
-          <span>y</span>
-          <input id="object-y" type="range" min="-1.5" max="1.5" step="0.01">
-          <output id="object-y-value"></output>
-        </label>
-        <label>
-          <span>z</span>
-          <input id="object-z" type="range" min="-1.5" max="1.5" step="0.01">
-          <output id="object-z-value"></output>
-        </label>
-        <button id="reset-object-position" type="button">Position zuruecksetzen</button>
-      </section>
-      <small id="material-mode-label" class="material-mode-label">Gedengeltes Kupfer</small>
-      <button id="material-toggle" class="mode-toggle" type="button" aria-pressed="false">Farbverlauf</button>
+      <div class="material-mode-control" role="group" aria-label="Darstellungsmodus">
+        <button id="material-previous" class="mode-step" type="button" aria-label="Vorheriger Darstellungsmodus">
+          <span aria-hidden="true">&#9664;</span>
+        </button>
+        <output id="material-mode-label" class="material-mode-badge" aria-live="polite">Kupfer</output>
+        <button id="material-next" class="mode-step" type="button" aria-label="Nächster Darstellungsmodus">
+          <span aria-hidden="true">&#9654;</span>
+        </button>
+      </div>
+      <label id="hammer-factor-row" class="hammer-factor-row">
+        <span>Dengelfaktor</span>
+        <input id="hammer-factor" type="range" min="0" max="2" step="0.05">
+        <output id="hammer-factor-value"></output>
+      </label>
       <div id="surface-buttons" class="surface-buttons" aria-label="Minimalflächen"></div>
       <button id="reset-view" type="button">Ansicht zurücksetzen</button>
       <button id="save-image" type="button">Bild speichern</button>

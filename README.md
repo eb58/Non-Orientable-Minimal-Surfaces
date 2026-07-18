@@ -49,13 +49,13 @@ node scripts/build-standalone.js
 - Zoom: Mausrad oder Trackpad-Scroll
 - Ansicht zuruecksetzen: Button `Ansicht zuruecksetzen`
 - Parameterbereich aendern: Slider `r min`, `r max`, `w max`
-- Flaechenparameter aendern: bei S41 steuern die Slider `m` und `n` die Exponenten, bei Cobra steuert `m` den Exponenten, bei Kusner steuert `p` die Familie
+- Flächenparameter ändern: bei S41 steuern die Slider `m` und `n` die Exponenten, bei Cobra steuert `m` den Exponenten, bei Kusner steuert `p` die Familie
 - Objekt verschieben: Slider `x`, `y`, `z`
-- Objekt mit der Maus verschieben: `Ctrl` gedrueckt halten und im Viewer ziehen
-- Darstellung umschalten: Button `Gedengeltes Kupfer`
+- Objekt verschieben: am Desktop `Ctrl` gedrueckt halten und ziehen, auf Touchscreens mit zwei Fingern ziehen
+- Darstellung umschalten: mit den Pfeilen links und rechts neben dem Modus-Badge
 - Seitenpanel skalieren: Griff zwischen Viewer und Seitenbereich ziehen
 
-Die Sliderwerte fuer Bereich, Flaechenparameter und Objektposition werden pro Flaeche separat gemerkt. Der Button `Bereich zuruecksetzen` setzt nur den Bereich der aktuell ausgewaehlten Flaeche zurueck. Kreisring-Flaechen starten mit einem kleinen Winkel-Overlap ueber `2pi`, damit an der Naht keine Luecke sichtbar bleibt.
+Die Sliderwerte für Bereich, Flächenparameter und Objektposition werden pro Fläche separat gemerkt. Der Button `Bereich zurücksetzen` setzt nur den Bereich der aktuell ausgewählten Fläche zurück. Kreisring-Flächen starten mit einem kleinen Winkel-Overlap über `2pi`, damit an der Naht keine Lücke sichtbar bleibt.
 
 ## Enthaltene Flaechen
 
