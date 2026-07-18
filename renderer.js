@@ -312,13 +312,12 @@ export const createRenderer = ({
   };
   const stopTouchObjectDrag = event => {
     touchPointers.forEach((_, pointerId) => {
-      if (canvas.hasPointerCapture(pointerId)) canvas.releasePointerCapture(pointerId);
+      if (pointerId !== event.pointerId && canvas.hasPointerCapture(pointerId)) canvas.releasePointerCapture(pointerId);
     });
     touchPointers.clear();
     objectDrag.current = null;
     controls.enabled = true;
     canvas.classList.remove("dragging-object");
-    event.stopImmediatePropagation();
   };
   const startObjectDrag = event => {
     if (event.pointerType === "touch") {
@@ -398,7 +397,7 @@ export const createRenderer = ({
   const stopObjectDrag = event => {
     if (event.pointerType === "touch") {
       touchPointers.delete(event.pointerId);
-      if (objectDrag.current?.mode === "touch") stopTouchObjectDrag(event);
+      if (["touch", "touch-zoom"].includes(objectDrag.current?.mode)) stopTouchObjectDrag(event);
       return;
     }
     if (!objectDrag.current || event.pointerId !== objectDrag.current.pointerId) return;
