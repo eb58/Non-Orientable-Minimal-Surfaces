@@ -325,6 +325,7 @@ export const createRenderer = ({
       if (touchPointers.size !== 2 || !getSurface()) return;
       event.preventDefault();
       event.stopImmediatePropagation();
+      controls._onPointerUp?.({ pointerId: [...touchPointers.keys()][0] });
       touchPointers.forEach((_, pointerId) => canvas.setPointerCapture(pointerId));
       controls.enabled = false;
       canvas.classList.add("dragging-object");
