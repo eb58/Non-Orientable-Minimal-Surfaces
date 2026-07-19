@@ -204,6 +204,22 @@ body.resizing-panel {
   box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.6), 0 4px 14px rgba(5, 12, 20, 0.35);
 }
 
+.viewer-nav-rotation {
+  background: linear-gradient(135deg, #1f5c3a, #3fae72 55%, #143b26);
+}
+
+.viewer-nav-rotation .icon-pause {
+  display: none;
+}
+
+.viewer-nav-rotation[aria-pressed="true"] .icon-play {
+  display: none;
+}
+
+.viewer-nav-rotation[aria-pressed="true"] .icon-pause {
+  display: block;
+}
+
 .viewer-nav-material {
   background: linear-gradient(135deg, #7a421f, #c87732 55%, #5a2f1b);
 }

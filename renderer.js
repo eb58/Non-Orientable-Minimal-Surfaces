@@ -145,6 +145,8 @@ export const createRenderer = ({
   controls.minDistance = 1.4;
   controls.maxDistance = 8;
   controls.enablePan = false;
+  controls.autoRotateSpeed = 5;
+  const clock = new THREE.Clock();
 
   scene.add(surfaceGroup);
   scene.add(new THREE.HemisphereLight(0xf5fbff, 0x6b8794, 1.05));
@@ -460,9 +462,10 @@ export const createRenderer = ({
   };
   const animate = () => {
     animation.id = requestAnimationFrame(animate);
-    controls.update();
+    controls.update(clock.getDelta());
     renderer.render(scene, camera);
   };
+  const setAutoRotate = enabled => { controls.autoRotate = enabled; };
 
   controls.addEventListener("change", onViewChange);
   canvas.addEventListener("pointerdown", startObjectDrag, { capture: true });
@@ -471,5 +474,5 @@ export const createRenderer = ({
   canvas.addEventListener("pointercancel", stopObjectDrag, { capture: true });
   new ResizeObserver(resize).observe(canvas);
 
-  return { applyView, currentView, defaultView, renderSurface, resize, animate, saveImage, setObjectPosition };
+  return { applyView, currentView, defaultView, renderSurface, resize, animate, saveImage, setObjectPosition, setAutoRotate };
 };

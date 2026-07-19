@@ -45,6 +45,7 @@ const state = {
   hammerFactors: storedHammerFactors,
   materialMode: MATERIAL_MODES.includes(storageState.materialMode) ? storageState.materialMode : "copper",
   background: BACKGROUND_IDS.includes(storageState.background) ? storageState.background : "space",
+  autoRotating: false,
   persistenceFrame: 0,
   sliderFrame: 0
 };
@@ -218,6 +219,11 @@ const resetView = () => {
   scheduleSaveAppState();
 };
 const saveImage = () => services.renderer.saveImage(state.surface ? domainKey(state.surface) : "flaeche");
+const toggleAutoRotate = () => {
+  state.autoRotating = !state.autoRotating;
+  services.renderer.setAutoRotate(state.autoRotating);
+  services.ui.syncRotation(state.autoRotating);
+};
 
 services.renderer = createRenderer({
   canvas: document.querySelector("#surface"),
@@ -245,6 +251,7 @@ services.ui = createUI({
   onHammerFactorChange: updateHammerFactor,
   onBackgroundChange: updateBackground,
   onSurfaceStep: stepSurface,
+  onRotationToggle: toggleAutoRotate,
   onPanelResize: services.renderer.resize
 });
 

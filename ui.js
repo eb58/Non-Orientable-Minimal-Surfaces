@@ -30,9 +30,9 @@ export const createUI = ({
   onHammerFactorChange,
   onBackgroundChange,
   onSurfaceStep,
+  onRotationToggle,
   onPanelResize
 }) => {
-  const canvas = document.querySelector("#surface");
   const app = document.querySelector(".app");
   const panelResizer = document.querySelector("#panel-resizer");
   const resetButton = document.querySelector("#reset-view");
@@ -55,6 +55,7 @@ export const createUI = ({
   const backgroundNext = document.querySelector("#background-next");
   const backgroundModeControl = document.querySelector(".background-mode-control");
   const backgroundModeLabel = document.querySelector("#background-mode-label");
+  const rotationToggle = document.querySelector("#rotation-toggle");
   const viewerMaterialCycle = document.querySelector("#material-cycle");
   const viewerBackgroundCycle = document.querySelector("#background-cycle");
   const viewerSurfaceCycle = document.querySelector("#surface-cycle");
@@ -202,6 +203,13 @@ export const createUI = ({
     viewer.dataset.background = current.id;
   };
 
+  const syncRotation = enabled => {
+    rotationToggle.setAttribute("aria-pressed", String(enabled));
+    const label = enabled ? "Automatische Drehung stoppen" : "Automatische Drehung starten";
+    rotationToggle.title = label;
+    rotationToggle.setAttribute("aria-label", label);
+  };
+
   const updateCurrentDomain = () => onDomainChange({
     uMin: domainControls.uMin.value,
     uMax: domainControls.uMax.value,
@@ -279,6 +287,7 @@ export const createUI = ({
     backgroundAt(backgroundModeControl.dataset.background, 1).id
   ));
   viewerSurfaceCycle.addEventListener("click", () => onSurfaceStep(1));
+  rotationToggle.addEventListener("click", onRotationToggle);
   viewerMaterialCycle.addEventListener("click", () => onMaterialStep(1));
   panelResizer.addEventListener("pointerdown", startPanelResize);
   panelResizer.addEventListener("pointermove", movePanelResize);
@@ -304,6 +313,7 @@ export const createUI = ({
     syncObjectPosition,
     syncMaterialSelector,
     syncHammerFactor,
-    syncBackground
+    syncBackground,
+    syncRotation
   };
 };
