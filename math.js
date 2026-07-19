@@ -197,7 +197,7 @@ const catenoidHelicoid = ({ angle = 0, r1 = 0.3, r2 = 3, uSegments = 70, vSegmen
   const normalizedAngle = clamp(0, Number(angle), 90);
   const alpha = normalizedAngle * Math.PI / 180;
   return surfaceWithFormulas({
-    name: "Katenoid–Helikoid",
+    name: "Katenoid-Helikoid",
     ...annulus(r1, r2, uSegments, vSegments),
     fText: "z => -2 * exp(i * alpha) / z**2",
     gText: "z => z",

@@ -7,32 +7,22 @@ const isFiniteVector = point => Array.isArray(point) && point.length === 3 && po
 const allPoints = pointGrids => pointGrids.flat(2);
 
 describe("clamp", () => {
-  it("laesst Werte innerhalb der Grenzen unveraendert", () => {
-    assert.equal(clamp(0, 5, 10), 5);
-  });
-  it("kappt Werte unterhalb des Minimums", () => {
-    assert.equal(clamp(0, -5, 10), 0);
-  });
-  it("kappt Werte oberhalb des Maximums", () => {
-    assert.equal(clamp(0, 15, 10), 10);
-  });
+  it("laesst Werte innerhalb der Grenzen unveraendert", () => assert.equal(clamp(0, 5, 10), 5));
+  it("kappt Werte unterhalb des Minimums", () => assert.equal(clamp(0, -5, 10), 0));
+  it("kappt Werte oberhalb des Maximums", () => assert.equal(clamp(0, 15, 10), 10));
 });
 
 describe("TAU", () => {
-  it("ist 2*PI", () => {
-    assert.equal(TAU, Math.PI * 2);
-  });
+  it("ist 2*PI", () => assert.equal(TAU, Math.PI * 2));
 });
 
 describe("surfaces-Katalog", () => {
-  it("enthaelt mindestens eine Flaeche", () => {
-    assert.ok(surfaces.length > 0);
-  });
+  it("enthaelt mindestens eine Flaeche", () => assert.ok(surfaces.length > 0));
   it("hat eindeutige Namen", () => {
     const names = surfaces.map(surface => surface.name);
     assert.equal(new Set(names).size, names.length);
   });
-  it("liefert fuer jede Flaeche ein vollstaendiges Preset", () => {
+  it("liefert fuer jede Flaeche ein vollstaendiges Preset", () =>
     surfaces.forEach(surface => {
       assert.equal(surface.uRange.length, 2);
       assert.equal(surface.vRange.length, 2);
@@ -42,8 +32,8 @@ describe("surfaces-Katalog", () => {
       assert.equal(typeof surface.gText, "string");
       assert.equal(typeof surface.f, "function");
       assert.equal(typeof surface.g, "function");
-    });
-  });
+    })
+  );
 });
 
 describe("pointGridsFor", () => {
@@ -92,7 +82,7 @@ describe("parametrisierte Flaechen", () => {
     assert.deepEqual(s41.normalizeParameters({ m: 4, n: 4 }), { m: 5, n: 3 });
   });
   it("Katenoid-Helikoid: normalizeParameters kappt den Winkel auf [0, 90]", () => {
-    const surface = findSurface("Katenoid–Helikoid");
+    const surface = findSurface("Katenoid-Helikoid");
     assert.deepEqual(surface.normalizeParameters({ angle: -10 }), { angle: 0 });
     assert.deepEqual(surface.normalizeParameters({ angle: 150 }), { angle: 90 });
   });

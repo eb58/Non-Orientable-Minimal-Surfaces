@@ -38,7 +38,7 @@ Die Sliderwerte für Bereich, Flächenparameter und Objektposition werden pro Fl
 - Cobra mit einstellbarem Parameter `m`
 - Kusner-Familie mit einstellbarem ungeraden Parameter `p`; hoehere `p`-Werte werden mit dichterem Mesh und passendem Radiusbereich zwischen den Polradien gerendert
 - Lopez Klein Bottle, die einmal punktierte minimale Kleinsche Flasche mit einem Ende; gerendert wird ein stetiger Zweig der orientierbaren Doppelflaeche
-- Katenoid–Helikoid-Familie mit einem Assoziationswinkel von `0°` bis `90°`
+- Katenoid-Helikoid-Familie mit einem Assoziationswinkel von `0°` bis `90°`
 
 Die Formeln fuer `f` und `g` stehen in `math.js` direkt bei den Presets.
 
