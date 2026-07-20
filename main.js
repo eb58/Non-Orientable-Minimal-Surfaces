@@ -224,6 +224,11 @@ const toggleAutoRotate = () => {
   services.renderer.setAutoRotate(state.autoRotating);
   services.ui.syncRotation(state.autoRotating);
 };
+const toggleVideoRecording = resolution => {
+  if (services.renderer.isRecording()) services.renderer.stopRecording();
+  else services.renderer.startRecording(state.surface ? domainKey(state.surface) : "flaeche", resolution);
+  services.ui.syncRecording(services.renderer.isRecording());
+};
 
 services.renderer = createRenderer({
   canvas: document.querySelector("#surface"),
@@ -232,6 +237,7 @@ services.renderer = createRenderer({
   getHammerFactor: () => state.surface ? hammerFactorFor(state.surface) : 1,
   getSurface: () => state.surface,
   getObjectPosition: objectPositionFor,
+  getBackground: () => state.background,
   onObjectPositionChange: setObjectPosition,
   onViewChange: saveCurrentView
 });
@@ -252,6 +258,7 @@ services.ui = createUI({
   onBackgroundChange: updateBackground,
   onSurfaceStep: stepSurface,
   onRotationToggle: toggleAutoRotate,
+  onRecordVideoToggle: toggleVideoRecording,
   onPanelResize: services.renderer.resize
 });
 

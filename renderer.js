@@ -4,6 +4,7 @@ import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 import { TAU, normalizePointGrids, pointGridsFor } from "./math.js";
 
 const EXPORT_PIXEL_RATIO = 4;
+const VIDEO_FPS = 30;
 
 export const createRenderer = ({
   canvas,
@@ -12,6 +13,7 @@ export const createRenderer = ({
   getHammerFactor,
   getSurface,
   getObjectPosition,
+  getBackground,
   onObjectPositionChange,
   onViewChange
 }) => {
@@ -452,6 +454,70 @@ export const createRenderer = ({
     link.click();
     document.body.removeChild(link);
   };
+  const backgroundImageCache = new Map();
+  const loadBackgroundImage = id => {
+    if (!backgroundImageCache.has(id)) {
+      const image = new Image();
+      image.src = new URL(`./backgrounds/background-${id}.png`, import.meta.url).href;
+      backgroundImageCache.set(id, image);
+    }
+    return backgroundImageCache.get(id);
+  };
+  const drawCover = (context, image, width, height) => {
+    if (!image.complete || !image.naturalWidth) return false;
+    const scale = Math.max(width / image.naturalWidth, height / image.naturalHeight);
+    const drawWidth = image.naturalWidth * scale;
+    const drawHeight = image.naturalHeight * scale;
+    context.drawImage(image, (width - drawWidth) / 2, (height - drawHeight) / 2, drawWidth, drawHeight);
+    return true;
+  };
+  const recording = { recorder: null, context: null, width: 0, height: 0 };
+  const isRecording = () => recording.recorder?.state === "recording";
+  const drawRecordingFrame = () => {
+    const { context, width, height } = recording;
+    if (!drawCover(context, loadBackgroundImage(getBackground()), width, height)) {
+      context.fillStyle = "#101a22";
+      context.fillRect(0, 0, width, height);
+    }
+    context.drawImage(canvas, 0, 0, canvas.width, canvas.height, 0, 0, width, height);
+  };
+  const evenify = value => value - (value % 2);
+  const recordingSize = targetLongEdge => {
+    const longEdge = Number(targetLongEdge) || Math.max(canvas.width, canvas.height);
+    const aspect = canvas.width / canvas.height;
+    return aspect >= 1
+      ? [evenify(Math.round(longEdge)), evenify(Math.round(longEdge / aspect))]
+      : [evenify(Math.round(longEdge * aspect)), evenify(Math.round(longEdge))];
+  };
+  const startRecording = (fileBase, targetLongEdge) => {
+    if (isRecording()) return;
+    const [width, height] = recordingSize(targetLongEdge);
+    const recordCanvas = document.createElement("canvas");
+    recordCanvas.width = width;
+    recordCanvas.height = height;
+    recording.context = recordCanvas.getContext("2d");
+    recording.width = width;
+    recording.height = height;
+    const mimeType = ["video/webm;codecs=vp9", "video/webm;codecs=vp8", "video/webm"]
+      .find(type => MediaRecorder.isTypeSupported(type)) || "";
+    const mediaRecorder = new MediaRecorder(recordCanvas.captureStream(VIDEO_FPS), mimeType ? { mimeType } : undefined);
+    const chunks = [];
+    mediaRecorder.ondataavailable = event => { if (event.data.size) chunks.push(event.data); };
+    mediaRecorder.onstop = () => {
+      const url = URL.createObjectURL(new Blob(chunks, { type: mediaRecorder.mimeType || "video/webm" }));
+      const link = document.createElement("a");
+      link.download = `${fileBase}.webm`;
+      link.href = url;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    };
+    recording.recorder = mediaRecorder;
+    mediaRecorder.start();
+  };
+  const stopRecording = () => isRecording() && recording.recorder.stop();
+
   const resize = () => {
     const rect = canvas.getBoundingClientRect();
     const width = Math.max(1, rect.width);
@@ -464,6 +530,7 @@ export const createRenderer = ({
     animation.id = requestAnimationFrame(animate);
     controls.update(clock.getDelta());
     renderer.render(scene, camera);
+    if (isRecording()) drawRecordingFrame();
   };
   const setAutoRotate = enabled => { controls.autoRotate = enabled; };
 
@@ -474,5 +541,8 @@ export const createRenderer = ({
   canvas.addEventListener("pointercancel", stopObjectDrag, { capture: true });
   new ResizeObserver(resize).observe(canvas);
 
-  return { applyView, currentView, defaultView, renderSurface, resize, animate, saveImage, setObjectPosition, setAutoRotate };
+  return {
+    applyView, currentView, defaultView, renderSurface, resize, animate, saveImage,
+    setObjectPosition, setAutoRotate, startRecording, stopRecording, isRecording
+  };
 };

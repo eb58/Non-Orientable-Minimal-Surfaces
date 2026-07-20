@@ -31,6 +31,7 @@ export const createUI = ({
   onBackgroundChange,
   onSurfaceStep,
   onRotationToggle,
+  onRecordVideoToggle,
   onPanelResize
 }) => {
   const app = document.querySelector(".app");
@@ -62,6 +63,8 @@ export const createUI = ({
   const viewer = document.querySelector(".viewer");
   const resetDomainButton = document.querySelector("#reset-domain");
   const saveImageButton = document.querySelector("#save-image");
+  const recordVideoButton = document.querySelector("#record-video");
+  const videoResolutionControl = document.querySelector("#video-resolution");
   const domainControls = {
     uMin: document.querySelector("#u-min"),
     uMax: document.querySelector("#u-max"),
@@ -210,6 +213,12 @@ export const createUI = ({
     rotationToggle.setAttribute("aria-label", label);
   };
 
+  const syncRecording = recording => {
+    recordVideoButton.setAttribute("aria-pressed", String(recording));
+    recordVideoButton.textContent = recording ? "Aufnahme beenden" : "Video aufnehmen";
+    videoResolutionControl.disabled = recording;
+  };
+
   const updateCurrentDomain = () => onDomainChange({
     uMin: domainControls.uMin.value,
     uMax: domainControls.uMax.value,
@@ -270,6 +279,7 @@ export const createUI = ({
   surfaceButtons.append(...surfaces.map(createSurfaceButton));
   resetButton.addEventListener("click", onResetView);
   saveImageButton.addEventListener("click", onSaveImage);
+  recordVideoButton.addEventListener("click", () => onRecordVideoToggle(videoResolutionControl.value));
   resetDomainButton.addEventListener("click", onResetDomain);
   resetParametersButton.addEventListener("click", onResetParameters);
   materialPrevious.addEventListener("click", () => onMaterialStep(-1));
@@ -314,6 +324,7 @@ export const createUI = ({
     syncMaterialSelector,
     syncHammerFactor,
     syncBackground,
-    syncRotation
+    syncRotation,
+    syncRecording
   };
 };

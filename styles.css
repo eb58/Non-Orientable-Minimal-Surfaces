@@ -579,6 +579,37 @@ button:hover {
   margin-top: 8px;
 }
 
+#record-video {
+  margin-top: 8px;
+}
+
+#record-video[aria-pressed="true"] {
+  background: #7a1f24;
+}
+
+#record-video[aria-pressed="true"]:hover {
+  background: #96262c;
+}
+
+.video-resolution-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 12px;
+  color: #2d4651;
+  font-size: 0.92rem;
+}
+
+.video-resolution-row select {
+  border: 1px solid #cfdde3;
+  border-radius: 6px;
+  background: #edf4f7;
+  color: #17343f;
+  font: inherit;
+  padding: 5px 8px;
+}
+
 .surface-option {
   border: 1px solid #cfdde3;
   background: #edf4f7;

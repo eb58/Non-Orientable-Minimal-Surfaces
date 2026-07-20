@@ -141,6 +141,17 @@
       </section>
       <button id="reset-view" type="button">Ansicht zurücksetzen</button>
       <button id="save-image" type="button">Bild speichern</button>
+      <label id="video-resolution-row" class="video-resolution-row">
+        <span>Videoauflösung</span>
+        <select id="video-resolution">
+          <option value="">Aktuelle Größe</option>
+          <option value="1280">HD (1280 px)</option>
+          <option value="1920" selected>Full HD (1920 px)</option>
+          <option value="2560">WQHD (2560 px)</option>
+          <option value="3840">4K (3840 px)</option>
+        </select>
+      </label>
+      <button id="record-video" type="button" aria-pressed="false">Video aufnehmen</button>
     </aside>
   </main>
   <script type="module" src="main.js"></script>
