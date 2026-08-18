@@ -18,3 +18,11 @@ npm-debug.log*
 *.tmp
 .env.local
 .env.*.local
+
+# Android build output and generated web bundle
+android/.gradle/
+android/build/
+android/app/build/
+android/app/src/main/assets/www/
+android/local.properties
+.android-tools/

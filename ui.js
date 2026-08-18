@@ -32,6 +32,7 @@ export const createUI = ({
   onSurfaceStep,
   onRotationToggle,
   onRecordVideoToggle,
+  onViewNudge,
   onPanelResize
 }) => {
   const app = document.querySelector(".app");
@@ -61,6 +62,8 @@ export const createUI = ({
   const viewerBackgroundCycle = document.querySelector("#background-cycle");
   const viewerSurfaceCycle = document.querySelector("#surface-cycle");
   const viewer = document.querySelector(".viewer");
+  const canvas = document.querySelector("#surface");
+  const panel = document.querySelector(".panel");
   const resetDomainButton = document.querySelector("#reset-domain");
   const saveImageButton = document.querySelector("#save-image");
   const recordVideoButton = document.querySelector("#record-video");
@@ -260,11 +263,122 @@ export const createUI = ({
   };
 
   const panelToggle = document.getElementById("panel-toggle");
+  const tvMode = new URLSearchParams(location.search).has("tv") || /\bAFT[A-Z0-9]+\b/i.test(navigator.userAgent);
+  document.documentElement.classList.toggle("tv", tvMode);
   const isMobile = () => globalThis.matchMedia("(max-width: 820px)").matches;
   const updatePanelToggle = () => {
     const collapsed = app.classList.contains("panel-collapsed");
     panelToggle.textContent = isMobile() ? (collapsed ? "\u2227" : "\u2228") : (collapsed ? "\u2039" : "\u203a");
     panelToggle.setAttribute("aria-expanded", String(!collapsed));
+    panel.toggleAttribute("inert", collapsed);
+    panel.setAttribute("aria-hidden", String(collapsed));
+  };
+  const setPanelCollapsed = collapsed => {
+    app.classList.toggle("panel-collapsed", collapsed);
+    updatePanelToggle();
+  };
+  const openTvPanel = () => {
+    setPanelCollapsed(false);
+    requestAnimationFrame(() => (surfaceButtons.querySelector(".active") || surfaceButtons.firstElementChild)?.focus());
+  };
+  const tvFocusableElements = () => [...document.querySelectorAll(
+    "button:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex='-1'])"
+  )].filter(element => !element.closest("[inert]") && element.getClientRects().length);
+  const stepTvFocus = offset => {
+    const elements = tvFocusableElements();
+    if (!elements.length) return false;
+    const currentIndex = elements.indexOf(document.activeElement);
+    const nextIndex = currentIndex < 0
+      ? (offset < 0 ? elements.length - 1 : 0)
+      : (currentIndex + offset + elements.length) % elements.length;
+    elements[nextIndex].focus();
+    return true;
+  };
+  const activateTvFocus = () => {
+    const active = document.activeElement;
+    if (!(active instanceof HTMLElement) || active === canvas) return false;
+    if (active instanceof HTMLSelectElement && typeof active.showPicker === "function") active.showPicker();
+    else active.click();
+    return true;
+  };
+  const handleTvDirection = key => {
+    const viewSteps = {
+      directionLeft: { horizontal: -0.11 },
+      directionRight: { horizontal: 0.11 },
+      directionUp: { vertical: 0.09 },
+      directionDown: { vertical: -0.09 }
+    };
+    if (document.activeElement === canvas) {
+      onViewNudge(viewSteps[key]);
+      return true;
+    }
+    const active = document.activeElement;
+    if (active instanceof HTMLInputElement && active.type === "range" && ["directionLeft", "directionRight"].includes(key)) {
+      key === "directionLeft" ? active.stepDown() : active.stepUp();
+      active.dispatchEvent(new Event("input", { bubbles: true }));
+      return true;
+    }
+    return stepTvFocus(["directionLeft", "directionUp"].includes(key) ? -1 : 1);
+  };
+  const handleTvCanvasKey = event => {
+    if (!tvMode || document.activeElement !== canvas) return false;
+    const viewSteps = {
+      ArrowLeft: { horizontal: -0.11 },
+      ArrowRight: { horizontal: 0.11 },
+      ArrowUp: { vertical: 0.09 },
+      ArrowDown: { vertical: -0.09 }
+    };
+    if (!viewSteps[event.key]) return false;
+    onViewNudge(viewSteps[event.key]);
+    event.preventDefault();
+    return true;
+  };
+  const handleNativeTvKey = key => {
+    if (!tvMode) return false;
+    if (key === "menu") {
+      app.classList.contains("panel-collapsed") ? openTvPanel() : setPanelCollapsed(true);
+      if (app.classList.contains("panel-collapsed")) canvas.focus();
+      return true;
+    }
+    if (key === "back" && !app.classList.contains("panel-collapsed")) {
+      setPanelCollapsed(true);
+      canvas.focus();
+      return true;
+    }
+    if (key === "playPause") {
+      onRotationToggle();
+      return true;
+    }
+    if (["directionLeft", "directionRight", "directionUp", "directionDown"].includes(key)) return handleTvDirection(key);
+    if (["focusPrevious", "focusNext"].includes(key)) return stepTvFocus(key === "focusPrevious" ? -1 : 1);
+    if (key === "select") return activateTvFocus();
+    if (["materialPrevious", "materialNext"].includes(key)) {
+      onMaterialStep(key === "materialPrevious" ? -1 : 1);
+      return true;
+    }
+    if (["backgroundPrevious", "backgroundNext"].includes(key)) {
+      onBackgroundChange(backgroundAt(
+        backgroundModeControl.dataset.background,
+        key === "backgroundPrevious" ? -1 : 1
+      ).id);
+      return true;
+    }
+    if (["rewind", "fastForward"].includes(key)) {
+      onViewNudge({ zoom: key === "rewind" ? 0.14 : -0.14 });
+      return true;
+    }
+    return false;
+  };
+  const handleTvKeyboardKey = event => {
+    if (!tvMode) return;
+    if (event.key === "Tab") {
+      event.preventDefault();
+      stepTvFocus(event.shiftKey ? -1 : 1);
+      return;
+    }
+    if (!["Enter", " "].includes(event.key) || document.activeElement === canvas) return;
+    event.preventDefault();
+    activateTvFocus();
   };
   const createSurfaceButton = data => {
     const button = document.createElement("button");
@@ -304,14 +418,17 @@ export const createUI = ({
   panelResizer.addEventListener("pointerup", stopPanelResize);
   panelResizer.addEventListener("pointercancel", stopPanelResize);
   panelResizer.addEventListener("keydown", resizePanelWithKeyboard);
-  if (isMobile()) app.classList.add("panel-collapsed");
+  if (isMobile() || tvMode) app.classList.add("panel-collapsed");
   updatePanelToggle();
   panelToggle.addEventListener("click", () => {
-    app.classList.toggle("panel-collapsed");
-    updatePanelToggle();
+    setPanelCollapsed(!app.classList.contains("panel-collapsed"));
   });
+  canvas.addEventListener("keydown", handleTvCanvasKey);
+  document.addEventListener("keydown", handleTvKeyboardKey, { capture: true });
+  window.fireTvHandleKey = handleNativeTvKey;
   window.addEventListener("resize", updatePanelToggle);
   initPanelWidth();
+  if (tvMode) requestAnimationFrame(() => canvas.focus());
 
   return {
     syncDomainControls,

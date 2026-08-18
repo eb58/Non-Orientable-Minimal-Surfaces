@@ -18,6 +18,10 @@ Die App verwendet ES-Module und sollte ueber einen lokalen HTTP-Server geoeffnet
 http://127.0.0.1:5500/index.html
 ```
 
+## Fire TV / Fire TV Stick
+
+Unter `android/` liegt ein nativer, vollständig offline nutzbarer Fire-TV-Wrapper. Er startet die vorhandene Three.js-Anwendung als APK und ergänzt eine Bedienung über die Fire-TV-Fernbedienung. Build und Sideloading sind in [FIRE_TV.md](FIRE_TV.md) beschrieben.
+
 ## Bedienung
 
 - Flaeche drehen: mit der Maus oder dem Trackpad ziehen

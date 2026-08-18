@@ -47,6 +47,21 @@ export const createRenderer = ({
     controls.target.fromArray(view.target);
     controls.update();
   };
+  const nudgeView = ({ horizontal = 0, vertical = 0, zoom = 0 }) => {
+    const offset = camera.position.clone().sub(controls.target);
+    const spherical = new THREE.Spherical().setFromVector3(offset);
+    spherical.theta -= horizontal;
+    spherical.phi = THREE.MathUtils.clamp(spherical.phi - vertical, 0.12, Math.PI - 0.12);
+    spherical.radius = THREE.MathUtils.clamp(
+      spherical.radius * Math.exp(zoom),
+      controls.minDistance,
+      controls.maxDistance
+    );
+    camera.position.copy(controls.target).add(new THREE.Vector3().setFromSpherical(spherical));
+    camera.lookAt(controls.target);
+    controls.update();
+    onViewChange();
+  };
 
   const material = new THREE.MeshPhysicalMaterial({
     color: 0xffffff,
@@ -542,7 +557,7 @@ export const createRenderer = ({
   new ResizeObserver(resize).observe(canvas);
 
   return {
-    applyView, currentView, defaultView, renderSurface, resize, animate, saveImage,
+    applyView, currentView, defaultView, nudgeView, renderSurface, resize, animate, saveImage,
     setObjectPosition, setAutoRotate, startRecording, stopRecording, isRecording
   };
 };

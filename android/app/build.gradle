@@ -1,0 +1,38 @@
+plugins {
+    id "com.android.application"
+}
+
+android {
+    namespace "de.eb58.minimalflaechen"
+    compileSdk 35
+
+    defaultConfig {
+        applicationId "de.eb58.minimalflaechen"
+        minSdk 22
+        targetSdk 35
+        versionCode 1
+        versionName "1.0.0"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
+        }
+    }
+}
+
+def webSource = rootProject.projectDir.parentFile
+def generatedWebAssets = layout.projectDirectory.dir("src/main/assets/www")
+
+tasks.register("syncWebAssets", Sync) {
+    from(webSource) {
+        include "*.html", "*.js", "*.css", "favicon.svg"
+        include "backgrounds/**", "vendor/**"
+    }
+    into generatedWebAssets
+}
+
+tasks.named("preBuild").configure {
+    dependsOn "syncWebAssets"
+}

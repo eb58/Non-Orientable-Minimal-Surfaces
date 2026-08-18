@@ -258,6 +258,10 @@ body.resizing-panel {
   display: none;
 }
 
+.tv-input-hint {
+  display: none;
+}
+
 .panel {
   background: #ffffff;
   color: #172026;
@@ -687,4 +691,78 @@ button:hover {
   .desktop-zoom-hint {
     display: none;
   }
+}
+
+/* 10-foot UI for Fire TV and other remote-controlled Android TV devices. */
+.tv .app {
+  grid-template-columns: minmax(0, 1fr) 0 min(32rem, 34vw);
+}
+
+.tv .app.panel-collapsed {
+  grid-template-columns: minmax(0, 1fr) 0 0;
+}
+
+.tv .panel-resizer,
+.tv .desktop-object-hint,
+.tv .desktop-zoom-hint,
+.tv .touch-object-hint,
+.tv .export-control {
+  display: none;
+}
+
+.tv .panel {
+  padding: 2.25rem 2.5rem 3rem;
+  font-size: 1.15rem;
+  scrollbar-width: none;
+}
+
+.tv .panel h1 {
+  font-size: 1.7rem;
+}
+
+.tv .viewer-nav {
+  top: 3rem;
+  right: 3rem;
+  gap: 1rem;
+}
+
+.tv .viewer-nav-button {
+  width: 4rem;
+  height: 4rem;
+}
+
+.tv .panel-toggle {
+  width: 3rem;
+  height: 7rem;
+  font-size: 1.8rem;
+}
+
+.tv .hud {
+  display: none;
+}
+
+.tv button,
+.tv select {
+  min-height: 3.25rem;
+  font-size: 1.08rem;
+}
+
+.tv button:focus-visible,
+.tv select:focus-visible,
+.tv input:focus-visible,
+.tv [tabindex]:focus-visible {
+  position: relative;
+  z-index: 20;
+  outline: 5px solid #ffca3a;
+  outline-offset: 4px;
+  box-shadow: 0 0 0 9px rgba(10, 25, 32, 0.72);
+}
+
+.tv #surface:focus-visible {
+  outline-offset: -12px;
+  box-shadow: inset 0 0 0 8px rgba(255, 202, 58, 0.72);
+}
+
+.tv input[type="range"] {
+  min-height: 2.5rem;
 }

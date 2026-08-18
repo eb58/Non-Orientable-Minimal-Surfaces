@@ -20,7 +20,7 @@
 <body>
   <main class="app">
     <section class="viewer" aria-label="Minimalfläche">
-      <canvas id="surface"></canvas>
+      <canvas id="surface" tabindex="0" aria-label="3D-Fläche. Mit dem Steuerkreuz drehen."></canvas>
       <button class="panel-toggle" id="panel-toggle" aria-label="Steuerung ein-/ausblenden">›</button>
       <div class="viewer-nav">
         <button id="rotation-toggle" class="viewer-nav-button viewer-nav-rotation" type="button" aria-pressed="false"
@@ -62,6 +62,7 @@
         <span class="desktop-object-hint">Ctrl+Ziehen: Verschieben</span>
         <span class="desktop-zoom-hint">Mausrad: Zoom</span>
         <span class="touch-object-hint">Zwei Finger: Verschieben</span>
+        <span class="tv-input-hint">Steuerkreuz: Drehen · Zurück/Weiter: Zoom · Play/Pause: Auto-Drehung · Menü: Einstellungen</span>
       </div>
     </section>
     <div id="panel-resizer" class="panel-resizer" role="separator" aria-label="Seitenbereich skalieren"
@@ -140,8 +141,8 @@
         </button>
       </section>
       <button id="reset-view" type="button">Ansicht zurücksetzen</button>
-      <button id="save-image" type="button">Bild speichern</button>
-      <label id="video-resolution-row" class="video-resolution-row">
+      <button id="save-image" class="export-control" type="button">Bild speichern</button>
+      <label id="video-resolution-row" class="video-resolution-row export-control">
         <span>Videoauflösung</span>
         <select id="video-resolution">
           <option value="">Aktuelle Größe</option>
@@ -151,7 +152,7 @@
           <option value="3840">4K (3840 px)</option>
         </select>
       </label>
-      <button id="record-video" type="button" aria-pressed="false">Video aufnehmen</button>
+      <button id="record-video" class="export-control" type="button" aria-pressed="false">Video aufnehmen</button>
     </aside>
   </main>
   <script type="module" src="main.js"></script>

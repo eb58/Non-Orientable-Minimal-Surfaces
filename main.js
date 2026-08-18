@@ -259,6 +259,7 @@ services.ui = createUI({
   onSurfaceStep: stepSurface,
   onRotationToggle: toggleAutoRotate,
   onRecordVideoToggle: toggleVideoRecording,
+  onViewNudge: services.renderer.nudgeView,
   onPanelResize: services.renderer.resize
 });
 
