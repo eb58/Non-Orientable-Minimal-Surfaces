@@ -5,6 +5,7 @@ import { TAU, normalizePointGrids, pointGridsFor } from "./math.js";
 
 const EXPORT_PIXEL_RATIO = 4;
 const VIDEO_FPS = 30;
+const AUTO_ROTATION_SPEED = 0.5;
 
 export const createRenderer = ({
   canvas,
@@ -29,10 +30,14 @@ export const createRenderer = ({
   pmremGenerator.dispose();
 
   const scene = new THREE.Scene();
+  // Basis-IBL fuer alle Materialien ohne eigene envMap; Materialien mit envMap behalten ihre envMapIntensity
+  scene.environment = envTexture;
+  scene.environmentIntensity = 0.55;
   const camera = new THREE.PerspectiveCamera(36, 1, 0.05, 100);
   const controls = new OrbitControls(camera, renderer.domElement);
   const surfaceGroup = new THREE.Group();
   const animation = { id: 0 };
+  const autoRotation = { enabled: false };
 
   const defaultView = () => ({
     camera: [1.95, -3.35, 1.45],
@@ -162,7 +167,6 @@ export const createRenderer = ({
   controls.minDistance = 1.4;
   controls.maxDistance = 8;
   controls.enablePan = false;
-  controls.autoRotateSpeed = 5;
   const clock = new THREE.Clock();
 
   scene.add(surfaceGroup);
@@ -543,11 +547,13 @@ export const createRenderer = ({
   };
   const animate = () => {
     animation.id = requestAnimationFrame(animate);
-    controls.update(clock.getDelta());
+    const delta = clock.getDelta();
+    controls.update(delta);
+    if (autoRotation.enabled) surfaceGroup.rotation.y += AUTO_ROTATION_SPEED * delta;
     renderer.render(scene, camera);
     if (isRecording()) drawRecordingFrame();
   };
-  const setAutoRotate = enabled => { controls.autoRotate = enabled; };
+  const setAutoRotate = enabled => { autoRotation.enabled = enabled; };
 
   controls.addEventListener("change", onViewChange);
   canvas.addEventListener("pointerdown", startObjectDrag, { capture: true });
