@@ -29,8 +29,6 @@ tasks.register("syncWebAssets", Sync) {
     from(webSource) {
         include "*.html", "*.js", "*.css", "favicon.svg"
         include "backgrounds/**", "vendor/**"
-        exclude "vendor/three-gpu-pathtracer/**", "vendor/three-mesh-bvh/**"
-        exclude "vendor/three/addons/postprocessing/**"
     }
     into generatedWebAssets
 }

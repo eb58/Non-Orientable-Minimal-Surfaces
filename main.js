@@ -233,7 +233,6 @@ const toggleVideoRecording = resolution => {
 services.renderer = createRenderer({
   canvas: document.querySelector("#surface"),
   hud: document.querySelector(".hud"),
-  renderStatus: document.querySelector("#render-status"),
   getMaterialMode: () => state.materialMode,
   getHammerFactor: () => state.surface ? hammerFactorFor(state.surface) : 1,
   getSurface: () => state.surface,
