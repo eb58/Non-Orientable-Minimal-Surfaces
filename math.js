@@ -99,7 +99,7 @@ const kusner = ({ name = "Kusner", p = 5, r1, r2 }) => {
   const B = 2 * A / (p - 1);
   const zp = zPowerText(p);
   const uSegments = 70 + Math.round(p * 4);
-  const vSegments = 241 + Math.round(p * 28);
+  const vSegments = 361 + Math.round(p * 40);
   const radiusRange = kusnerRadiusRange(p);
 
   return surfaceWithFormulas({
@@ -290,7 +290,7 @@ export const normalizePointGrids = pointGrids => {
     safePoints.reduce((sum, point) => sum + point[axis], 0) / safePoints.length
   );
   const centered = safePoints.map(point => vSub(point, midpoint));
-  const radius = Math.max(...centered.map(vLength)) || 1;
+  const radius = centered.reduce((maximum, point) => Math.max(maximum, vLength(point)), 0) || 1;
   const normalizePoint = point => finiteVector(point) ? vSub(point, midpoint).map(value => value / radius) : [0, 0, 0];
   return pointGrids.map(points => points.map(row => row.map(normalizePoint)));
 };

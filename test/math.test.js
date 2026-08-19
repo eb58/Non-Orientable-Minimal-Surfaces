@@ -62,6 +62,12 @@ describe("normalizePointGrids", () => {
     const [normalized] = normalizePointGrids(pointGrids);
     assert.deepEqual(normalized[0][1], [0, 0, 0]);
   });
+  it("verarbeitet grosse Punktwolken ohne die Argumentgrenze zu ueberschreiten", () => {
+    const pointGrids = [[Array.from({ length: 150_000 }, (_, index) => [index % 101, index % 53, index % 29])]];
+    const [normalized] = normalizePointGrids(pointGrids);
+    assert.equal(normalized[0].length, 150_000);
+    assert.ok(normalized[0].flat().every(Number.isFinite));
+  });
 });
 
 describe("parametrisierte Flaechen", () => {
@@ -75,6 +81,7 @@ describe("parametrisierte Flaechen", () => {
     const kusner = findSurface("Kusner");
     const rebuilt = kusner.withParameters({ p: 7 });
     assert.equal(rebuilt.parameters.p.value, 7);
+    assert.equal(rebuilt.vSegments, 641);
     assert.equal(typeof rebuilt.f, "function");
   });
   it("S41: normalizeParameters erzwingt n < m, beide ungerade", () => {
