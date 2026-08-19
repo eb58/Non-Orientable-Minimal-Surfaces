@@ -493,7 +493,9 @@ export const createRenderer = ({
   const isRecording = () => recording.recorder?.state === "recording";
   const drawRecordingFrame = () => {
     const { context, width, height } = recording;
-    if (!drawCover(context, loadBackgroundImage(getBackground()), width, height)) {
+    const background = getBackground();
+    if (background === "none") drawExportBackground(context, width, height);
+    else if (!drawCover(context, loadBackgroundImage(background), width, height)) {
       context.fillStyle = "#101a22";
       context.fillRect(0, 0, width, height);
     }

@@ -1,4 +1,5 @@
 export const BACKGROUNDS = [
+  { id: "none", label: "Keinen Hintergrund" },
   { id: "space", label: "Weltraum" },
   { id: "park", label: "Parklandschaft" },
   { id: "mountains", label: "Gebirgslandschaft" },
