@@ -5,11 +5,14 @@ import { TAU, normalizePointGrids, pointGridsFor } from "./math.js";
 
 const EXPORT_PIXEL_RATIO = 4;
 const VIDEO_FPS = 30;
-const AUTO_ROTATION_SPEED = 0.5;
+const PATH_TRACING_SETTLE_MS = 500;
+const PATH_TRACING_RENDER_SCALE = 0.6;
+const PATH_TRACING_MAX_SAMPLES = 128;
 
 export const createRenderer = ({
   canvas,
   hud,
+  renderStatus,
   getMaterialMode,
   getHammerFactor,
   getSurface,
@@ -37,7 +40,35 @@ export const createRenderer = ({
   const controls = new OrbitControls(camera, renderer.domElement);
   const surfaceGroup = new THREE.Group();
   const animation = { id: 0 };
-  const autoRotation = { enabled: false };
+  const urlParameters = new URLSearchParams(location.search);
+  const tvMode = urlParameters.has("tv") || /\bAFT[A-Z0-9]+\b/i.test(navigator.userAgent);
+  const pathTracing = {
+    eligible: !tvMode
+      && urlParameters.get("pathtracing") === "1"
+      && matchMedia("(pointer: fine)").matches
+      && renderer.capabilities.isWebGL2,
+    tracer: null,
+    environmentTarget: null,
+    sceneDirty: true,
+    cameraDirty: true,
+    movingUntil: performance.now() + PATH_TRACING_SETTLE_MS,
+    failed: false,
+    status: ""
+  };
+  const setRenderStatus = status => {
+    if (!renderStatus || pathTracing.status === status) return;
+    pathTracing.status = status;
+    renderStatus.textContent = status;
+    renderStatus.hidden = !status;
+  };
+  const markPathTracingDirty = ({ sceneChanged = false, cameraChanged = false } = {}) => {
+    if (!pathTracing.eligible || pathTracing.failed) return;
+    pathTracing.sceneDirty ||= sceneChanged;
+    pathTracing.cameraDirty ||= cameraChanged;
+    pathTracing.movingUntil = performance.now() + PATH_TRACING_SETTLE_MS;
+    pathTracing.tracer?.reset();
+    setRenderStatus("PBR · Bewegung");
+  };
 
   const defaultView = () => ({
     camera: [1.95, -3.35, 1.45],
@@ -51,6 +82,7 @@ export const createRenderer = ({
     camera.position.fromArray(view.camera);
     controls.target.fromArray(view.target);
     controls.update();
+    markPathTracingDirty({ cameraChanged: true });
   };
   const nudgeView = ({ horizontal = 0, vertical = 0, zoom = 0 }) => {
     const offset = camera.position.clone().sub(controls.target);
@@ -65,6 +97,7 @@ export const createRenderer = ({
     camera.position.copy(controls.target).add(new THREE.Vector3().setFromSpherical(spherical));
     camera.lookAt(controls.target);
     controls.update();
+    markPathTracingDirty({ cameraChanged: true });
     onViewChange();
   };
 
@@ -167,6 +200,7 @@ export const createRenderer = ({
   controls.minDistance = 1.4;
   controls.maxDistance = 8;
   controls.enablePan = false;
+  controls.autoRotateSpeed = 5;
   const clock = new THREE.Clock();
 
   scene.add(surfaceGroup);
@@ -174,6 +208,60 @@ export const createRenderer = ({
   scene.add(((light) => { light.position.set(-2.6, -3.2, 4.4); return light; })(new THREE.DirectionalLight(0xffffff, 2.05)));
   scene.add(((light) => { light.position.set(3.2, 2.1, 2.5); return light; })(new THREE.DirectionalLight(0x9ee9ff, 0.8)));
   scene.add(((light) => { light.position.set(0.4, -1.2, 3.8); return light; })(new THREE.DirectionalLight(0xfff0c8, 0.9)));
+
+  const initPathTracing = async () => {
+    if (!pathTracing.eligible) return;
+    setRenderStatus("PBR · Pathtracing lädt");
+    try {
+      const { WebGLPathTracer } = await import("three-gpu-pathtracer");
+      const room = new RoomEnvironment();
+      const environmentTarget = new THREE.WebGLCubeRenderTarget(256, {
+        type: THREE.HalfFloatType,
+        generateMipmaps: true,
+        minFilter: THREE.LinearMipmapLinearFilter
+      });
+      new THREE.CubeCamera(0.1, 100, environmentTarget).update(renderer, room);
+      room.dispose();
+      const tracer = new WebGLPathTracer(renderer);
+      tracer.bounces = 2;
+      tracer.transmissiveBounces = 2;
+      tracer.renderDelay = 0;
+      tracer.minSamples = 1;
+      tracer.fadeDuration = 400;
+      tracer.renderScale = PATH_TRACING_RENDER_SCALE;
+      tracer.tiles.set(2, 2);
+      tracer.rasterizeScene = true;
+      pathTracing.tracer = tracer;
+      pathTracing.environmentTarget = environmentTarget;
+      pathTracing.movingUntil = performance.now() + PATH_TRACING_SETTLE_MS;
+      setRenderStatus("PBR · bereit");
+    } catch (error) {
+      pathTracing.failed = true;
+      setRenderStatus("PBR · Pathtracing nicht verfügbar");
+      console.warn("Pathtracing konnte nicht initialisiert werden.", error);
+    }
+  };
+
+  const preparePathTracingScene = () => {
+    const { tracer, environmentTarget } = pathTracing;
+    if (!tracer || !environmentTarget) return false;
+    setRenderStatus("PBR · Pathtracing wird vorbereitet");
+    const previousEnvironment = scene.environment;
+    scene.environment = environmentTarget.texture;
+    try {
+      tracer.setScene(scene, camera);
+      pathTracing.sceneDirty = false;
+      pathTracing.cameraDirty = false;
+      return true;
+    } catch (error) {
+      pathTracing.failed = true;
+      setRenderStatus("PBR · Pathtracing nicht verfügbar");
+      console.warn("Pathtracing-Szene konnte nicht aufgebaut werden.", error);
+      return false;
+    } finally {
+      scene.environment = previousEnvironment;
+    }
+  };
 
   const surfacePalette = [0x6b1f0a, 0xb84020, 0xe87030, 0xf5b050, 0xfff5b0].map(color => new THREE.Color(color));
   const paletteColor = value => {
@@ -297,9 +385,13 @@ export const createRenderer = ({
     const mats = { copper: copperMaterial, mirror: mirrorMaterial, marble: marbleMaterial, glass: glassMaterial, irid: iridMaterial, bronze: bronzeMaterial, gold: goldMaterial, email: emailMaterial, color: material };
     surfaceGroup.add(new THREE.Mesh(geometries.geometry, mats[getMaterialMode()] ?? material));
     if (getMaterialMode() === "color") surfaceGroup.add(new THREE.LineSegments(geometries.lineGeometry, lineMaterial));
+    markPathTracingDirty({ sceneChanged: true });
   };
 
-  const setObjectPosition = position => surfaceGroup.position.set(position.x, position.y, position.z);
+  const setObjectPosition = position => {
+    surfaceGroup.position.set(position.x, position.y, position.z);
+    markPathTracingDirty({ sceneChanged: true });
+  };
   const cameraBasis = () => {
     const forward = new THREE.Vector3();
     camera.getWorldDirection(forward);
@@ -544,23 +636,51 @@ export const createRenderer = ({
     renderer.setSize(width, height, false);
     camera.aspect = width / height;
     camera.updateProjectionMatrix();
+    markPathTracingDirty({ cameraChanged: true });
   };
   const animate = () => {
     animation.id = requestAnimationFrame(animate);
     const delta = clock.getDelta();
     controls.update(delta);
-    if (autoRotation.enabled) surfaceGroup.rotation.y += AUTO_ROTATION_SPEED * delta;
-    renderer.render(scene, camera);
+    const canPathTrace = pathTracing.tracer
+      && !pathTracing.failed
+      && !controls.autoRotate
+      && performance.now() >= pathTracing.movingUntil;
+    if (canPathTrace) {
+      if (pathTracing.sceneDirty && !preparePathTracingScene()) renderer.render(scene, camera);
+      else {
+        if (pathTracing.cameraDirty) {
+          pathTracing.tracer.updateCamera();
+          pathTracing.cameraDirty = false;
+        }
+        try {
+          if (pathTracing.tracer.samples < PATH_TRACING_MAX_SAMPLES) pathTracing.tracer.renderSample();
+          setRenderStatus(`Pathtracing · ${Math.min(PATH_TRACING_MAX_SAMPLES, Math.max(1, Math.floor(pathTracing.tracer.samples)))} Samples`);
+        } catch (error) {
+          pathTracing.failed = true;
+          setRenderStatus("PBR · Pathtracing nicht verfügbar");
+          console.warn("Pathtracing wurde wegen eines Renderfehlers deaktiviert.", error);
+          renderer.render(scene, camera);
+        }
+      }
+    } else renderer.render(scene, camera);
     if (isRecording()) drawRecordingFrame();
   };
-  const setAutoRotate = enabled => { autoRotation.enabled = enabled; };
+  const setAutoRotate = enabled => {
+    controls.autoRotate = enabled;
+    markPathTracingDirty({ cameraChanged: true });
+  };
 
-  controls.addEventListener("change", onViewChange);
+  controls.addEventListener("change", () => {
+    markPathTracingDirty({ cameraChanged: true });
+    onViewChange();
+  });
   canvas.addEventListener("pointerdown", startObjectDrag, { capture: true });
   canvas.addEventListener("pointermove", moveObjectDrag, { capture: true });
   canvas.addEventListener("pointerup", stopObjectDrag, { capture: true });
   canvas.addEventListener("pointercancel", stopObjectDrag, { capture: true });
   new ResizeObserver(resize).observe(canvas);
+  initPathTracing();
 
   return {
     applyView, currentView, defaultView, nudgeView, renderSurface, resize, animate, saveImage,

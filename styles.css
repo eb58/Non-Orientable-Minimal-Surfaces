@@ -254,6 +254,18 @@ body.resizing-panel {
   color: #ffffff;
 }
 
+.render-status {
+  border-radius: 999px;
+  background: rgba(47, 141, 168, 0.82);
+  padding: 2px 7px;
+  color: #fff;
+  font-variant-numeric: tabular-nums;
+}
+
+.render-status[hidden] {
+  display: none;
+}
+
 .touch-object-hint {
   display: none;
 }

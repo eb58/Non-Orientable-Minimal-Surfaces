@@ -10,6 +10,8 @@ Re int ( f(1 - g^2) / 2, i f(1 + g^2) / 2, f g ) dz
 
 und rendert sie mit Three.js als frei drehbares WebGL-Modell.
 
+Der experimentelle Hybrid-Pathtracer ist standardmaessig ausgeschaltet. Auf Desktop-Systemen mit WebGL 2 kann er mit `?pathtracing=1` gezielt aktiviert werden; bei jeder Bewegung wird dann sofort wieder PBR verwendet. Fire TV und Touch-Geräte bleiben vollständig beim PBR-Renderer.
+
 ## Start
 
 Die App verwendet ES-Module und sollte ueber einen lokalen HTTP-Server geoeffnet werden, nicht direkt per `file://`. Zum Beispiel mit der VS-Code-Erweiterung Live Server:
@@ -57,6 +59,7 @@ Die Formeln fuer `f` und `g` stehen in `math.js` direkt bei den Presets.
 - `complex.js` ist ein lokaler ESM-Adapter und exportiert `C$`.
 - `vendor/complex/` enthaelt die vendorte ESM-Fassung von `cops.js`, `tokenizer.js` und `complex.js` aus dem [algorithms-js-Repository](https://github.com/eb58/algorithms-js), Stand `b7e1b2a3ea1a81219b9bb806b9e9590c988223f9`; die App benoetigt dafuer keinen Laufzeit-Netzwerkzugriff.
 - `vendor/three/` enthaelt Three.js und OrbitControls lokal, damit die App ohne CDN laeuft.
+- `vendor/three-gpu-pathtracer/` und `vendor/three-mesh-bvh/` enthalten die lokal vendorizierten MIT-lizenzierten Module `three-gpu-pathtracer` 0.0.24 und `three-mesh-bvh` 0.9.5 für den experimentellen Desktop-Pathtracer.
 
 ## Tests
 
