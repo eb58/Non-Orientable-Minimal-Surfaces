@@ -80,14 +80,14 @@ const cobra = ({ name, m = 5, r1, r2, uSegments = 58, vSegments = 221 }) => surf
   withParameters: values => cobra({ name, m: Math.round(values.m), r1, r2, uSegments, vSegments })
 });
 
-const s42 = (r1 = 1.8, r2 = 3) => {
+const s42 = (r1 = 1.8, r2 = 3, uSegments = 58, vSegments = 301) => {
   const a = Math.sqrt(-5 + 2 * Math.sqrt(15));
   const gText = "z => z^3 * (z^2 - a^2) / ((a*z)^2 - 1)";
   const fText = 'z => i * ((a*z)^2 - 1)^2 / (z^2 * (z - 1)^4 * (z + 1)^4)';
 
   return surfaceWithFormulas({
     name: "S42",
-    ...annulus(r1, r2, 70, 221),
+    ...annulus(r1, r2, uSegments, vSegments),
     fText,
     gText,
     constants: { a }
@@ -230,12 +230,13 @@ const richmond = ({ name = "Richmond", n = 2, r1 = 0.25, r2 = 1.5, uSegments = 6
 });
 
 export const surfaces = [
-  s41({ name: "S41_3_1 Twisted Catenoid", m: 3, n: 1, r1: 1.0, r2: 2.0 }),
+  s41({ name: "Meeks Möbiusband (Twisted Catenoid)", m: 3, n: 1, r1: 1.0, r2: 2.0 }),
   s41({ name: "S41_5_1 UFO             ", m: 5, n: 1, r1: 1.0, r2: 1.3 }),
   s41({ name: "S41_5_3 Trefoil         ", m: 5, n: 3, r1: 1.0, r2: 1.5 }),
   s41({ name: "S41_5_3 Double Trefoil  ", m: 5, n: 3, r1: 1.1, r2: 1.5 }),
   s41({ name: "S41_7_5                 ", m: 7, n: 5, r1: 1.1, r2: 1.3 }),
   cobra({ name: "Cobra", m: 5, r1: 1, r2: 1.2 }),
+  s42(),
   kusner({ name: "Kusner" }),
   lopezKlein(),
   catenoidHelicoid(),

@@ -38,8 +38,9 @@ Die Sliderwerte für Bereich, Flächenparameter und Objektposition werden pro Fl
 
 ## Enthaltene Flaechen
 
-- S41-Presets mit einstellbaren ungeraden Parametern `m` und `n`, wobei `n < m` gilt
+- Meeks' minimales Moebiusband als `Twisted Catenoid` sowie weitere S41-Presets mit einstellbaren ungeraden Parametern `m` und `n`, wobei `n < m` gilt
 - Cobra mit einstellbarem Parameter `m`
+- S42, eine nichtorientierbare Minimalflaeche vom Typ einer zweifach punktierten projektiven Ebene
 - Kusner-Familie mit einstellbarem ungeraden Parameter `p`; hoehere `p`-Werte werden mit dichterem Mesh und passendem Radiusbereich zwischen den Polradien gerendert
 - Lopez Klein Bottle, die einmal punktierte minimale Kleinsche Flasche mit einem Ende; gerendert wird ein stetiger Zweig der orientierbaren Doppelflaeche
 - Katenoid-Helikoid-Familie mit einem Assoziationswinkel von `0°` bis `90°`

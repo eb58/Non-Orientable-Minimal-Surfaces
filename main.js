@@ -5,7 +5,9 @@ import { MATERIAL_MODES, adjacentMaterialMode } from "./materials.js";
 import { BACKGROUND_IDS } from "./backgrounds.js";
 
 const STORAGE_KEY = "minimalSurfaceStateV1";
+const SURFACE_NAME_ALIASES = { "S41_3_1 Twisted Catenoid": "Meeks Möbiusband (Twisted Catenoid)" };
 const domainKey = surface => surface.name;
+const currentSurfaceName = name => SURFACE_NAME_ALIASES[name] || name;
 const formatNumber = value => Number(value).toFixed(3);
 const defaultDomain = surface => ({
   uRange: [...surface.uRange],
@@ -27,14 +29,17 @@ const readStorageState = () => {
   }
 };
 const mapFromStorage = (value, validValue) => new Map(
-  Object.entries(value || {}).filter(([key, item]) => surfaces.some(surface => domainKey(surface) === key) && validValue(item))
+  Object.entries(value || {})
+    .map(([key, item]) => [currentSurfaceName(key), item])
+    .filter(([key, item]) => surfaces.some(surface => domainKey(surface) === key) && validValue(item))
 );
 const storageState = readStorageState();
+const activeSurfaceName = currentSurfaceName(storageState.activeSurface);
 const storedHammerFactors = mapFromStorage(storageState.hammerFactors, validHammerFactor);
 if (!storedHammerFactors.size
   && validHammerFactor(storageState.hammerFactor)
-  && surfaces.some(surface => domainKey(surface) === storageState.activeSurface)) {
-  storedHammerFactors.set(storageState.activeSurface, storageState.hammerFactor);
+  && surfaces.some(surface => domainKey(surface) === activeSurfaceName)) {
+  storedHammerFactors.set(activeSurfaceName, storageState.hammerFactor);
 }
 const state = {
   surface: null,
@@ -82,7 +87,7 @@ const withDomain = surface => {
 const currentData = () => withDomain(withParameters(state.surface));
 
 const saveAppState = () => localStorage.setItem(STORAGE_KEY, JSON.stringify({
-  activeSurface: state.surface ? domainKey(state.surface) : storageState.activeSurface,
+  activeSurface: state.surface ? domainKey(state.surface) : activeSurfaceName,
   materialMode: state.materialMode,
   background: state.background,
   hammerFactors: Object.fromEntries(state.hammerFactors),
@@ -266,6 +271,6 @@ services.ui = createUI({
 services.ui.syncMaterialSelector(state.materialMode);
 services.ui.syncBackground(state.background);
 resetView();
-setSurface(surfaces.find(surface => domainKey(surface) === storageState.activeSurface) || surfaces.find(surface => surface.name.startsWith("S41_7_5")));
+setSurface(surfaces.find(surface => domainKey(surface) === activeSurfaceName) || surfaces.find(surface => surface.name.startsWith("S41_7_5")));
 services.renderer.resize();
 services.renderer.animate();

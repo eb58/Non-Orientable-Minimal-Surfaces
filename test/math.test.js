@@ -18,6 +18,13 @@ describe("TAU", () => {
 
 describe("surfaces-Katalog", () => {
   it("enthaelt mindestens eine Flaeche", () => assert.ok(surfaces.length > 0));
+  it("enthaelt S42", () => assert.ok(findSurface("S42")));
+  it("verwendet fuer S42 den geeigneten Ausschnitt und die passende Aufloesung", () => {
+    const s42 = findSurface("S42");
+    assert.deepEqual(s42.uRange, [1.8, 3]);
+    assert.equal(s42.uSegments, 58);
+    assert.equal(s42.vSegments, 301);
+  });
   it("hat eindeutige Namen", () => {
     const names = surfaces.map(surface => surface.name);
     assert.equal(new Set(names).size, names.length);
@@ -85,7 +92,7 @@ describe("parametrisierte Flaechen", () => {
     assert.equal(typeof rebuilt.f, "function");
   });
   it("S41: normalizeParameters erzwingt n < m, beide ungerade", () => {
-    const s41 = findSurface("S41_3_1 Twisted Catenoid");
+    const s41 = findSurface("Meeks Möbiusband (Twisted Catenoid)");
     assert.deepEqual(s41.normalizeParameters({ m: 4, n: 4 }), { m: 5, n: 3 });
   });
   it("Katenoid-Helikoid: normalizeParameters kappt den Winkel auf [0, 90]", () => {
