@@ -40,9 +40,13 @@ Die Sliderwerte für Bereich, Flächenparameter und Objektposition werden pro Fl
 
 - Meeks' minimales Moebiusband als `Twisted Catenoid` sowie weitere S41-Presets mit einstellbaren ungeraden Parametern `m` und `n`, wobei `n < m` gilt
 - Cobra mit einstellbarem Parameter `m`
+- Cobra-Familie mit ungeradem Exponenten `m` und stetigem Deformationsparameter `t`; bei `t = 1` stimmen ihre Weierstrass-Daten exakt mit der vorhandenen Cobra überein
+- Grad-7-Familie mit dem freien komplexen Parameter `c = Re c + i Im c`
 - S42, eine nichtorientierbare Minimalflaeche vom Typ einer zweifach punktierten projektiven Ebene
 - Kusner-Familie mit einstellbarem ungeraden Parameter `p`; hoehere `p`-Werte werden mit dichterem Mesh und passendem Radiusbereich zwischen den Polradien gerendert
 - Lopez Klein Bottle, die einmal punktierte minimale Kleinsche Flasche mit einem Ende; gerendert wird ein stetiger Zweig der orientierbaren Doppelflaeche
+- Henneberg-Familie mit ganzzahligem Parameter `m`; `m = 1` ist die klassische Henneberg-Flaeche. Die Flaechen besitzen Verzweigungspunkte und sind dort keine regulaeren Immersionen
+- Costa-Flaeche als orientierbare Vergleichsflaeche auf dem dreifach punktierten quadratischen Torus; die elliptischen Weierstrass-Funktionen werden lokal ueber schnell konvergierende Theta-Reihen ausgewertet. Das periodisch geschlossene Mesh schneidet die drei Enden kreisfoermig aus; ihre Laenge laesst sich mit `Endenausschnitt ε` einstellen
 - Katenoid-Helikoid-Familie mit einem Assoziationswinkel von `0°` bis `90°`
 
 Die Formeln fuer `f` und `g` stehen in `math.js` direkt bei den Presets.

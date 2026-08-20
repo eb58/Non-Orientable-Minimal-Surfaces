@@ -273,17 +273,22 @@ export const createRenderer = ({
   };
 
   const surfaceGeometry = data => {
-    const pointGrids = normalizePointGrids(pointGridsFor(data));
+    const customMesh = data.mesh ? data.mesh(data) : null;
+    const pointGrids = normalizePointGrids(customMesh ? [[customMesh.points]] : pointGridsFor(data));
     const geometry = new THREE.BufferGeometry();
     const lineGeometry = new THREE.BufferGeometry();
     const materialMode = getMaterialMode();
     geometry.setAttribute("position", new THREE.Float32BufferAttribute(pointGrids.flat(3), 3));
     const colorFns = { marble: marbleColorForPoint, bronze: bronzeColorForPoint, gold: goldColorForPoint };
     geometry.setAttribute("color", colorAttribute(pointGrids, colorFns[materialMode] ?? colorForPoint));
-    geometry.setIndex(makeIndices(pointGrids));
+    geometry.setIndex(customMesh ? customMesh.indices : makeIndices(pointGrids));
     geometry.computeVertexNormals();
     hammerGeometry(geometry, getHammerFactor());
-    lineGeometry.setAttribute("position", new THREE.Float32BufferAttribute(makeLinePositions(pointGrids), 3));
+    const customPoints = customMesh ? pointGrids[0][0] : null;
+    const linePositions = customMesh
+      ? customMesh.lineIndices.flatMap(([from, to]) => [...customPoints[from], ...customPoints[to]])
+      : makeLinePositions(pointGrids);
+    lineGeometry.setAttribute("position", new THREE.Float32BufferAttribute(linePositions, 3));
     return { geometry, lineGeometry };
   };
   const disposeSurface = () => {

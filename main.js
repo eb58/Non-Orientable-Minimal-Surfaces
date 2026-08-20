@@ -5,8 +5,13 @@ import { MATERIAL_MODES, adjacentMaterialMode } from "./materials.js";
 import { BACKGROUND_IDS } from "./backgrounds.js";
 
 const STORAGE_KEY = "minimalSurfaceStateV1";
-const SURFACE_NAME_ALIASES = { "S41_3_1 Twisted Catenoid": "Meeks Möbiusband (Twisted Catenoid)" };
+const MEEKS_SURFACE_NAME = "S41_3_1 - Meeks Möbiusband (Twisted Catenoid)";
+const SURFACE_NAME_ALIASES = {
+  "S41_3_1 Twisted Catenoid": MEEKS_SURFACE_NAME,
+  "Meeks Möbiusband (Twisted Catenoid)": MEEKS_SURFACE_NAME
+};
 const domainKey = surface => surface.name;
+const loopSurfaces = surfaces.filter(surface => surface.cycle !== false);
 const currentSurfaceName = name => SURFACE_NAME_ALIASES[name] || name;
 const formatNumber = value => Number(value).toFixed(3);
 const defaultDomain = surface => ({
@@ -55,9 +60,10 @@ const state = {
   sliderFrame: 0
 };
 const services = { renderer: null, ui: null };
+const defaultViewFor = surface => surface?.initialView || services.renderer.defaultView();
 
 const domainFor = surface => {
-  const domain = state.domains.get(domainKey(surface)) || defaultDomain(surface);
+  const domain = surface.fixedDomain ? defaultDomain(surface) : state.domains.get(domainKey(surface)) || defaultDomain(surface);
   return {
     uRange: [...domain.uRange],
     vRange: [domain.vRange[0], Math.min(domain.vRange[1], surface.vRange[1])]
@@ -122,20 +128,19 @@ const setSurface = surface => {
   services.ui.syncDomainControls(surface, domainFor(surface));
   services.ui.syncParameterControls(surface, parametersFor(surface));
   services.ui.syncObjectControls(surface, objectPositionFor(surface));
-  services.renderer.applyView(state.surfaceViews.get(domainKey(surface)) || services.renderer.defaultView());
+  services.renderer.applyView(state.surfaceViews.get(domainKey(surface)) || defaultViewFor(surface));
   services.renderer.setObjectPosition(objectPositionFor(surface));
   scheduleSaveAppState();
 };
-const updateCurrentDomain = ({ uMin, uMax, vMax }) => {
-  if (!state.surface) return;
-  const currentDomain = domainFor(state.surface);
+const updateCurrentDomain = ({ uMin, uMax, vMin, vMax }) => {
+  if (!state.surface || state.surface.fixedDomain) return;
   const sortedRange = (min, max) => {
     const values = [Number(min), Number(max)].sort((a, b) => a - b);
     return values[0] === values[1] ? [values[0], values[1] + 0.01] : values;
   };
   const domain = {
     uRange: sortedRange(uMin, uMax),
-    vRange: sortedRange(currentDomain.vRange[0], vMax)
+    vRange: sortedRange(vMin, vMax)
   };
   state.domains.set(domainKey(state.surface), domain);
   services.ui.syncDomainOutputs(domain);
@@ -194,8 +199,9 @@ const resetObjectPosition = () => {
 };
 const stepSurface = offset => {
   if (!state.surface) return;
-  const index = surfaces.findIndex(surface => domainKey(surface) === domainKey(state.surface));
-  setSurface(surfaces[(index + offset + surfaces.length) % surfaces.length]);
+  const index = loopSurfaces.findIndex(surface => domainKey(surface) === domainKey(state.surface));
+  const startIndex = index >= 0 ? index : offset > 0 ? -1 : 0;
+  setSurface(loopSurfaces[(startIndex + offset + loopSurfaces.length) % loopSurfaces.length]);
 };
 const stepMaterialMode = offset => {
   state.materialMode = adjacentMaterialMode(state.materialMode, offset);
@@ -217,7 +223,7 @@ const updateBackground = background => {
   scheduleSaveAppState();
 };
 const resetView = () => {
-  const view = services.renderer.defaultView();
+  const view = defaultViewFor(state.surface);
   services.renderer.applyView(view);
   if (!state.surface) return;
   state.surfaceViews.set(domainKey(state.surface), view);

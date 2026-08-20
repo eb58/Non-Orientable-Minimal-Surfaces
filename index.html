@@ -102,20 +102,21 @@
         <h2>Parameterbereich</h2>
         <div id="domain-info"></div>
         <div id="domain-slider-controls">
-          <label>
-            <span id="u-min-label">u min</span>
-            <input id="u-min" type="range" step="0.01">
-            <output id="u-min-value"></output>
+          <label class="domain-range-row">
+            <span id="u-range-label">u</span>
+            <span id="u-range-slider" class="range-pair">
+              <input id="u-min" class="range-pair-input range-pair-min" type="range" step="0.01" aria-label="u min">
+              <input id="u-max" class="range-pair-input range-pair-max" type="range" step="0.01" aria-label="u max">
+            </span>
+            <output id="u-range-value"></output>
           </label>
-          <label>
-            <span id="u-max-label">u max</span>
-            <input id="u-max" type="range" step="0.01">
-            <output id="u-max-value"></output>
-          </label>
-          <label>
-            <span id="v-max-label">v max</span>
-            <input id="v-max" type="range" step="0.01">
-            <output id="v-max-value"></output>
+          <label class="domain-range-row">
+            <span id="v-range-label">v</span>
+            <span id="v-range-slider" class="range-pair">
+              <input id="v-min" class="range-pair-input range-pair-min" type="range" step="0.01" aria-label="v min">
+              <input id="v-max" class="range-pair-input range-pair-max" type="range" step="0.01" aria-label="v max">
+            </span>
+            <output id="v-range-value"></output>
           </label>
         </div>
         <button id="reset-domain" class="icon-button" type="button" title="Zurücksetzen" aria-label="Parameterbereich zurücksetzen">

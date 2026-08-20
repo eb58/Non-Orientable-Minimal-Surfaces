@@ -68,20 +68,23 @@ export const createUI = ({
   const saveImageButton = document.querySelector("#save-image");
   const recordVideoButton = document.querySelector("#record-video");
   const videoResolutionControl = document.querySelector("#video-resolution");
+  const domainRangeSliders = {
+    u: document.querySelector("#u-range-slider"),
+    v: document.querySelector("#v-range-slider")
+  };
   const domainControls = {
     uMin: document.querySelector("#u-min"),
     uMax: document.querySelector("#u-max"),
+    vMin: document.querySelector("#v-min"),
     vMax: document.querySelector("#v-max")
   };
   const domainOutputs = {
-    uMin: document.querySelector("#u-min-value"),
-    uMax: document.querySelector("#u-max-value"),
-    vMax: document.querySelector("#v-max-value")
+    uRange: document.querySelector("#u-range-value"),
+    vRange: document.querySelector("#v-range-value")
   };
   const domainLabels = {
-    uMin: document.querySelector("#u-min-label"),
-    uMax: document.querySelector("#u-max-label"),
-    vMax: document.querySelector("#v-max-label")
+    uRange: document.querySelector("#u-range-label"),
+    vRange: document.querySelector("#v-range-label")
   };
   const objectAxes = ["x", "y", "z"];
   const objectControls = Object.fromEntries(objectAxes.map(axis => [axis, document.querySelector(`#object-${axis}`)]));
@@ -93,24 +96,44 @@ export const createUI = ({
     control.step = step;
     control.value = formatDomainNumber(value);
   };
+  const syncRangeVisual = (slider, minControl, maxControl) => {
+    const lowerBound = Number(minControl.min);
+    const upperBound = Number(minControl.max);
+    const span = upperBound - lowerBound || 1;
+    const position = value => 100 * (Number(value) - lowerBound) / span;
+    slider.style.setProperty("--range-min", `${position(minControl.value)}%`);
+    slider.style.setProperty("--range-max", `${position(maxControl.value)}%`);
+  };
+  const syncDomainRangeVisuals = () => {
+    syncRangeVisual(domainRangeSliders.u, domainControls.uMin, domainControls.uMax);
+    syncRangeVisual(domainRangeSliders.v, domainControls.vMin, domainControls.vMax);
+  };
   const syncDomainOutputs = domain => {
-    domainOutputs.uMin.value = formatDomainNumber(domain.uRange[0]);
-    domainOutputs.uMax.value = formatDomainNumber(domain.uRange[1]);
-    domainOutputs.vMax.value = formatDomainNumber(domain.vRange[1]);
+    domainOutputs.uRange.value = `${formatDomainNumber(domain.uRange[0])} – ${formatDomainNumber(domain.uRange[1])}`;
+    domainOutputs.vRange.value = `${formatDomainNumber(domain.vRange[0])} – ${formatDomainNumber(domain.vRange[1])}`;
+    syncDomainRangeVisuals();
   };
   const syncDomainControls = (surface, domain) => {
-    const uBounds = surface.parameter
+    const uBounds = surface.uBounds || (surface.parameter
       ? [Math.max(0.01, sliderBounds(surface.uRange)[0]), sliderBounds(surface.uRange)[1]]
-      : sliderBounds(surface.uRange);
-    const vBounds = surface.parameter
-      ? [surface.vRange[0] + 0.01, surface.vRange[1]]
-      : [surface.vRange[0] + 0.01, sliderBounds(surface.vRange)[1]];
-    domainLabels.uMin.textContent = surface.parameter ? "r min" : "u min";
-    domainLabels.uMax.textContent = surface.parameter ? "r max" : "u max";
-    domainLabels.vMax.textContent = surface.parameter ? "w max" : "v max";
+      : sliderBounds(surface.uRange));
+    const vBounds = surface.vBounds || (surface.parameter
+      ? [...surface.vRange]
+      : sliderBounds(surface.vRange));
+    const uName = surface.parameter ? "r" : "u";
+    const vName = surface.parameter ? "w" : "v";
+    domainLabels.uRange.textContent = uName;
+    domainControls.uMin.setAttribute("aria-label", `${uName} min`);
+    domainControls.uMax.setAttribute("aria-label", `${uName} max`);
+    domainLabels.vRange.textContent = vName;
+    domainControls.vMin.setAttribute("aria-label", `${vName} min`);
+    domainControls.vMax.setAttribute("aria-label", `${vName} max`);
     configureSlider(domainControls.uMin, uBounds, domain.uRange[0]);
     configureSlider(domainControls.uMax, uBounds, domain.uRange[1]);
+    configureSlider(domainControls.vMin, vBounds, domain.vRange[0]);
     configureSlider(domainControls.vMax, vBounds, domain.vRange[1]);
+    Object.values(domainControls).forEach(control => { control.disabled = surface.fixedDomain === true; });
+    resetDomainButton.disabled = surface.fixedDomain === true;
     syncDomainOutputs(domain);
   };
 
@@ -160,7 +183,8 @@ export const createUI = ({
     formulaF.textContent = data.fText;
     formulaG.textContent = data.gText;
     domainInfo.textContent = data.domainText;
-    [...surfaceButtons.children].forEach(button => button.classList.toggle("active", button.dataset.surface === data.name));
+    surfaceButtons.querySelectorAll(".surface-option")
+      .forEach(button => button.classList.toggle("active", button.dataset.surface === data.name));
   };
   const syncObjectOutputs = position => objectAxes.forEach(axis => {
     if (!objectOutputs[axis]) return;
@@ -222,11 +246,24 @@ export const createUI = ({
     videoResolutionControl.disabled = recording;
   };
 
-  const updateCurrentDomain = () => onDomainChange({
-    uMin: domainControls.uMin.value,
-    uMax: domainControls.uMax.value,
-    vMax: domainControls.vMax.value
-  });
+  const preventRangeCrossing = (changedControl, minControl, maxControl) => {
+    const step = Number(minControl.step) || 0.01;
+    const min = Number(minControl.value);
+    const max = Number(maxControl.value);
+    if (changedControl === minControl && min >= max) minControl.value = max - step;
+    if (changedControl === maxControl && max <= min) maxControl.value = min + step;
+  };
+  const updateCurrentDomain = event => {
+    preventRangeCrossing(event?.target, domainControls.uMin, domainControls.uMax);
+    preventRangeCrossing(event?.target, domainControls.vMin, domainControls.vMax);
+    syncDomainRangeVisuals();
+    onDomainChange({
+      uMin: domainControls.uMin.value,
+      uMax: domainControls.uMax.value,
+      vMin: domainControls.vMin.value,
+      vMax: domainControls.vMax.value
+    });
+  };
   const updateCurrentObjectPosition = () => onObjectPositionChange(
     Object.fromEntries(objectAxes.map(axis => [axis, Number(objectControls[axis].value)]))
   );
@@ -279,7 +316,7 @@ export const createUI = ({
   };
   const openTvPanel = () => {
     setPanelCollapsed(false);
-    requestAnimationFrame(() => (surfaceButtons.querySelector(".active") || surfaceButtons.firstElementChild)?.focus());
+    requestAnimationFrame(() => (surfaceButtons.querySelector(".active") || surfaceButtons.querySelector(".surface-option"))?.focus());
   };
   const tvFocusableElements = () => [...document.querySelectorAll(
     "button:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex='-1'])"
@@ -389,8 +426,23 @@ export const createUI = ({
     button.addEventListener("click", () => onSurfaceChange(data));
     return button;
   };
+  const createSurfaceGroup = (label, groupSurfaces, secondary = false) => {
+    const group = document.createElement("section");
+    const heading = document.createElement("h2");
+    group.className = `surface-group${secondary ? " surface-group-secondary" : ""}`;
+    group.setAttribute("aria-label", label);
+    heading.className = "surface-group-title";
+    heading.textContent = label;
+    group.append(heading, ...groupSurfaces.map(createSurfaceButton));
+    return group;
+  };
 
-  surfaceButtons.append(...surfaces.map(createSurfaceButton));
+  const loopSurfaces = surfaces.filter(surface => surface.cycle !== false);
+  const additionalSurfaces = surfaces.filter(surface => surface.cycle === false);
+  surfaceButtons.append(
+    createSurfaceGroup("Flächen-Loop", loopSurfaces),
+    createSurfaceGroup("Weitere Flächen · nicht in der Loop", additionalSurfaces, true)
+  );
   resetButton.addEventListener("click", onResetView);
   saveImageButton.addEventListener("click", onSaveImage);
   recordVideoButton.addEventListener("click", () => onRecordVideoToggle(videoResolutionControl.value));
