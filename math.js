@@ -446,16 +446,16 @@ export const surfaces = [
   s41({ name: "S41_7_5                 ", m: 7, n: 5, r1: 1.1, r2: 1.3 }),
   cobra({ name: "Cobra", m: 5, r1: 1, r2: 1.2 }),
   cobraFamily(),
-  degree7(),
   kusner({ name: "Kusner" }),
   richmond(),
   henneberg(),
+  costa(),
+  outsideCycle(degree7()),
   outsideCycle(s41({ name: "S41_5_1 UFO             ", m: 5, n: 1, r1: 1.0, r2: 1.3 })),
   outsideCycle(s42()),
   outsideCycle(catenoidHelicoid()),
   outsideCycle(lopezKlein()),
-  outsideCycle(enneper()),
-  outsideCycle(costa())
+  outsideCycle(enneper())
 ];
 
 const weierstrass = data => z => {

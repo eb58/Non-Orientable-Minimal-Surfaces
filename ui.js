@@ -31,6 +31,7 @@ export const createUI = ({
   onBackgroundChange,
   onSurfaceStep,
   onRotationToggle,
+  onRotationSpeedChange,
   onRecordVideoToggle,
   onViewNudge,
   onPanelResize
@@ -58,6 +59,8 @@ export const createUI = ({
   const backgroundModeControl = document.querySelector(".background-mode-control");
   const backgroundModeLabel = document.querySelector("#background-mode-label");
   const rotationToggle = document.querySelector("#rotation-toggle");
+  const rotationSpeedControl = document.querySelector("#rotation-speed");
+  const rotationSpeedOutput = document.querySelector("#rotation-speed-value");
   const viewerMaterialCycle = document.querySelector("#material-cycle");
   const viewerBackgroundCycle = document.querySelector("#background-cycle");
   const viewerSurfaceCycle = document.querySelector("#surface-cycle");
@@ -235,9 +238,13 @@ export const createUI = ({
 
   const syncRotation = enabled => {
     rotationToggle.setAttribute("aria-pressed", String(enabled));
-    const label = enabled ? "Automatische Drehung stoppen" : "Automatische Drehung starten";
+    const label = enabled ? "Präsentation stoppen" : "Präsentation starten";
     rotationToggle.title = label;
     rotationToggle.setAttribute("aria-label", label);
+  };
+  const syncRotationSpeed = value => {
+    rotationSpeedControl.value = value;
+    rotationSpeedOutput.value = `${Number(value).toFixed(2)}×`;
   };
 
   const syncRecording = recording => {
@@ -464,6 +471,7 @@ export const createUI = ({
   ));
   viewerSurfaceCycle.addEventListener("click", () => onSurfaceStep(1));
   rotationToggle.addEventListener("click", onRotationToggle);
+  rotationSpeedControl.addEventListener("input", () => onRotationSpeedChange(Number(rotationSpeedControl.value)));
   viewerMaterialCycle.addEventListener("click", () => onMaterialStep(1));
   panelResizer.addEventListener("pointerdown", startPanelResize);
   panelResizer.addEventListener("pointermove", movePanelResize);
@@ -494,6 +502,7 @@ export const createUI = ({
     syncHammerFactor,
     syncBackground,
     syncRotation,
+    syncRotationSpeed,
     syncRecording
   };
 };

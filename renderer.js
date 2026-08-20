@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 import { TAU, normalizePointGrids, pointGridsFor } from "./math.js";
+import { AUTO_ROTATION_TURNS, ROTATION_SPEED } from "./presentation.js";
 
 const EXPORT_PIXEL_RATIO = 4;
 const VIDEO_FPS = 30;
@@ -15,7 +16,8 @@ export const createRenderer = ({
   getObjectPosition,
   getBackground,
   onObjectPositionChange,
-  onViewChange
+  onViewChange,
+  onAutoRotationComplete = () => {}
 }) => {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, preserveDrawingBuffer: true });
   renderer.setClearColor(0x000000, 0);
@@ -48,7 +50,7 @@ export const createRenderer = ({
   const applyView = view => {
     camera.position.fromArray(view.camera);
     controls.target.fromArray(view.target);
-    controls.update();
+    controls.update(0);
   };
   const nudgeView = ({ horizontal = 0, vertical = 0, zoom = 0 }) => {
     const offset = camera.position.clone().sub(controls.target);
@@ -165,8 +167,9 @@ export const createRenderer = ({
   controls.minDistance = 1.4;
   controls.maxDistance = 8;
   controls.enablePan = false;
-  controls.autoRotateSpeed = 5;
+  controls.autoRotateSpeed = ROTATION_SPEED.base;
   const clock = new THREE.Clock();
+  const autoRotation = { angle: 0 };
 
   scene.add(surfaceGroup);
   scene.add(new THREE.HemisphereLight(0xf5fbff, 0x6b8794, 1.05));
@@ -555,10 +558,21 @@ export const createRenderer = ({
     animation.id = requestAnimationFrame(animate);
     const delta = clock.getDelta();
     controls.update(delta);
+    if (controls.autoRotate) {
+      autoRotation.angle += TAU / 60 * controls.autoRotateSpeed * delta;
+      if (autoRotation.angle >= TAU * AUTO_ROTATION_TURNS) {
+        autoRotation.angle = 0;
+        onAutoRotationComplete();
+      }
+    }
     renderer.render(scene, camera);
     if (isRecording()) drawRecordingFrame();
   };
-  const setAutoRotate = enabled => { controls.autoRotate = enabled; };
+  const setAutoRotate = enabled => {
+    controls.autoRotate = enabled;
+    autoRotation.angle = 0;
+  };
+  const setAutoRotateSpeed = factor => { controls.autoRotateSpeed = ROTATION_SPEED.base * factor; };
 
   controls.addEventListener("change", onViewChange);
   canvas.addEventListener("pointerdown", startObjectDrag, { capture: true });
@@ -569,6 +583,6 @@ export const createRenderer = ({
 
   return {
     applyView, currentView, defaultView, nudgeView, renderSurface, resize, animate, saveImage,
-    setObjectPosition, setAutoRotate, startRecording, stopRecording, isRecording
+    setObjectPosition, setAutoRotate, setAutoRotateSpeed, startRecording, stopRecording, isRecording
   };
 };

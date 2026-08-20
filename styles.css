@@ -559,6 +559,29 @@ body.resizing-panel {
   background: linear-gradient(135deg, #123f52, #2f8da8 48%, #14313d);
 }
 
+.presentation-speed-row {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr) 56px;
+  gap: 8px;
+  align-items: center;
+  margin: 12px 0 4px;
+  color: #2d4651;
+  font-size: 0.92rem;
+}
+
+.presentation-speed-row > span {
+  white-space: nowrap;
+}
+
+.presentation-speed-row input {
+  width: 100%;
+  accent-color: #2f8da8;
+}
+
+.presentation-speed-row output {
+  font-variant-numeric: tabular-nums;
+}
+
 .material-mode-control[data-mode="color"],
 .material-mode-control[data-mode="irid"] {
   background: linear-gradient(110deg, #8b3fc7, #268ba5 38%, #31a66c 62%, #d98927);

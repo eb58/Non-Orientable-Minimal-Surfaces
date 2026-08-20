@@ -22,15 +22,16 @@ describe("surfaces-Katalog", () => {
   it("ordnet die nicht zyklischen Flaechen am Ende des Katalogs an", () => {
     const names = surfaces.map(surface => surface.name.trim());
     assert.deepEqual(names.slice(-6), [
+      "Grad-7-Familie",
       "S41_5_1 UFO",
       "S42",
       "Katenoid-Helikoid",
       "Lopez Klein Bottle",
-      "Enneper",
-      "Costa"
+      "Enneper"
     ]);
     assert.ok(surfaces.slice(-6).every(surface => surface.cycle === false));
     assert.ok(surfaces.slice(0, -6).every(surface => surface.cycle !== false));
+    assert.notEqual(findSurface("Costa").cycle, false);
   });
   it("verwendet fuer S42 den geeigneten Ausschnitt und die passende Aufloesung", () => {
     const s42 = findSurface("S42");

@@ -36,6 +36,8 @@ Unter `android/` liegt ein nativer, vollständig offline nutzbarer Fire-TV-Wrapp
 
 Die Sliderwerte für Bereich, Flächenparameter und Objektposition werden pro Fläche separat gemerkt. Der Button `Bereich zurücksetzen` setzt nur den Bereich der aktuell ausgewählten Fläche zurück. Kreisring-Flächen starten mit einem kleinen Winkel-Overlap über `2pi`, damit an der Naht keine Lücke sichtbar bleibt.
 
+Der Play-Knopf startet eine Präsentationsschleife: Jede Fläche der Loop dreht sich zweimal, danach folgt die nächste. Beim Sprung von der letzten zurück zur ersten Fläche wechseln Hintergrund und Material jeweils einen Schritt. Der globale Regler `Drehgeschwindigkeit` verändert das Tempo, ohne die zwei Umdrehungen pro Fläche zu verändern.
+
 ## Enthaltene Flaechen
 
 - Meeks' minimales Moebiusband als `Twisted Catenoid` sowie weitere S41-Presets mit einstellbaren ungeraden Parametern `m` und `n`, wobei `n < m` gilt
@@ -46,7 +48,7 @@ Die Sliderwerte für Bereich, Flächenparameter und Objektposition werden pro Fl
 - Kusner-Familie mit einstellbarem ungeraden Parameter `p`; hoehere `p`-Werte werden mit dichterem Mesh und passendem Radiusbereich zwischen den Polradien gerendert
 - Lopez Klein Bottle, die einmal punktierte minimale Kleinsche Flasche mit einem Ende; gerendert wird ein stetiger Zweig der orientierbaren Doppelflaeche
 - Henneberg-Familie mit ganzzahligem Parameter `m`; `m = 1` ist die klassische Henneberg-Flaeche. Die Flaechen besitzen Verzweigungspunkte und sind dort keine regulaeren Immersionen
-- Costa-Flaeche als orientierbare Vergleichsflaeche auf dem dreifach punktierten quadratischen Torus; die elliptischen Weierstrass-Funktionen werden lokal ueber schnell konvergierende Theta-Reihen ausgewertet. Das periodisch geschlossene Mesh schneidet die drei Enden kreisfoermig aus; ihre Laenge laesst sich mit `Endenausschnitt ε` einstellen
+- Costa-Flaeche als orientierbare Vergleichsflaeche in der Flaechen-Loop auf dem dreifach punktierten quadratischen Torus; die elliptischen Weierstrass-Funktionen werden lokal ueber schnell konvergierende Theta-Reihen ausgewertet. Das periodisch geschlossene Mesh schneidet die drei Enden kreisfoermig aus; ihre Laenge laesst sich mit `Endenausschnitt ε` einstellen
 - Katenoid-Helikoid-Familie mit einem Assoziationswinkel von `0°` bis `90°`
 
 Die Formeln fuer `f` und `g` stehen in `math.js` direkt bei den Presets.

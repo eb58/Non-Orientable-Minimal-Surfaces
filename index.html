@@ -24,7 +24,7 @@
       <button class="panel-toggle" id="panel-toggle" aria-label="Steuerung ein-/ausblenden">›</button>
       <div class="viewer-nav">
         <button id="rotation-toggle" class="viewer-nav-button viewer-nav-rotation" type="button" aria-pressed="false"
-          title="Automatische Drehung starten" aria-label="Automatische Drehung starten">
+          title="Präsentation starten" aria-label="Präsentation starten">
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path class="icon-play" d="M9 7.2v9.6l8-4.8z" fill="currentColor" />
             <path class="icon-pause" d="M8.3 7v10M15.7 7v10" fill="none" stroke="currentColor" stroke-width="2.2"
@@ -97,6 +97,11 @@
           <span aria-hidden="true">&#9654;</span>
         </button>
       </div>
+      <label class="presentation-speed-row">
+        <span>Drehgeschwindigkeit</span>
+        <input id="rotation-speed" type="range" min="0.25" max="3" step="0.05" value="1">
+        <output id="rotation-speed-value">1.00×</output>
+      </label>
       <div id="surface-buttons" class="surface-buttons" aria-label="Minimalflächen"></div>
       <section class="domain-controls" aria-label="Parameterbereich">
         <h2>Parameterbereich</h2>

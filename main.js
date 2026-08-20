@@ -3,6 +3,7 @@ import { createRenderer } from "./renderer.js";
 import { createUI } from "./ui.js";
 import { MATERIAL_MODES, adjacentMaterialMode } from "./materials.js";
 import { BACKGROUND_IDS } from "./backgrounds.js";
+import { nextPresentationIndices, normalizeRotationSpeed } from "./presentation.js";
 
 const STORAGE_KEY = "minimalSurfaceStateV1";
 const MEEKS_SURFACE_NAME = "S41_3_1 - Meeks Möbiusband (Twisted Catenoid)";
@@ -55,6 +56,7 @@ const state = {
   hammerFactors: storedHammerFactors,
   materialMode: MATERIAL_MODES.includes(storageState.materialMode) ? storageState.materialMode : "copper",
   background: BACKGROUND_IDS.includes(storageState.background) ? storageState.background : "space",
+  rotationSpeed: normalizeRotationSpeed(storageState.rotationSpeed),
   autoRotating: false,
   persistenceFrame: 0,
   sliderFrame: 0
@@ -96,6 +98,7 @@ const saveAppState = () => localStorage.setItem(STORAGE_KEY, JSON.stringify({
   activeSurface: state.surface ? domainKey(state.surface) : activeSurfaceName,
   materialMode: state.materialMode,
   background: state.background,
+  rotationSpeed: state.rotationSpeed,
   hammerFactors: Object.fromEntries(state.hammerFactors),
   domains: Object.fromEntries(state.domains),
   parameters: Object.fromEntries(state.parameters),
@@ -235,6 +238,30 @@ const toggleAutoRotate = () => {
   services.renderer.setAutoRotate(state.autoRotating);
   services.ui.syncRotation(state.autoRotating);
 };
+const updateRotationSpeed = value => {
+  state.rotationSpeed = normalizeRotationSpeed(value);
+  services.renderer.setAutoRotateSpeed(state.rotationSpeed);
+  services.ui.syncRotationSpeed(state.rotationSpeed);
+  scheduleSaveAppState();
+};
+const advancePresentation = () => {
+  if (!state.autoRotating || !state.surface) return;
+  const next = nextPresentationIndices({
+    surfaceIndex: loopSurfaces.findIndex(surface => domainKey(surface) === domainKey(state.surface)),
+    surfaceCount: loopSurfaces.length,
+    backgroundIndex: BACKGROUND_IDS.indexOf(state.background),
+    backgroundCount: BACKGROUND_IDS.length,
+    materialIndex: MATERIAL_MODES.indexOf(state.materialMode),
+    materialCount: MATERIAL_MODES.length
+  });
+  if (next.themeChanged) {
+    state.background = BACKGROUND_IDS[next.backgroundIndex];
+    state.materialMode = MATERIAL_MODES[next.materialIndex];
+    services.ui.syncBackground(state.background);
+    services.ui.syncMaterialSelector(state.materialMode);
+  }
+  setSurface(loopSurfaces[next.surfaceIndex]);
+};
 const toggleVideoRecording = resolution => {
   if (services.renderer.isRecording()) services.renderer.stopRecording();
   else services.renderer.startRecording(state.surface ? domainKey(state.surface) : "flaeche", resolution);
@@ -250,7 +277,8 @@ services.renderer = createRenderer({
   getObjectPosition: objectPositionFor,
   getBackground: () => state.background,
   onObjectPositionChange: setObjectPosition,
-  onViewChange: saveCurrentView
+  onViewChange: saveCurrentView,
+  onAutoRotationComplete: advancePresentation
 });
 services.ui = createUI({
   surfaces,
@@ -269,6 +297,7 @@ services.ui = createUI({
   onBackgroundChange: updateBackground,
   onSurfaceStep: stepSurface,
   onRotationToggle: toggleAutoRotate,
+  onRotationSpeedChange: updateRotationSpeed,
   onRecordVideoToggle: toggleVideoRecording,
   onViewNudge: services.renderer.nudgeView,
   onPanelResize: services.renderer.resize
@@ -276,6 +305,8 @@ services.ui = createUI({
 
 services.ui.syncMaterialSelector(state.materialMode);
 services.ui.syncBackground(state.background);
+services.renderer.setAutoRotateSpeed(state.rotationSpeed);
+services.ui.syncRotationSpeed(state.rotationSpeed);
 resetView();
 setSurface(surfaces.find(surface => domainKey(surface) === activeSurfaceName) || surfaces.find(surface => surface.name.startsWith("S41_7_5")));
 services.renderer.resize();
