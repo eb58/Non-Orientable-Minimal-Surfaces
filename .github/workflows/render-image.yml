@@ -1,0 +1,53 @@
+name: Render image
+
+on:
+  workflow_dispatch:
+    inputs:
+      request:
+        description: "JSON mit surface, material, background, Kamera usw."
+        required: true
+        type: string
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Repository auschecken
+        uses: actions/checkout@v4
+
+      - name: Node einrichten
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Playwright installieren
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+
+      - name: Lokalen Webserver starten
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 > /tmp/minimal-surfaces-http.log 2>&1 &
+          for i in {1..40}; do
+            if curl -fsS http://127.0.0.1:4173/index.html >/dev/null; then
+              exit 0
+            fi
+            sleep 0.25
+          done
+          cat /tmp/minimal-surfaces-http.log
+          exit 1
+
+      - name: Bild rendern
+        env:
+          RENDER_REQUEST: ${{ inputs.request }}
+        run: node scripts/render-image.mjs
+
+      - name: Bild als Artefakt bereitstellen
+        uses: actions/upload-artifact@v4
+        with:
+          name: rendered-image
+          path: exports/render.png
+          if-no-files-found: error
+          retention-days: 7
