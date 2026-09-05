@@ -7,9 +7,12 @@ on:
         description: "JSON mit surface, material, background, Kamera usw."
         required: true
         type: string
+  issues:
+    types: [opened]
 
 jobs:
   render:
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.event.issue.title, '[render]')
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -41,7 +44,7 @@ jobs:
 
       - name: Bild rendern
         env:
-          RENDER_REQUEST: ${{ inputs.request }}
+          RENDER_REQUEST: ${{ github.event_name == 'workflow_dispatch' && inputs.request || github.event.issue.body }}
         run: node scripts/render-image.mjs
 
       - name: Bild als Artefakt bereitstellen
