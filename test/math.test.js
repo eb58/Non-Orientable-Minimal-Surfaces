@@ -87,13 +87,26 @@ describe("surfaces-Katalog", () => {
     surfaces.forEach(surface => {
       assert.equal(surface.uRange.length, 2);
       assert.equal(surface.vRange.length, 2);
-      assert.ok(surface.uSegments > 0);
-      assert.ok(surface.vSegments > 0);
+      assert.ok(surface.uRange.every(Number.isFinite));
+      assert.ok(surface.vRange.every(Number.isFinite));
+      assert.ok(surface.uRange[0] < surface.uRange[1]);
+      assert.ok(surface.vRange[0] < surface.vRange[1]);
+      assert.ok(Number.isInteger(surface.uSegments) && surface.uSegments > 0);
+      assert.ok(Number.isInteger(surface.vSegments) && surface.vSegments > 0);
       assert.equal(typeof surface.fText, "string");
       assert.equal(typeof surface.gText, "string");
       assert.equal(typeof surface.f, "function");
       assert.equal(typeof surface.g, "function");
     })
+  );
+  it("hat gueltige Standardwerte fuer alle Flaechenparameter", () =>
+    surfaces.forEach(surface => Object.values(surface.parameters || {}).forEach(parameter => {
+      assert.ok(Number.isFinite(parameter.value));
+      assert.ok(parameter.value >= parameter.min);
+      assert.ok(parameter.value <= parameter.max);
+      const steps = (parameter.value - parameter.min) / parameter.step;
+      assert.ok(Math.abs(steps - Math.round(steps)) < 1e-9);
+    }))
   );
 });
 
@@ -143,8 +156,46 @@ describe("parametrisierte Flaechen", () => {
     const rebuilt = kusner.withParameters({ p: 7 });
     assert.equal(rebuilt.parameters.p.value, 7);
     assert.equal(rebuilt.vSegments, 641);
+    assert.equal(rebuilt.uRange[0], 1);
+    assert.equal(rebuilt.uRange[1], 1.05);
+    assert.equal(rebuilt.uBounds[1], 1.05);
+    assert.ok(rebuilt.uBounds[0] < rebuilt.uRange[0]);
+    assert.ok(rebuilt.uRange[1] <= rebuilt.uBounds[1]);
+    assert.equal(rebuilt.uStep, 0.001);
     assert.equal(typeof rebuilt.f, "function");
   });
+  it("Kusner: alle p-Werte bleiben mit Sicherheitsabstand zwischen den Polen", () => {
+    const kusner = findSurface("Kusner");
+    [3, 5, 7, 9, 11, 13, 15, 17].forEach(p => {
+      const rebuilt = kusner.withParameters({ p });
+      const A = Math.sqrt(2 * p - 1);
+      const B = 2 * A / (p - 1);
+      const rootSpan = Math.sqrt(B ** 2 + 4);
+      const poles = [
+        ((rootSpan - B) / 2) ** (1 / p),
+        ((rootSpan + B) / 2) ** (1 / p)
+      ];
+      assert.ok([...rebuilt.uBounds, ...rebuilt.uRange].every(value => Number.isFinite(value) && value > 0));
+      assert.ok(poles[0] < rebuilt.uBounds[0]);
+      assert.ok(rebuilt.uBounds[0] < rebuilt.uRange[0]);
+      assert.equal(rebuilt.uRange[0], 1);
+      assert.ok(rebuilt.uRange[0] < rebuilt.uRange[1]);
+      assert.ok(rebuilt.uRange[1] <= rebuilt.uBounds[1]);
+      assert.ok(rebuilt.uBounds[1] < poles[1]);
+      if (p !== 7) {
+        assert.ok(Math.abs((poles[1] - rebuilt.uRange[1]) / (poles[1] - poles[0]) - 0.12) < 1e-12);
+      }
+    });
+  });
+  it("normalizeParameters ist fuer Standardwerte idempotent", () =>
+    surfaces.filter(surface => surface.normalizeParameters).forEach(surface => {
+      const defaults = Object.fromEntries(
+        Object.entries(surface.parameters).map(([key, parameter]) => [key, parameter.value])
+      );
+      const normalized = surface.normalizeParameters(defaults);
+      assert.deepEqual(surface.normalizeParameters(normalized), normalized, surface.name);
+    })
+  );
   it("Cobra: normalisiert m und t und baut die Formeln neu auf", () => {
     const surface = findSurface("Cobra");
     assert.deepEqual(surface.normalizeParameters({ m: 6, t: 10 }), { m: 7, t: 3 });

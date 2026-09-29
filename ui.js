@@ -13,6 +13,26 @@ const sliderBounds = rangeValues => {
   const padding = Math.max(0.25, Math.abs(span) * 0.8);
   return [rangeValues[0] - padding, rangeValues[1] + padding];
 };
+export const sliderValueAtRatio = (control, ratio) => {
+  const lowerBound = Number(control.min);
+  const upperBound = Number(control.max);
+  const step = Number(control.step) || 1;
+  const value = lowerBound + Math.round(clamp(0, ratio, 1) * (upperBound - lowerBound) / step) * step;
+  return clamp(lowerBound, value, upperBound);
+};
+export const nearestRangeEndpoint = (value, min, max) =>
+  Math.abs(value - min) <= Math.abs(value - max) ? "min" : "max";
+export const directionalSliderValue = (control, ratio, currentValue) => {
+  const lowerBound = Number(control.min);
+  const upperBound = Number(control.max);
+  const step = Number(control.step) || 1;
+  const current = Number(currentValue);
+  const currentRatio = (current - lowerBound) / (upperBound - lowerBound || 1);
+  const target = sliderValueAtRatio(control, ratio);
+  if (ratio > currentRatio) return clamp(lowerBound, Math.max(target, current + step), upperBound);
+  if (ratio < currentRatio) return clamp(lowerBound, Math.min(target, current - step), upperBound);
+  return current;
+};
 
 export const createUI = ({
   surfaces,
@@ -131,8 +151,8 @@ export const createUI = ({
     domainLabels.vRange.textContent = vName;
     domainControls.vMin.setAttribute("aria-label", `${vName} min`);
     domainControls.vMax.setAttribute("aria-label", `${vName} max`);
-    configureSlider(domainControls.uMin, uBounds, domain.uRange[0]);
-    configureSlider(domainControls.uMax, uBounds, domain.uRange[1]);
+    configureSlider(domainControls.uMin, uBounds, domain.uRange[0], surface.uStep ?? 0.01);
+    configureSlider(domainControls.uMax, uBounds, domain.uRange[1], surface.uStep ?? 0.01);
     configureSlider(domainControls.vMin, vBounds, domain.vRange[0]);
     configureSlider(domainControls.vMax, vBounds, domain.vRange[1]);
     Object.values(domainControls).forEach(control => { control.disabled = surface.fixedDomain === true; });
@@ -145,6 +165,17 @@ export const createUI = ({
     [...surfaceParameterControls.querySelectorAll("input[data-parameter]")]
       .map(control => [control.dataset.parameter, Number(control.value)])
   );
+  const setParameterFromTrackPointer = (event, control) => {
+    if (event.button !== 0) return;
+    const bounds = control.getBoundingClientRect();
+    const ratio = clamp(0, (event.clientX - bounds.left) / bounds.width, 1);
+    const value = directionalSliderValue(control, ratio, control.value);
+    if (value === Number(control.value)) return;
+    event.preventDefault();
+    control.value = String(value);
+    control.focus();
+    onParametersChange(readParameterControls());
+  };
   const createParameterControl = ([key, parameter], values) => {
     const label = document.createElement("label");
     const title = document.createElement("span");
@@ -156,6 +187,7 @@ export const createUI = ({
     input.step = parameter.step || 1;
     input.value = values[key];
     input.dataset.parameter = key;
+    input.addEventListener("pointerdown", event => setParameterFromTrackPointer(event, input));
     title.textContent = parameter.label || key;
     output.value = parameterText(parameter, values[key]);
     label.append(title, input, output);
@@ -270,6 +302,18 @@ export const createUI = ({
       vMin: domainControls.vMin.value,
       vMax: domainControls.vMax.value
     });
+  };
+  const setRangeFromTrackClick = (event, minControl, maxControl) => {
+    if (event.target !== event.currentTarget || minControl.disabled) return;
+    const bounds = event.currentTarget.getBoundingClientRect();
+    const ratio = clamp(0, (event.clientX - bounds.left) / bounds.width, 1);
+    const value = sliderValueAtRatio(minControl, ratio);
+    const control = nearestRangeEndpoint(value, Number(minControl.value), Number(maxControl.value)) === "min"
+      ? minControl
+      : maxControl;
+    control.value = String(value);
+    control.focus();
+    updateCurrentDomain({ target: control });
   };
   const updateCurrentObjectPosition = () => onObjectPositionChange(
     Object.fromEntries(objectAxes.map(axis => [axis, Number(objectControls[axis].value)]))
@@ -458,6 +502,12 @@ export const createUI = ({
   materialPrevious.addEventListener("click", () => onMaterialStep(-1));
   materialNext.addEventListener("click", () => onMaterialStep(1));
   Object.values(domainControls).forEach(control => control.addEventListener("input", updateCurrentDomain));
+  [
+    [domainRangeSliders.u, domainControls.uMin, domainControls.uMax],
+    [domainRangeSliders.v, domainControls.vMin, domainControls.vMax]
+  ].forEach(([slider, minControl, maxControl]) =>
+    slider.addEventListener("click", event => setRangeFromTrackClick(event, minControl, maxControl))
+  );
   Object.values(objectControls).filter(Boolean).forEach(control => control.addEventListener("input", updateCurrentObjectPosition));
   hammerFactorControl.addEventListener("input", updateCurrentHammerFactor);
   backgroundPrevious.addEventListener("click", () => onBackgroundChange(

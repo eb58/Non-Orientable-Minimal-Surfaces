@@ -55,14 +55,18 @@ const surfaceWithFormulas = ({ fText, gText, constants = {}, ...surface }) => ({
   gText
 });
 
-const kusnerRadiusRange = p => {
+const kusnerRadiusDomain = p => {
   const A = Math.sqrt(2 * p - 1);
   const B = 2 * A / (p - 1);
   const rootSpan = Math.sqrt(B ** 2 + 4);
   const innerPole = ((rootSpan - B) / 2) ** (1 / p);
   const outerPole = ((rootSpan + B) / 2) ** (1 / p);
-  const margin = Math.min(0.24, (outerPole - innerPole) * 0.38);
-  return [innerPole + margin, outerPole - margin];
+  const span = outerPole - innerPole;
+  const upperLimit = p === 7 ? 1.05 : Infinity;
+  return {
+    range: [1, Math.min(outerPole - span * 0.12, upperLimit)],
+    bounds: [innerPole + span * 0.03, Math.min(outerPole - span * 0.03, upperLimit)]
+  };
 };
 
 const s41 = ({ name, m, n, r1 = 1, r2 = 1.2, uSegments = 58, vSegments = 221 }) => surfaceWithFormulas({
@@ -138,11 +142,13 @@ const kusner = ({ name = "Kusner", p = 5, r1, r2 }) => {
   const zp = zPowerText(p);
   const uSegments = 70 + Math.round(p * 4);
   const vSegments = 361 + Math.round(p * 40);
-  const radiusRange = kusnerRadiusRange(p);
+  const radiusDomain = kusnerRadiusDomain(p);
 
   return surfaceWithFormulas({
     name,
-    ...annulus(r1 ?? radiusRange[0], r2 ?? radiusRange[1], uSegments, vSegments),
+    ...annulus(r1 ?? radiusDomain.range[0], r2 ?? radiusDomain.range[1], uSegments, vSegments),
+    uBounds: radiusDomain.bounds,
+    uStep: 0.001,
     fText: `z => i * (A * ${zp} + 1)^2 / (${zPowerText(2 * p)} + B * ${zp} - 1)^2`,
     gText: `z => ${zPowerText(p - 1)} * (${zp} - A) / (A * ${zp} + 1)`,
     constants: { A, B },

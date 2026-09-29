@@ -412,6 +412,7 @@ body.resizing-panel {
   position: relative;
   display: block;
   height: 24px;
+  cursor: pointer;
 }
 
 .range-pair::before {
@@ -509,6 +510,11 @@ body.resizing-panel {
 .object-controls input {
   width: 100%;
   accent-color: #2f8da8;
+}
+
+.surface-parameters input[data-parameter] {
+  min-height: 24px;
+  cursor: pointer;
 }
 
 .domain-controls output,

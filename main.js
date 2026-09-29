@@ -4,8 +4,10 @@ import { createUI } from "./ui.js";
 import { MATERIAL_MODES, adjacentMaterialMode } from "./materials.js";
 import { BACKGROUND_IDS } from "./backgrounds.js";
 import { nextPresentationIndices, normalizeRotationSpeed } from "./presentation.js";
+import { constrainDomain, migrateStorageState, resetDomainState } from "./storage-state.js";
 
 const STORAGE_KEY = "minimalSurfaceStateV1";
+const STORAGE_VERSION = 3;
 const MEEKS_SURFACE_NAME = "S41_3_1 Meeks Möbiusband";
 const SURFACE_NAME_ALIASES = {
   "S41_3_1": MEEKS_SURFACE_NAME,
@@ -39,8 +41,9 @@ const mapFromStorage = (value, validValue) => new Map(
     .map(([key, item]) => [currentSurfaceName(key), item])
     .filter(([key, item]) => surfaces.some(surface => domainKey(surface) === key) && validValue(item))
 );
-const storageState = readStorageState();
+const storageState = migrateStorageState(readStorageState(), STORAGE_VERSION);
 const activeSurfaceName = currentSurfaceName(storageState.activeSurface);
+const storedDomains = mapFromStorage(storageState.domains, validDomain);
 const storedHammerFactors = mapFromStorage(storageState.hammerFactors, validHammerFactor);
 if (!storedHammerFactors.size
   && validHammerFactor(storageState.hammerFactor)
@@ -49,7 +52,7 @@ if (!storedHammerFactors.size
 }
 const state = {
   surface: null,
-  domains: mapFromStorage(storageState.domains, validDomain),
+  domains: storedDomains,
   parameters: mapFromStorage(storageState.parameters, validParameters),
   objectPositions: mapFromStorage(storageState.objectPositions, validObjectPosition),
   surfaceViews: mapFromStorage(storageState.surfaceViews, validSurfaceView),
@@ -66,10 +69,7 @@ const defaultViewFor = surface => surface?.initialView || services.renderer.defa
 
 const domainFor = surface => {
   const domain = surface.fixedDomain ? defaultDomain(surface) : state.domains.get(domainKey(surface)) || defaultDomain(surface);
-  return {
-    uRange: [...domain.uRange],
-    vRange: [domain.vRange[0], Math.min(domain.vRange[1], surface.vRange[1])]
-  };
+  return constrainDomain(domain, surface);
 };
 const normalizeParameters = (surface, values) => surface.normalizeParameters ? surface.normalizeParameters(values) : values;
 const defaultParameters = surface => Object.fromEntries(
@@ -83,18 +83,17 @@ const withParameters = surface => surface.withParameters ? surface.withParameter
 const domainTextFor = data => data.parameter
   ? `${formatNumber(data.uRange[0])} <= |z| <= ${formatNumber(data.uRange[1])}, ${formatNumber(data.vRange[0])} <= arg z <= ${formatNumber(data.vRange[1])}`
   : `${formatNumber(data.uRange[0])} <= Re z <= ${formatNumber(data.uRange[1])}, ${formatNumber(data.vRange[0])} <= Im z <= ${formatNumber(data.vRange[1])}`;
-const withDomain = surface => {
-  const domain = domainFor(surface);
-  return {
-    ...surface,
-    uRange: [...domain.uRange],
-    vRange: [...domain.vRange],
-    domainText: domainTextFor({ ...surface, ...domain })
-  };
-};
+const withSelectedDomain = (surface, domain) => ({
+  ...surface,
+  uRange: [...domain.uRange],
+  vRange: [...domain.vRange],
+  domainText: domainTextFor({ ...surface, ...domain })
+});
+const withDomain = surface => withSelectedDomain(surface, domainFor(surface));
 const currentData = () => withDomain(withParameters(state.surface));
 
 const saveAppState = () => localStorage.setItem(STORAGE_KEY, JSON.stringify({
+  version: STORAGE_VERSION,
   activeSurface: state.surface ? domainKey(state.surface) : activeSurfaceName,
   materialMode: state.materialMode,
   background: state.background,
@@ -124,11 +123,12 @@ const setObjectPosition = position => {
 };
 const setSurface = surface => {
   state.surface = surface;
-  const data = currentData();
+  const parameterizedSurface = withParameters(surface);
+  const data = withDomain(parameterizedSurface);
   services.ui.syncHammerFactor(hammerFactorFor(surface));
   services.renderer.renderSurface(data);
   services.ui.updateDomainInfo(data);
-  services.ui.syncDomainControls(surface, domainFor(surface));
+  services.ui.syncDomainControls(parameterizedSurface, domainFor(parameterizedSurface));
   services.ui.syncParameterControls(surface, parametersFor(surface));
   services.ui.syncObjectControls(surface, objectPositionFor(surface));
   services.renderer.applyView(state.surfaceViews.get(domainKey(surface)) || defaultViewFor(surface));
@@ -170,12 +170,18 @@ const updateCurrentParameters = values => {
 };
 const resetDomain = () => {
   if (!state.surface) return;
-  state.domains.delete(domainKey(state.surface));
-  scheduleSaveAppState();
-  const data = currentData();
-  services.ui.syncDomainControls(state.surface, domainFor(state.surface));
+  const parameterizedSurface = withParameters(state.surface);
+  const reset = resetDomainState(
+    state.domains,
+    domainKey(state.surface),
+    defaultDomain(parameterizedSurface)
+  );
+  state.domains = reset.domains;
+  const data = withSelectedDomain(parameterizedSurface, reset.domain);
   services.renderer.renderSurface(data);
   services.ui.updateDomainInfo(data);
+  services.ui.syncDomainControls(parameterizedSurface, reset.domain);
+  scheduleSaveAppState();
 };
 const resetParameters = () => {
   if (!state.surface) return;
