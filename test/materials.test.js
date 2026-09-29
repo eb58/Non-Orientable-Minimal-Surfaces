@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { MATERIAL_MODES, MATERIAL_MODE_LABELS, adjacentMaterialMode } from "../materials.js";
+import { MATERIAL_MODES, MATERIAL_MODE_LABELS, adjacentMaterialMode, usesSurfaceLines } from "../materials.js";
 
 describe("MATERIAL_MODE_LABELS", () => {
   it("hat fuer jeden Modus eine Beschriftung", () => {
@@ -22,5 +22,11 @@ describe("adjacentMaterialMode", () => {
   it("springt am Anfang rueckwaerts zum Ende", () => {
     const last = MATERIAL_MODES[MATERIAL_MODES.length - 1];
     assert.equal(adjacentMaterialMode(MATERIAL_MODES[0], -1), last);
+  });
+});
+
+describe("usesSurfaceLines", () => {
+  it("erzeugt das Liniennetz nur fuer den Farbverlauf", () => {
+    MATERIAL_MODES.forEach(mode => assert.equal(usesSurfaceLines(mode), mode === "color"));
   });
 });

@@ -140,8 +140,8 @@ const kusner = ({ name = "Kusner", p = 5, r1, r2 }) => {
   const A = Math.sqrt(2 * p - 1);
   const B = 2 * A / (p - 1);
   const zp = zPowerText(p);
-  const uSegments = 70 + Math.round(p * 4);
-  const vSegments = 361 + Math.round(p * 40);
+  const uSegments = 76 + Math.round(p * 5);
+  const vSegments = 361 + Math.round(p * 48);
   const radiusDomain = kusnerRadiusDomain(p);
 
   return surfaceWithFormulas({
@@ -149,6 +149,7 @@ const kusner = ({ name = "Kusner", p = 5, r1, r2 }) => {
     ...annulus(r1 ?? radiusDomain.range[0], r2 ?? radiusDomain.range[1], uSegments, vSegments),
     uBounds: radiusDomain.bounds,
     uStep: 0.001,
+    hammerScale: 0.35,
     fText: `z => i * (A * ${zp} + 1)^2 / (${zPowerText(2 * p)} + B * ${zp} - 1)^2`,
     gText: `z => ${zPowerText(p - 1)} * (${zp} - A) / (A * ${zp} + 1)`,
     constants: { A, B },
@@ -462,9 +463,12 @@ const weierstrass = data => z => {
 
 const pointFor = (u, v, data) => data.parameter ? data.parameter(u, v) : C$(u, v);
 
-const segmentDelta = (z0, z1, data) => {
+const segmentDelta = (z0, z1, data, start = weierstrass(data)(z0), end = weierstrass(data)(z1)) => {
   const dz = diff(z0, z1);
-  const delta = weierstrass(data)(center(z0, z1))(dz);
+  const samples = [start(dz), weierstrass(data)(center(z0, z1))(dz), end(dz)];
+  const delta = [0, 1, 2].map(axis =>
+    (samples[0][axis] + 4 * samples[1][axis] + samples[2][axis]) / 6
+  );
   return finiteVector(delta) ? delta : [0, 0, 0];
 };
 
@@ -472,22 +476,28 @@ const buildPointGrid = data => {
   const us = range(data.uRange[0], data.uRange[1], data.uSegments);
   const vs = range(data.vRange[0], data.vRange[1], data.vSegments);
   const points = vs.map(() => us.map(() => [0, 0, 0]));
+  const firstRow = us.map(u => pointFor(u, vs[0], data));
+  const firstIntegrands = firstRow.map(z => weierstrass(data)(z));
 
   us.slice(1).forEach((_, offset) => {
     const column = offset + 1;
-    const z0 = pointFor(us[column - 1], vs[0], data);
-    const z1 = pointFor(us[column], vs[0], data);
-    points[0][column] = vAdd(points[0][column - 1], segmentDelta(z0, z1, data));
+    points[0][column] = vAdd(points[0][column - 1], segmentDelta(
+      firstRow[column - 1], firstRow[column], data, firstIntegrands[column - 1], firstIntegrands[column]
+    ));
   });
 
-  vs.slice(1).forEach((_, offset) => {
+  vs.slice(1).reduce((previousIntegrands, _, offset) => {
     const row = offset + 1;
+    const currentRow = us.map(u => pointFor(u, vs[row], data));
+    const currentIntegrands = currentRow.map(z => weierstrass(data)(z));
     us.forEach((u, column) => {
       const z0 = pointFor(u, vs[row - 1], data);
-      const z1 = pointFor(u, vs[row], data);
-      points[row][column] = vAdd(points[row - 1][column], segmentDelta(z0, z1, data));
+      points[row][column] = vAdd(points[row - 1][column], segmentDelta(
+        z0, currentRow[column], data, previousIntegrands[column], currentIntegrands[column]
+      ));
     });
-  });
+    return currentIntegrands;
+  }, firstIntegrands);
 
   return points;
 };

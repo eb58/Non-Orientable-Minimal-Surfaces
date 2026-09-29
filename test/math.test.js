@@ -1,6 +1,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { TAU, clamp, surfaces, pointGridsFor, normalizePointGrids } from "../math.js";
+import { C$ } from "../complex.js";
 
 const findSurface = name => surfaces.find(surface => surface.name.trim() === name);
 const isFiniteVector = point => Array.isArray(point) && point.length === 3 && point.every(Number.isFinite);
@@ -155,14 +156,36 @@ describe("parametrisierte Flaechen", () => {
     const kusner = findSurface("Kusner");
     const rebuilt = kusner.withParameters({ p: 7 });
     assert.equal(rebuilt.parameters.p.value, 7);
-    assert.equal(rebuilt.vSegments, 641);
+    assert.equal(rebuilt.uSegments, 111);
+    assert.equal(rebuilt.vSegments, 697);
     assert.equal(rebuilt.uRange[0], 1);
     assert.equal(rebuilt.uRange[1], 1.05);
     assert.equal(rebuilt.uBounds[1], 1.05);
     assert.ok(rebuilt.uBounds[0] < rebuilt.uRange[0]);
     assert.ok(rebuilt.uRange[1] <= rebuilt.uBounds[1]);
     assert.equal(rebuilt.uStep, 0.001);
+    assert.equal(rebuilt.hammerScale, 0.35);
     assert.equal(typeof rebuilt.f, "function");
+  });
+  it("integriert Weierstrass-Daten allgemein mit der Simpson-Regel", () => {
+    const [points] = pointGridsFor({
+      uRange: [0, 1],
+      vRange: [0, 0],
+      uSegments: 1,
+      vSegments: 1,
+      parameter: radius => C$(radius, 0),
+      f: C$("z => z^3"),
+      g: C$("z => 0")
+    });
+    assert.ok(Math.abs(points[0][1][0] - 1 / 8) < 1e-12);
+    assert.ok(Math.abs(points[0][1][1]) < 1e-12);
+    assert.ok(Math.abs(points[0][1][2]) < 1e-12);
+  });
+  it("Kusner: p=9 verwendet ein ausgewogenes Gitter", () => {
+    const rebuilt = findSurface("Kusner").withParameters({ p: 9 });
+    assert.equal(rebuilt.uSegments, 121);
+    assert.equal(rebuilt.vSegments, 793);
+    assert.ok((rebuilt.uSegments + 1) * (rebuilt.vSegments + 1) < 100_000);
   });
   it("Kusner: alle p-Werte bleiben mit Sicherheitsabstand zwischen den Polen", () => {
     const kusner = findSurface("Kusner");

@@ -3,6 +3,7 @@ import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 import { TAU, normalizePointGrids, pointGridsFor } from "./math.js";
 import { AUTO_ROTATION_TURNS, ROTATION_SPEED } from "./presentation.js";
+import { usesSurfaceLines } from "./materials.js";
 
 const EXPORT_PIXEL_RATIO = 4;
 const VIDEO_FPS = 30;
@@ -234,19 +235,21 @@ export const createRenderer = ({
     const customMesh = data.mesh ? data.mesh(data) : null;
     const pointGrids = normalizePointGrids(customMesh ? [[customMesh.points]] : pointGridsFor(data));
     const geometry = new THREE.BufferGeometry();
-    const lineGeometry = new THREE.BufferGeometry();
     const materialMode = getMaterialMode();
     geometry.setAttribute("position", new THREE.Float32BufferAttribute(pointGrids.flat(3), 3));
     const colorFns = { marble: marbleColorForPoint, gold: goldColorForPoint };
     geometry.setAttribute("color", colorAttribute(pointGrids, colorFns[materialMode] ?? colorForPoint));
     geometry.setIndex(customMesh ? customMesh.indices : makeIndices(pointGrids));
     geometry.computeVertexNormals();
-    hammerGeometry(geometry, getHammerFactor());
-    const customPoints = customMesh ? pointGrids[0][0] : null;
-    const linePositions = customMesh
-      ? customMesh.lineIndices.flatMap(([from, to]) => [...customPoints[from], ...customPoints[to]])
-      : makeLinePositions(pointGrids);
-    lineGeometry.setAttribute("position", new THREE.Float32BufferAttribute(linePositions, 3));
+    hammerGeometry(geometry, getHammerFactor() * (data.hammerScale ?? 1));
+    const lineGeometry = usesSurfaceLines(materialMode) ? new THREE.BufferGeometry() : null;
+    if (lineGeometry) {
+      const customPoints = customMesh ? pointGrids[0][0] : null;
+      const linePositions = customMesh
+        ? customMesh.lineIndices.flatMap(([from, to]) => [...customPoints[from], ...customPoints[to]])
+        : makeLinePositions(pointGrids);
+      lineGeometry.setAttribute("position", new THREE.Float32BufferAttribute(linePositions, 3));
+    }
     return { geometry, lineGeometry };
   };
   const disposeSurface = () => {
@@ -258,7 +261,7 @@ export const createRenderer = ({
     disposeSurface();
     const mats = { copper: copperMaterial, marble: marbleMaterial, gold: goldMaterial, email: emailMaterial, color: material };
     surfaceGroup.add(new THREE.Mesh(geometries.geometry, mats[getMaterialMode()] ?? material));
-    if (getMaterialMode() === "color") surfaceGroup.add(new THREE.LineSegments(geometries.lineGeometry, lineMaterial));
+    if (geometries.lineGeometry) surfaceGroup.add(new THREE.LineSegments(geometries.lineGeometry, lineMaterial));
   };
 
   const setObjectPosition = position => surfaceGroup.position.set(position.x, position.y, position.z);
