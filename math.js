@@ -463,12 +463,9 @@ const weierstrass = data => z => {
 
 const pointFor = (u, v, data) => data.parameter ? data.parameter(u, v) : C$(u, v);
 
-const segmentDelta = (z0, z1, data, start = weierstrass(data)(z0), end = weierstrass(data)(z1)) => {
+const segmentDelta = (z0, z1, data) => {
   const dz = diff(z0, z1);
-  const samples = [start(dz), weierstrass(data)(center(z0, z1))(dz), end(dz)];
-  const delta = [0, 1, 2].map(axis =>
-    (samples[0][axis] + 4 * samples[1][axis] + samples[2][axis]) / 6
-  );
+  const delta = weierstrass(data)(center(z0, z1))(dz);
   return finiteVector(delta) ? delta : [0, 0, 0];
 };
 
@@ -476,28 +473,22 @@ const buildPointGrid = data => {
   const us = range(data.uRange[0], data.uRange[1], data.uSegments);
   const vs = range(data.vRange[0], data.vRange[1], data.vSegments);
   const points = vs.map(() => us.map(() => [0, 0, 0]));
-  const firstRow = us.map(u => pointFor(u, vs[0], data));
-  const firstIntegrands = firstRow.map(z => weierstrass(data)(z));
 
   us.slice(1).forEach((_, offset) => {
     const column = offset + 1;
-    points[0][column] = vAdd(points[0][column - 1], segmentDelta(
-      firstRow[column - 1], firstRow[column], data, firstIntegrands[column - 1], firstIntegrands[column]
-    ));
+    const z0 = pointFor(us[column - 1], vs[0], data);
+    const z1 = pointFor(us[column], vs[0], data);
+    points[0][column] = vAdd(points[0][column - 1], segmentDelta(z0, z1, data));
   });
 
-  vs.slice(1).reduce((previousIntegrands, _, offset) => {
+  vs.slice(1).forEach((_, offset) => {
     const row = offset + 1;
-    const currentRow = us.map(u => pointFor(u, vs[row], data));
-    const currentIntegrands = currentRow.map(z => weierstrass(data)(z));
     us.forEach((u, column) => {
       const z0 = pointFor(u, vs[row - 1], data);
-      points[row][column] = vAdd(points[row - 1][column], segmentDelta(
-        z0, currentRow[column], data, previousIntegrands[column], currentIntegrands[column]
-      ));
+      const z1 = pointFor(u, vs[row], data);
+      points[row][column] = vAdd(points[row - 1][column], segmentDelta(z0, z1, data));
     });
-    return currentIntegrands;
-  }, firstIntegrands);
+  });
 
   return points;
 };

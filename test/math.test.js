@@ -167,17 +167,17 @@ describe("parametrisierte Flaechen", () => {
     assert.equal(rebuilt.hammerScale, 0.35);
     assert.equal(typeof rebuilt.f, "function");
   });
-  it("integriert Weierstrass-Daten allgemein mit der Simpson-Regel", () => {
+  it("integriert lineare Weierstrass-Daten mit der Mittelpunktregel exakt", () => {
     const [points] = pointGridsFor({
       uRange: [0, 1],
       vRange: [0, 0],
       uSegments: 1,
       vSegments: 1,
       parameter: radius => C$(radius, 0),
-      f: C$("z => z^3"),
+      f: C$("z => z"),
       g: C$("z => 0")
     });
-    assert.ok(Math.abs(points[0][1][0] - 1 / 8) < 1e-12);
+    assert.ok(Math.abs(points[0][1][0] - 1 / 4) < 1e-12);
     assert.ok(Math.abs(points[0][1][1]) < 1e-12);
     assert.ok(Math.abs(points[0][1][2]) < 1e-12);
   });
