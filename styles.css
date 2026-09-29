@@ -582,28 +582,13 @@ body.resizing-panel {
   font-variant-numeric: tabular-nums;
 }
 
-.material-mode-control[data-mode="color"],
-.material-mode-control[data-mode="irid"] {
+.material-mode-control[data-mode="color"] {
   background: linear-gradient(110deg, #8b3fc7, #268ba5 38%, #31a66c 62%, #d98927);
-}
-
-.material-mode-control[data-mode="mirror"] {
-  background: linear-gradient(135deg, #3f5260, #c4d2d9 50%, #536874);
-  color: #142832;
 }
 
 .material-mode-control[data-mode="marble"] {
   background: linear-gradient(135deg, #ebe7de, #a4afb2 52%, #f7f3eb);
   color: #263a43;
-}
-
-.material-mode-control[data-mode="glass"] {
-  background: linear-gradient(135deg, #387f97, #c4edf2 50%, #37748b);
-  color: #123440;
-}
-
-.material-mode-control[data-mode="bronze"] {
-  background: linear-gradient(135deg, #624424, #bc813d 50%, #694524);
 }
 
 .material-mode-control[data-mode="gold"] {

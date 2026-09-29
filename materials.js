@@ -1,13 +1,9 @@
-export const MATERIAL_MODES = ["copper", "bronze", "gold", "color", "mirror", "marble", "glass", "irid", "email"];
+export const MATERIAL_MODES = ["copper", "gold", "color", "marble", "email"];
 
 export const MATERIAL_MODE_LABELS = {
   copper: "Kupfer",
   color: "Farbverlauf",
-  mirror: "Spiegel",
   marble: "Marmor",
-  glass: "Glas",
-  irid: "Seifenblase",
-  bronze: "Bronze",
   gold: "Gold",
   email: "Emaille"
 };

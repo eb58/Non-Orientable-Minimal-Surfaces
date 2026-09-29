@@ -87,55 +87,12 @@ export const createRenderer = ({
     clearcoatRoughness: 0.1,
     side: THREE.DoubleSide,
   });
-  const mirrorMaterial = new THREE.MeshPhysicalMaterial({
-    color: 0xdce8f2,
-    metalness: 1.0,
-    roughness: 0.04,
-    envMap: envTexture,
-    envMapIntensity: 3.0,
-    clearcoat: 1.0,
-    clearcoatRoughness: 0.02,
-    side: THREE.DoubleSide
-  });
   const marbleMaterial = new THREE.MeshPhysicalMaterial({
     vertexColors: true,
     metalness: 0,
-    roughness: 0.1,
-    clearcoat: 1.0,
-    clearcoatRoughness: 0.08,
-    side: THREE.DoubleSide
-  });
-  const glassMaterial = new THREE.MeshPhysicalMaterial({
-    color: 0xffffff,
-    metalness: 0,
-    roughness: 0,
-    transmission: 1.0,
-    thickness: 0.45,
-    ior: 1.38,
-    envMap: envTexture,
-    envMapIntensity: 0.38,
-    side: THREE.DoubleSide
-  });
-  const iridMaterial = new THREE.MeshPhysicalMaterial({
-    color: 0xffffff,
-    metalness: 0,
-    roughness: 0.05,
-    transmission: 0.4,
-    iridescence: 1.0,
-    iridescenceIOR: 1.3,
-    iridescenceThicknessRange: [100, 400],
-    envMap: envTexture,
-    envMapIntensity: 1.5,
-    clearcoat: 1.0,
-    clearcoatRoughness: 0,
-    side: THREE.DoubleSide
-  });
-  const bronzeMaterial = new THREE.MeshPhysicalMaterial({
-    vertexColors: true,
-    metalness: 0.75,
-    roughness: 0.55,
-    clearcoat: 0.12,
-    clearcoatRoughness: 0.45,
+    roughness: 0.34,
+    clearcoat: 0.28,
+    clearcoatRoughness: 0.42,
     side: THREE.DoubleSide
   });
   const goldMaterial = new THREE.MeshPhysicalMaterial({
@@ -193,23 +150,21 @@ export const createRenderer = ({
     return paletteColor(value);
   };
 
-  const marbleTurb = (x, y, z) =>
-    Math.abs(Math.sin(4 * x - 3 * z)) * 0.5 +
-    Math.abs(Math.sin(9 * y + 5 * x)) * 0.25 +
-    Math.abs(Math.sin(15 * z - 7 * y)) * 0.125;
-  const marbleBase = new THREE.Color(0xede8e0);
-  const marbleVein = new THREE.Color(0x4a4a5c);
+  const marbleBase = new THREE.Color(0xf2eee5);
+  const marbleShade = new THREE.Color(0xc8c4bd);
+  const marbleVein = new THREE.Color(0x4f5660);
   const marbleColorForPoint = ([x, y, z]) => {
-    const t = (Math.sin((x + z * 1.5 + marbleTurb(x, y, z) * 6) * Math.PI) + 1) / 2;
-    return marbleBase.clone().lerp(marbleVein, t ** 3);
-  };
-
-  const bronzeBase = new THREE.Color(0x7c5228);
-  const patinaColor = new THREE.Color(0x4a9b7f);
-  const bronzeColorForPoint = ([x, y, z]) => {
-    const height = THREE.MathUtils.clamp((z + 1) / 2, 0, 1);
-    const noise = (Math.sin(x * 7 + z * 5) + Math.sin(y * 11 - x * 3)) * 0.25 + 0.5;
-    return bronzeBase.clone().lerp(patinaColor, (height * 0.7 + noise * 0.3) ** 1.5);
+    const broadWarp = Math.sin(y * 3.1 + z * 2.3) * 0.22 + Math.sin(x * 7.3 - y * 4.7) * 0.08;
+    const fineWarp = Math.sin(x * 13.7 + y * 9.1 - z * 11.3) * 0.035;
+    const primary = Math.abs(Math.sin((x * 0.85 + z * 1.35 + broadWarp + fineWarp) * Math.PI * 2.1));
+    const branch = Math.abs(Math.sin((x * 1.7 - y * 0.45 + z * 0.7 - broadWarp * 0.6) * Math.PI * 2.6));
+    const primaryVein = Math.exp(-primary * primary * 92);
+    const branchVein = Math.exp(-branch * branch * 180) * 0.38;
+    const stoneVariation = 0.07 + 0.1 * (Math.sin(x * 5.3 + y * 3.7 + z * 4.1) + 1) / 2;
+    return marbleBase
+      .clone()
+      .lerp(marbleShade, stoneVariation)
+      .lerp(marbleVein, Math.min(0.72, primaryVein * 0.62 + branchVein));
   };
 
   const goldBase = new THREE.Color(0xd4a017);
@@ -282,7 +237,7 @@ export const createRenderer = ({
     const lineGeometry = new THREE.BufferGeometry();
     const materialMode = getMaterialMode();
     geometry.setAttribute("position", new THREE.Float32BufferAttribute(pointGrids.flat(3), 3));
-    const colorFns = { marble: marbleColorForPoint, bronze: bronzeColorForPoint, gold: goldColorForPoint };
+    const colorFns = { marble: marbleColorForPoint, gold: goldColorForPoint };
     geometry.setAttribute("color", colorAttribute(pointGrids, colorFns[materialMode] ?? colorForPoint));
     geometry.setIndex(customMesh ? customMesh.indices : makeIndices(pointGrids));
     geometry.computeVertexNormals();
@@ -301,7 +256,7 @@ export const createRenderer = ({
   const renderSurface = data => {
     const geometries = surfaceGeometry(data);
     disposeSurface();
-    const mats = { copper: copperMaterial, mirror: mirrorMaterial, marble: marbleMaterial, glass: glassMaterial, irid: iridMaterial, bronze: bronzeMaterial, gold: goldMaterial, email: emailMaterial, color: material };
+    const mats = { copper: copperMaterial, marble: marbleMaterial, gold: goldMaterial, email: emailMaterial, color: material };
     surfaceGroup.add(new THREE.Mesh(geometries.geometry, mats[getMaterialMode()] ?? material));
     if (getMaterialMode() === "color") surfaceGroup.add(new THREE.LineSegments(geometries.lineGeometry, lineMaterial));
   };

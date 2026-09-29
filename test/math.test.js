@@ -145,8 +145,8 @@ describe("parametrisierte Flaechen", () => {
     assert.equal(rebuilt.vSegments, 641);
     assert.equal(typeof rebuilt.f, "function");
   });
-  it("Cobra-Familie: normalisiert m und t und baut die Formeln neu auf", () => {
-    const surface = findSurface("Cobra-Familie");
+  it("Cobra: normalisiert m und t und baut die Formeln neu auf", () => {
+    const surface = findSurface("Cobra");
     assert.deepEqual(surface.normalizeParameters({ m: 6, t: 10 }), { m: 7, t: 3 });
     assert.deepEqual(surface.normalizeParameters({ t: 1.8 }), { m: 5, t: 1.8 });
     const rebuilt = surface.withParameters({ m: 7, t: 1 });
@@ -157,20 +157,6 @@ describe("parametrisierte Flaechen", () => {
     assert.equal(rebuilt.vSegments, 221);
     assert.ok(allPoints(pointGridsFor(rebuilt)).every(isFiniteVector));
   });
-  it("Cobra-Familie: t = 1 stimmt exakt mit Cobra ueberein", () => {
-    const cobra = findSurface("Cobra");
-    const family = findSurface("Cobra-Familie");
-    const z = { re: 1.17, im: 0.31 };
-    assert.deepEqual(family.uRange, cobra.uRange);
-    assert.deepEqual(family.vRange, cobra.vRange);
-    assert.equal(family.uSegments, cobra.uSegments);
-    assert.equal(family.vSegments, cobra.vSegments);
-    assert.equal(family.parameters.m.value, cobra.parameters.m.value);
-    assert.equal(family.parameters.t.value, 1);
-    assert.deepEqual(family.f(z), cobra.f(z));
-    assert.deepEqual(family.g(z), cobra.g(z));
-    assert.deepEqual(pointGridsFor(family), pointGridsFor(cobra));
-  });
   it("Grad-7-Familie: normalisiert den komplexen Parameter und erzeugt endliche Punkte", () => {
     const surface = findSurface("Grad-7-Familie");
     assert.deepEqual(surface.normalizeParameters({ cr: -4, ci: 4 }), { cr: -2.5, ci: 2.5 });
@@ -180,7 +166,8 @@ describe("parametrisierte Flaechen", () => {
     assert.ok(allPoints(pointGridsFor(rebuilt)).every(isFiniteVector));
   });
   it("S41: normalizeParameters erzwingt n < m, beide ungerade", () => {
-    const s41 = findSurface("S41_3_1 - Meeks Möbiusband (Twisted Catenoid)");
+    const s41 = surfaces.find(surface => surface.name.trim().startsWith("S41_3_1"));
+    assert.ok(s41);
     assert.deepEqual(s41.normalizeParameters({ m: 4, n: 4 }), { m: 5, n: 3 });
   });
   it("Katenoid-Helikoid: normalizeParameters kappt den Winkel auf [0, 90]", () => {

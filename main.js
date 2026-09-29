@@ -6,10 +6,10 @@ import { BACKGROUND_IDS } from "./backgrounds.js";
 import { nextPresentationIndices, normalizeRotationSpeed } from "./presentation.js";
 
 const STORAGE_KEY = "minimalSurfaceStateV1";
-const MEEKS_SURFACE_NAME = "S41_3_1 - Meeks Möbiusband (Twisted Catenoid)";
+const MEEKS_SURFACE_NAME = "S41_3_1 Meeks Möbiusband";
 const SURFACE_NAME_ALIASES = {
-  "S41_3_1 Twisted Catenoid": MEEKS_SURFACE_NAME,
-  "Meeks Möbiusband (Twisted Catenoid)": MEEKS_SURFACE_NAME
+  "S41_3_1": MEEKS_SURFACE_NAME,
+  "Meeks Möbiusband": MEEKS_SURFACE_NAME
 };
 const domainKey = surface => surface.name;
 const loopSurfaces = surfaces.filter(surface => surface.cycle !== false);

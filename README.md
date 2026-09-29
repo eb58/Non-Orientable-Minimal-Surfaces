@@ -28,7 +28,7 @@ Unter `android/` liegt ein nativer, vollständig offline nutzbarer Fire-TV-Wrapp
 - Zoom: Mausrad oder Trackpad-Scroll
 - Ansicht zuruecksetzen: Button `Ansicht zuruecksetzen`
 - Parameterbereich aendern: Slider `r min`, `r max`, `w max`
-- Flächenparameter ändern: bei S41 steuern die Slider `m` und `n` die Exponenten, bei Cobra steuert `m` den Exponenten, bei Kusner steuert `p` die Familie und bei Katenoid–Helikoid der Winkel den Übergang
+- Flächenparameter ändern: bei S41 steuern die Slider `m` und `n` die Exponenten, bei Cobra steuern `m` den Exponenten und `t` die Deformation, bei Kusner steuert `p` die Familie und bei Katenoid–Helikoid der Winkel den Übergang
 - Objekt verschieben: Slider `x`, `y`, `z`
 - Objekt verschieben: am Desktop `Ctrl` gedrueckt halten und ziehen, auf Touchscreens mit zwei Fingern ziehen
 - Darstellung umschalten: mit den Pfeilen links und rechts neben dem Modus-Badge
@@ -40,9 +40,8 @@ Der Play-Knopf startet eine Präsentationsschleife: Jede Fläche der Loop dreht 
 
 ## Enthaltene Flaechen
 
-- Meeks' minimales Moebiusband als `Twisted Catenoid` sowie weitere S41-Presets mit einstellbaren ungeraden Parametern `m` und `n`, wobei `n < m` gilt
-- Cobra mit einstellbarem Parameter `m`
-- Cobra-Familie mit ungeradem Exponenten `m` und stetigem Deformationsparameter `t`; bei `t = 1` stimmen ihre Weierstrass-Daten exakt mit der vorhandenen Cobra überein
+- Meeks' minimales Moebiusband sowie weitere S41-Presets mit einstellbaren ungeraden Parametern `m` und `n`, wobei `n < m` gilt
+- Cobra mit ungeradem Exponenten `m` und stetigem Deformationsparameter `t`; `t = 1` entspricht der klassischen Form
 - Grad-7-Familie mit dem freien komplexen Parameter `c = Re c + i Im c`
 - S42, eine nichtorientierbare Minimalflaeche vom Typ einer zweifach punktierten projektiven Ebene
 - Kusner-Familie mit einstellbarem ungeraden Parameter `p`; hoehere `p`-Werte werden mit dichterem Mesh und passendem Radiusbereich zwischen den Polradien gerendert

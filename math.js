@@ -82,16 +82,7 @@ const s41 = ({ name, m, n, r1 = 1, r2 = 1.2, uSegments = 58, vSegments = 221 }) 
   withParameters: values => s41({ name, ...values, r1, r2, uSegments, vSegments })
 });
 
-const cobra = ({ name, m = 5, r1, r2, uSegments = 58, vSegments = 221 }) => surfaceWithFormulas({ // S39
-  name,
-  ...annulus(r1, r2, uSegments, vSegments),
-  fText: `z => (z + 1)^2 * (z + i)^2 / z^${m + 1}`,
-  gText: `z => z^${m - 2} * (z - 1) * (z - i) / ((z + 1) * (z + i))`,
-  parameters: { m: { label: "m", min: 5, max: 11, step: 2, value: m, format: value => Math.round(value).toString() } },
-  withParameters: values => cobra({ name, m: Math.round(values.m), r1, r2, uSegments, vSegments })
-});
-
-const cobraFamily = ({ name = "Cobra-Familie", m = 5, t = 1, r2 = 1.2, uSegments = 58, vSegments = 221 } = {}) =>
+const cobra = ({ name = "Cobra", m = 5, t = 1, r2 = 1.2, uSegments = 58, vSegments = 221 } = {}) =>
   surfaceWithFormulas({
     name,
     ...annulus(1, r2, uSegments, vSegments),
@@ -106,7 +97,7 @@ const cobraFamily = ({ name = "Cobra-Familie", m = 5, t = 1, r2 = 1.2, uSegments
       m: oddInRange(values.m ?? m, 5, 11),
       t: clamp(0.3, Number(values.t ?? t), 3)
     }),
-    withParameters: values => cobraFamily({ name, m: values.m, t: values.t, r2, uSegments, vSegments })
+    withParameters: values => cobra({ name, m: values.m, t: values.t, r2, uSegments, vSegments })
   });
 
 const degree7 = ({ name = "Grad-7-Familie", cr = 0.7, ci = 0, r2 = 1.13, uSegments = 80, vSegments = 481 } = {}) =>
@@ -440,12 +431,11 @@ const costa = ({ cutoff = 0.12, uSegments = 160, vSegments = 160 } = {}) => surf
 const outsideCycle = surface => ({ ...surface, cycle: false });
 
 export const surfaces = [
-  s41({ name: "S41_3_1 - Meeks Möbiusband (Twisted Catenoid)", m: 3, n: 1, r1: 1.0, r2: 2.0 }),
+  s41({ name: "S41_3_1 Meeks Möbiusband", m: 3, n: 1, r1: 1.0, r2: 2.0 }),
   s41({ name: "S41_5_3 Trefoil         ", m: 5, n: 3, r1: 1.0, r2: 1.5 }),
   s41({ name: "S41_5_3 Double Trefoil  ", m: 5, n: 3, r1: 1.1, r2: 1.5 }),
   s41({ name: "S41_7_5                 ", m: 7, n: 5, r1: 1.1, r2: 1.3 }),
-  cobra({ name: "Cobra", m: 5, r1: 1, r2: 1.2 }),
-  cobraFamily(),
+  cobra(),
   kusner({ name: "Kusner" }),
   richmond(),
   henneberg(),
