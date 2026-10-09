@@ -1,17 +1,23 @@
 import { sanitizeRemoteCommand, websocketUrl } from "./remote-protocol.js";
+import { REMOTE_RELAY_URL } from "./remote-config.js";
 
 const params = new URLSearchParams(location.hash.slice(1));
 const room = params.get("room");
 const secret = params.get("secret");
-const relay = params.get("relay");
+const relay = params.get("relay") || REMOTE_RELAY_URL;
 const status = document.querySelector("#connection-status");
 const touchpad = document.querySelector("#touchpad");
+const motionToggle = document.querySelector("#motion-toggle");
+const motionStatus = document.querySelector("#motion-status");
 let socket;
 let reconnectTimer;
 let lastDistance = null;
 let lastPoint = null;
 let pendingRotate = { dx: 0, dy: 0 };
 let animationFrame = 0;
+let motionEnabled = false;
+let lastOrientation = null;
+let filteredMotion = { horizontal: 0, vertical: 0 };
 
 const setStatus = (text, className = "") => {
   status.textContent = text;
@@ -33,6 +39,61 @@ const queueRotate = (dx, dy) => {
   if (!animationFrame) animationFrame = requestAnimationFrame(flushRotate);
 };
 const distance = touches => Math.hypot(touches[0].clientX - touches[1].clientX, touches[0].clientY - touches[1].clientY);
+const angleDelta = (next, previous) => ((next - previous + 540) % 360) - 180;
+const screenAngle = () => screen.orientation?.angle ?? window.orientation ?? 0;
+const orientedTilt = event => {
+  const beta = Number(event.beta);
+  const gamma = Number(event.gamma);
+  if (!Number.isFinite(beta) || !Number.isFinite(gamma)) return null;
+  const angle = ((screenAngle() % 360) + 360) % 360;
+  if (angle === 90) return { horizontal: beta, vertical: -gamma };
+  if (angle === 270) return { horizontal: -beta, vertical: gamma };
+  if (angle === 180) return { horizontal: -gamma, vertical: -beta };
+  return { horizontal: gamma, vertical: beta };
+};
+const handleOrientation = event => {
+  if (!motionEnabled) return;
+  const next = orientedTilt(event);
+  if (!next) return;
+  if (!lastOrientation) { lastOrientation = next; return; }
+  const rawHorizontal = angleDelta(next.horizontal, lastOrientation.horizontal);
+  const rawVertical = angleDelta(next.vertical, lastOrientation.vertical);
+  lastOrientation = next;
+  if (Math.abs(rawHorizontal) > 25 || Math.abs(rawVertical) > 25) return;
+  filteredMotion.horizontal = filteredMotion.horizontal * .62 + rawHorizontal * .38;
+  filteredMotion.vertical = filteredMotion.vertical * .62 + rawVertical * .38;
+  const horizontal = Math.abs(filteredMotion.horizontal) < .08 ? 0 : filteredMotion.horizontal;
+  const vertical = Math.abs(filteredMotion.vertical) < .08 ? 0 : filteredMotion.vertical;
+  if (horizontal || vertical) queueRotate(horizontal * .012, vertical * .012);
+};
+
+const setMotionEnabled = enabled => {
+  motionEnabled = enabled;
+  lastOrientation = null;
+  filteredMotion = { horizontal: 0, vertical: 0 };
+  motionToggle.setAttribute("aria-pressed", String(enabled));
+  motionToggle.textContent = enabled ? "Bewegung ausschalten" : "Bewegung aktivieren";
+  motionStatus.textContent = enabled
+    ? "Aktiv – Smartphone neigen; erneutes Aktivieren kalibriert neu."
+    : "Smartphone neigen, um die Fläche zu drehen.";
+};
+const toggleMotion = async () => {
+  if (motionEnabled) { setMotionEnabled(false); return; }
+  if (!("DeviceOrientationEvent" in window)) {
+    motionStatus.textContent = "Dieser Browser stellt keine Bewegungssensoren bereit.";
+    return;
+  }
+  try {
+    if (typeof DeviceOrientationEvent.requestPermission === "function") {
+      const permission = await DeviceOrientationEvent.requestPermission();
+      if (permission !== "granted") throw new Error("permission-denied");
+    }
+    setMotionEnabled(true);
+  } catch {
+    setMotionEnabled(false);
+    motionStatus.textContent = "Sensorzugriff wurde nicht erlaubt. Bitte in den Browser-Einstellungen freigeben.";
+  }
+};
 
 const connect = () => {
   clearTimeout(reconnectTimer);
@@ -82,4 +143,6 @@ document.querySelectorAll("[data-command]").forEach(button => button.addEventLis
   if (button.dataset.direction) command.direction = Number(button.dataset.direction);
   send(command);
 }));
+window.addEventListener("deviceorientation", handleOrientation);
+motionToggle.addEventListener("click", toggleMotion);
 connect();
