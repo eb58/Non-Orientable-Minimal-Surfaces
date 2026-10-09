@@ -20,6 +20,7 @@ let lastOrientation = null;
 let filteredMotion = { horizontal: 0, vertical: 0 };
 let motionSource = null;
 let motionWatchdog = 0;
+const MOTION_SENSITIVITY = .024;
 
 const setStatus = (text, className = "") => {
   status.textContent = text;
@@ -67,11 +68,11 @@ const handleOrientation = event => {
   const rawVertical = angleDelta(next.vertical, lastOrientation.vertical);
   lastOrientation = next;
   if (Math.abs(rawHorizontal) > 25 || Math.abs(rawVertical) > 25) return;
-  filteredMotion.horizontal = filteredMotion.horizontal * .62 + rawHorizontal * .38;
-  filteredMotion.vertical = filteredMotion.vertical * .62 + rawVertical * .38;
-  const horizontal = Math.abs(filteredMotion.horizontal) < .08 ? 0 : filteredMotion.horizontal;
-  const vertical = Math.abs(filteredMotion.vertical) < .08 ? 0 : filteredMotion.vertical;
-  if (horizontal || vertical) queueRotate(horizontal * .012, vertical * .012);
+  filteredMotion.horizontal = filteredMotion.horizontal * .28 + rawHorizontal * .72;
+  filteredMotion.vertical = filteredMotion.vertical * .28 + rawVertical * .72;
+  const horizontal = Math.abs(filteredMotion.horizontal) < .04 ? 0 : filteredMotion.horizontal;
+  const vertical = Math.abs(filteredMotion.vertical) < .04 ? 0 : filteredMotion.vertical;
+  if (horizontal || vertical) queueRotate(horizontal * MOTION_SENSITIVITY, vertical * MOTION_SENSITIVITY);
 };
 const handleDeviceMotion = event => {
   if (!motionEnabled || !event.rotationRate) return;
@@ -91,8 +92,8 @@ const handleDeviceMotion = event => {
   if (angle === 90) [horizontal, vertical] = [beta, -gamma];
   else if (angle === 270) [horizontal, vertical] = [-beta, gamma];
   else if (angle === 180) [horizontal, vertical] = [-gamma, -beta];
-  const dx = Math.abs(horizontal) < .35 ? 0 : horizontal * seconds * .012;
-  const dy = Math.abs(vertical) < .35 ? 0 : vertical * seconds * .012;
+  const dx = Math.abs(horizontal) < .2 ? 0 : horizontal * seconds * MOTION_SENSITIVITY;
+  const dy = Math.abs(vertical) < .2 ? 0 : vertical * seconds * MOTION_SENSITIVITY;
   if (dx || dy) queueRotate(dx, dy);
 };
 
