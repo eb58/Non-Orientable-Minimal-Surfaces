@@ -159,7 +159,7 @@ describe("parametrisierte Flaechen", () => {
     assert.equal(rebuilt.uSegments, 111);
     assert.equal(rebuilt.vSegments, 697);
     assert.equal(rebuilt.uRange[0], 1);
-    assert.equal(rebuilt.uRange[1], 1.06);
+    assert.equal(rebuilt.uRange[1], 1.028);
     assert.equal(rebuilt.uBounds[1], 1.06);
     assert.ok(rebuilt.uBounds[0] < rebuilt.uRange[0]);
     assert.ok(rebuilt.uRange[1] <= rebuilt.uBounds[1]);

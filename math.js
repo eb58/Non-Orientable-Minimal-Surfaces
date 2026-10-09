@@ -64,7 +64,7 @@ const kusnerRadiusDomain = p => {
   const span = outerPole - innerPole;
   const upperLimit = p === 7 ? 1.06 : Infinity;
   return {
-    range: [1, Math.min(outerPole - span * 0.12, upperLimit)],
+    range: [1, p === 7 ? 1.028 : Math.min(outerPole - span * 0.12, upperLimit)],
     bounds: [innerPole + span * 0.03, Math.min(outerPole - span * 0.03, upperLimit)]
   };
 };
