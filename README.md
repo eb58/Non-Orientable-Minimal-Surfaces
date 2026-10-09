@@ -22,6 +22,21 @@ http://127.0.0.1:5500/index.html
 
 Unter `android/` liegt ein nativer, vollständig offline nutzbarer Fire-TV-Wrapper. Er startet die vorhandene Three.js-Anwendung als APK und ergänzt eine Bedienung über die Fire-TV-Fernbedienung. Build und Sideloading sind in [FIRE_TV.md](FIRE_TV.md) beschrieben.
 
+## Smartphone-Fernbedienung
+
+Über das Smartphone-Symbol in der 3D-Ansicht kann eine kurzlebige Fernbedienungs-Sitzung geöffnet werden. Der angezeigte QR-Code führt zu `remote.html`; Dreh-, Zoom- und Auswahlbefehle laufen über einen kleinen WebSocket-Relay.
+
+Der Relay liegt als Cloudflare Worker mit Durable Object unter `remote-worker/`:
+
+```text
+cd remote-worker
+npm install
+npx wrangler login
+npm run deploy
+```
+
+Anschließend die ausgegebene HTTPS-Adresse in `remote-config.js` als `REMOTE_RELAY_URL` eintragen und GitHub Pages erneut veröffentlichen. Sitzungs-ID und 128-Bit-Geheimnis werden zufällig im Browser erzeugt. Der Relay speichert keine Sitzungsdaten dauerhaft und akzeptiert nur die definierten Steuerbefehle.
+
 ## Bedienung
 
 - Flaeche drehen: mit der Maus oder dem Trackpad ziehen

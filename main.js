@@ -5,6 +5,7 @@ import { MATERIAL_MODES, adjacentMaterialMode } from "./materials.js";
 import { BACKGROUND_IDS } from "./backgrounds.js";
 import { nextPresentationIndices, normalizeRotationSpeed } from "./presentation.js";
 import { constrainDomain, migrateStorageState, resetDomainState } from "./storage-state.js";
+import { createRemoteDisplay } from "./remote-display.js";
 
 const STORAGE_KEY = "minimalSurfaceStateV1";
 const STORAGE_VERSION = 3;
@@ -218,6 +219,10 @@ const stepMaterialMode = offset => {
   scheduleSaveAppState();
   if (state.surface) services.renderer.renderSurface(currentData());
 };
+const stepBackground = offset => {
+  const index = BACKGROUND_IDS.indexOf(state.background);
+  updateBackground(BACKGROUND_IDS[(index + offset + BACKGROUND_IDS.length) % BACKGROUND_IDS.length]);
+};
 const updateHammerFactor = factor => {
   if (!state.surface || !validHammerFactor(factor)) return;
   state.hammerFactors.set(domainKey(state.surface), factor);
@@ -313,6 +318,19 @@ services.ui.syncMaterialSelector(state.materialMode);
 services.ui.syncBackground(state.background);
 services.renderer.setAutoRotateSpeed(state.rotationSpeed);
 services.ui.syncRotationSpeed(state.rotationSpeed);
+createRemoteDisplay({
+  onCommand: command => {
+    switch (command.type) {
+      case "rotate": services.renderer.nudgeView({ horizontal: command.dx, vertical: command.dy }); break;
+      case "zoom": services.renderer.nudgeView({ zoom: command.delta }); break;
+      case "surface": stepSurface(command.direction); break;
+      case "material": stepMaterialMode(command.direction); break;
+      case "background": stepBackground(command.direction); break;
+      case "rotation": toggleAutoRotate(); break;
+      case "reset": resetView(); break;
+    }
+  }
+});
 resetView();
 setSurface(surfaces.find(surface => domainKey(surface) === activeSurfaceName) || surfaces.find(surface => surface.name.startsWith("S41_7_5")));
 services.renderer.resize();

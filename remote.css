@@ -1,0 +1,21 @@
+:root { color-scheme: dark; font-family: Inter, system-ui, sans-serif; background: #0b171d; color: #edf7f8; }
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+body { margin: 0; min-height: 100dvh; overscroll-behavior: none; background: radial-gradient(circle at 50% 0, #21434d, #0b171d 55%); }
+.remote-controller { display: grid; grid-template-rows: auto minmax(260px, 1fr) auto; gap: 16px; width: min(100%, 560px); min-height: 100dvh; margin: auto; padding: max(18px, env(safe-area-inset-top)) 18px max(18px, env(safe-area-inset-bottom)); }
+header { display: flex; gap: 12px; align-items: center; }
+header h1 { margin: 0; font-size: 1.15rem; }
+header p { margin: 3px 0 0; color: #a9c0c6; font-size: .82rem; }
+.connection-dot { width: 13px; height: 13px; border-radius: 50%; background: #d49536; box-shadow: 0 0 12px currentColor; }
+body.connected .connection-dot { background: #44ce92; }
+body.disconnected .connection-dot { background: #d95f65; }
+.touchpad { position: relative; display: grid; place-content: center; border: 1px solid rgba(255,255,255,.16); border-radius: 24px; background: linear-gradient(145deg, rgba(64,121,132,.3), rgba(10,31,39,.75)); box-shadow: inset 0 1px 0 rgba(255,255,255,.09), 0 18px 45px rgba(0,0,0,.25); text-align: center; touch-action: none; user-select: none; overflow: hidden; }
+.touchpad::before { content: ""; position: absolute; inset: 14% 20%; border: 1px dashed rgba(185,226,231,.18); border-radius: 50%; }
+.touchpad span { z-index: 1; font-weight: 650; }
+.touchpad small { z-index: 1; margin-top: 6px; color: #98b6bc; }
+.zoom-rail { position: absolute; top: 16px; right: 14px; bottom: 16px; display: flex; flex-direction: column; justify-content: space-between; width: 32px; border-radius: 99px; background: rgba(5,15,19,.38); padding: 8px; color: #a8c8cf; }
+.button-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+button { min-height: 58px; border: 1px solid rgba(255,255,255,.13); border-radius: 14px; background: #1c3a44; color: #eefafb; font: inherit; font-weight: 650; touch-action: manipulation; }
+button:active { transform: scale(.97); background: #285361; }
+button.accent { background: #267b6e; }
+body:not(.connected) button, body:not(.connected) .touchpad { opacity: .56; }
+@media (orientation: landscape) and (max-height: 540px) { .remote-controller { grid-template: auto 1fr / minmax(240px, 1fr) minmax(220px, .75fr); } header { grid-column: 1 / -1; } }

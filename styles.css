@@ -239,6 +239,46 @@ body.resizing-panel {
   background: linear-gradient(135deg, #3a2359, #8b5fbf 55%, #2b1a44);
 }
 
+.viewer-nav-remote {
+  background: linear-gradient(135deg, #174f49, #2ca893 55%, #103832);
+}
+
+.remote-dialog {
+  position: absolute;
+  z-index: 30;
+  inset: 50% auto auto 50%;
+  width: min(92vw, 390px);
+  transform: translate(-50%, -50%);
+  border: 1px solid rgba(255,255,255,.2);
+  border-radius: 18px;
+  background: rgba(10, 24, 31, .96);
+  box-shadow: 0 24px 80px rgba(0,0,0,.55);
+  padding: 28px;
+  color: #fff;
+  text-align: center;
+  backdrop-filter: blur(16px);
+}
+
+.remote-dialog[hidden] { display: none; }
+.remote-dialog h2 { margin: 0 28px 8px; font-size: 1.35rem; }
+.remote-dialog p { min-height: 2.5em; margin: 0 0 14px; color: #cfe0e5; }
+.remote-dialog canvas { display: block; width: min(65vw, 260px); height: auto; margin: 0 auto 12px; border-radius: 10px; background: #fff; }
+.remote-dialog a { display: block; overflow: hidden; margin: 0 0 14px; color: #8edbea; font-size: .78rem; text-overflow: ellipsis; white-space: nowrap; }
+.remote-dialog > button:not(.remote-close) { background: #237c70; }
+.remote-close { position: absolute; top: 10px; right: 12px; width: 40px; min-width: 40px; height: 40px; padding: 0; border-radius: 50%; background: transparent; font-size: 1.8rem; }
+.remote-dialog[data-connected="true"] {
+  inset: auto auto 20px 20px;
+  width: min(88vw, 330px);
+  transform: none;
+  padding: 18px 56px 18px 20px;
+  text-align: left;
+}
+.remote-dialog[data-connected="true"] h2,
+.remote-dialog[data-connected="true"] canvas,
+.remote-dialog[data-connected="true"] a,
+.remote-dialog[data-connected="true"] #remote-new-session { display: none; }
+.remote-dialog[data-connected="true"] p { min-height: 0; margin: 0; color: #8df0c5; font-weight: 700; }
+
 .hud {
   position: absolute;
   left: 18px;
