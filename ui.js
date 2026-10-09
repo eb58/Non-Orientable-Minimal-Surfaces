@@ -385,6 +385,8 @@ export const createUI = ({
   const activateTvFocus = () => {
     const active = document.activeElement;
     if (!(active instanceof HTMLElement) || active === canvas) return false;
+    const interactive = active.matches("button, input, select, textarea, a[href], [role='button']");
+    if (!interactive || active.hasAttribute("disabled") || active.closest("[inert]")) return false;
     if (active instanceof HTMLSelectElement && typeof active.showPicker === "function") active.showPicker();
     else active.click();
     return true;
@@ -464,9 +466,10 @@ export const createUI = ({
       stepTvFocus(event.shiftKey ? -1 : 1);
       return;
     }
-    if (!["Enter", " "].includes(event.key) || document.activeElement === canvas) return;
-    event.preventDefault();
-    activateTvFocus();
+    const isSelectKey = ["Enter", " ", "Select", "Accept"].includes(event.key)
+      || [13, 23, 66].includes(event.keyCode);
+    if (!isSelectKey || document.activeElement === canvas) return;
+    if (activateTvFocus()) event.preventDefault();
   };
   const createSurfaceButton = data => {
     const button = document.createElement("button");
