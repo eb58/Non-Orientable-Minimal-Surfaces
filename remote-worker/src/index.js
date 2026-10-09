@@ -64,6 +64,7 @@ export class Room {
 
   validCommand(value) {
     if (!value || typeof value !== "object") return false;
+    if (value.type === "object-rotate") return Number.isFinite(value.yaw) && Math.abs(value.yaw) <= .5 && Number.isFinite(value.roll) && Math.abs(value.roll) <= .5;
     if (value.type === "rotate") return Number.isFinite(value.dx) && Math.abs(value.dx) <= .5 && Number.isFinite(value.dy) && Math.abs(value.dy) <= .5;
     if (value.type === "zoom") return Number.isFinite(value.delta) && Math.abs(value.delta) <= .5;
     if (["surface", "material", "background"].includes(value.type)) return value.direction === -1 || value.direction === 1;

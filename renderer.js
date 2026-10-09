@@ -49,6 +49,7 @@ export const createRenderer = ({
     target: controls.target.toArray()
   });
   const applyView = view => {
+    surfaceGroup.quaternion.identity();
     camera.position.fromArray(view.camera);
     controls.target.fromArray(view.target);
     controls.update(0);
@@ -278,6 +279,14 @@ export const createRenderer = ({
     const right = new THREE.Vector3().crossVectors(forward, camera.up).normalize();
     const up = new THREE.Vector3().crossVectors(right, forward).normalize();
     return { right, up };
+  };
+  const rotateObject = ({ yaw = 0, roll = 0 }) => {
+    const { up, forward } = cameraBasis();
+    // Bildschirmbezogene Achsen: seitlich um Bildschirm-oben,
+    // vor/zurueck um die Blickrichtung. Der Objektmittelpunkt bleibt fest.
+    const rotation = new THREE.Quaternion().setFromAxisAngle(up, yaw);
+    rotation.premultiply(new THREE.Quaternion().setFromAxisAngle(forward, roll));
+    surfaceGroup.quaternion.premultiply(rotation).normalize();
   };
   const objectDragScale = () => {
     const distance = Math.max(0.1, camera.position.distanceTo(surfaceGroup.position));
@@ -547,7 +556,7 @@ export const createRenderer = ({
   new ResizeObserver(resize).observe(canvas);
 
   return {
-    applyView, currentView, defaultView, nudgeView, renderSurface, resize, animate, saveImage,
+    applyView, currentView, defaultView, nudgeView, rotateObject, renderSurface, resize, animate, saveImage,
     setObjectPosition, setAutoRotate, setAutoRotateSpeed, startRecording, stopRecording, isRecording
   };
 };

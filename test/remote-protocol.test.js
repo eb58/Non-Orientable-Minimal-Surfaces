@@ -9,6 +9,9 @@ test("accepts known bounded commands", () => {
 });
 
 test("rejects malformed and excessive commands", () => {
+  assert.deepEqual(sanitizeRemoteCommand({ type: "object-rotate", yaw: .2, roll: -.3 }), { type: "object-rotate", yaw: .2, roll: -.3 });
+  assert.equal(sanitizeRemoteCommand({ type: "object-rotate", yaw: .2, roll: Infinity }), null);
+  assert.equal(sanitizeRemoteCommand({ type: "object-rotate", yaw: 1, roll: 0 }), null);
   assert.equal(sanitizeRemoteCommand({ type: "rotate", dx: 9, dy: 0 }), null);
   assert.equal(sanitizeRemoteCommand({ type: "surface", direction: 2 }), null);
   assert.equal(sanitizeRemoteCommand({ type: "unknown" }), null);

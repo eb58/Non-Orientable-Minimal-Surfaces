@@ -322,6 +322,7 @@ createRemoteDisplay({
   onCommand: command => {
     switch (command.type) {
       case "rotate": services.renderer.nudgeView({ horizontal: command.dx, vertical: command.dy }); break;
+      case "object-rotate": services.renderer.rotateObject(command); break;
       case "zoom": services.renderer.nudgeView({ zoom: command.delta }); break;
       case "surface": stepSurface(command.direction); break;
       case "material": stepMaterialMode(command.direction); break;

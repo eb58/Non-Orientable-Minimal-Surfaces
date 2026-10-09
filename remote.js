@@ -15,6 +15,8 @@ let lastDistance = null;
 let lastPoint = null;
 let pendingRotate = { dx: 0, dy: 0 };
 let animationFrame = 0;
+let pendingObjectRotation = { yaw: 0, roll: 0 };
+let objectRotationFrame = 0;
 let motionEnabled = false;
 let lastOrientation = null;
 let filteredMotion = { horizontal: 0, vertical: 0 };
@@ -42,6 +44,16 @@ const queueRotate = (dx, dy) => {
   if (!animationFrame) animationFrame = requestAnimationFrame(flushRotate);
 };
 const distance = touches => Math.hypot(touches[0].clientX - touches[1].clientX, touches[0].clientY - touches[1].clientY);
+const queueObjectRotation = (yaw, roll) => {
+  pendingObjectRotation.yaw = Math.max(-.5, Math.min(.5, pendingObjectRotation.yaw + yaw));
+  pendingObjectRotation.roll = Math.max(-.5, Math.min(.5, pendingObjectRotation.roll + roll));
+  if (!objectRotationFrame) objectRotationFrame = requestAnimationFrame(() => {
+    objectRotationFrame = 0;
+    if (pendingObjectRotation.yaw || pendingObjectRotation.roll)
+      send({ type: "object-rotate", ...pendingObjectRotation });
+    pendingObjectRotation = { yaw: 0, roll: 0 };
+  });
+};
 const angleDelta = (next, previous) => ((next - previous + 540) % 360) - 180;
 const screenAngle = () => screen.orientation?.angle ?? window.orientation ?? 0;
 const orientedTilt = event => {
@@ -72,7 +84,7 @@ const handleOrientation = event => {
   filteredMotion.vertical = filteredMotion.vertical * .15 + rawVertical * .85;
   const horizontal = Math.abs(filteredMotion.horizontal) < .03 ? 0 : filteredMotion.horizontal;
   const vertical = Math.abs(filteredMotion.vertical) < .03 ? 0 : filteredMotion.vertical;
-  if (horizontal || vertical) queueRotate(horizontal * MOTION_SENSITIVITY, vertical * MOTION_SENSITIVITY);
+  if (horizontal || vertical) queueObjectRotation(horizontal * MOTION_SENSITIVITY, vertical * MOTION_SENSITIVITY);
 };
 const handleDeviceMotion = event => {
   if (!motionEnabled || !event.rotationRate) return;
@@ -94,7 +106,7 @@ const handleDeviceMotion = event => {
   else if (angle === 180) [horizontal, vertical] = [-gamma, -beta];
   const dx = Math.abs(horizontal) < .2 ? 0 : horizontal * seconds * MOTION_SENSITIVITY;
   const dy = Math.abs(vertical) < .2 ? 0 : vertical * seconds * MOTION_SENSITIVITY;
-  if (dx || dy) queueRotate(dx, dy);
+  if (dx || dy) queueObjectRotation(dx, dy);
 };
 
 const setMotionEnabled = enabled => {
