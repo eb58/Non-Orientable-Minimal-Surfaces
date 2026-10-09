@@ -18,6 +18,8 @@ let animationFrame = 0;
 let motionEnabled = false;
 let lastOrientation = null;
 let filteredMotion = { horizontal: 0, vertical: 0 };
+let motionSource = null;
+let motionWatchdog = 0;
 
 const setStatus = (text, className = "") => {
   status.textContent = text;
@@ -52,9 +54,14 @@ const orientedTilt = event => {
   return { horizontal: gamma, vertical: beta };
 };
 const handleOrientation = event => {
-  if (!motionEnabled) return;
+  if (!motionEnabled || motionSource === "gyroscope") return;
   const next = orientedTilt(event);
   if (!next) return;
+  if (!motionSource) {
+    motionSource = "orientation";
+    clearTimeout(motionWatchdog);
+    motionStatus.textContent = "Aktiv – Neigungssensor empfängt Daten.";
+  }
   if (!lastOrientation) { lastOrientation = next; return; }
   const rawHorizontal = angleDelta(next.horizontal, lastOrientation.horizontal);
   const rawVertical = angleDelta(next.vertical, lastOrientation.vertical);
@@ -66,29 +73,66 @@ const handleOrientation = event => {
   const vertical = Math.abs(filteredMotion.vertical) < .08 ? 0 : filteredMotion.vertical;
   if (horizontal || vertical) queueRotate(horizontal * .012, vertical * .012);
 };
+const handleDeviceMotion = event => {
+  if (!motionEnabled || !event.rotationRate) return;
+  const beta = Number(event.rotationRate.beta);
+  const gamma = Number(event.rotationRate.gamma);
+  if (!Number.isFinite(beta) || !Number.isFinite(gamma)) return;
+  if (motionSource !== "gyroscope") {
+    motionSource = "gyroscope";
+    lastOrientation = null;
+    clearTimeout(motionWatchdog);
+    motionStatus.textContent = "Aktiv – Gyroskop empfängt Daten.";
+  }
+  const seconds = Math.max(.005, Math.min(.1, Number(event.interval || 16) / 1000));
+  const angle = ((screenAngle() % 360) + 360) % 360;
+  let horizontal = gamma;
+  let vertical = beta;
+  if (angle === 90) [horizontal, vertical] = [beta, -gamma];
+  else if (angle === 270) [horizontal, vertical] = [-beta, gamma];
+  else if (angle === 180) [horizontal, vertical] = [-gamma, -beta];
+  const dx = Math.abs(horizontal) < .35 ? 0 : horizontal * seconds * .012;
+  const dy = Math.abs(vertical) < .35 ? 0 : vertical * seconds * .012;
+  if (dx || dy) queueRotate(dx, dy);
+};
 
 const setMotionEnabled = enabled => {
   motionEnabled = enabled;
   lastOrientation = null;
   filteredMotion = { horizontal: 0, vertical: 0 };
+  motionSource = null;
+  clearTimeout(motionWatchdog);
   motionToggle.setAttribute("aria-pressed", String(enabled));
-  motionToggle.textContent = enabled ? "Bewegung ausschalten" : "Bewegung aktivieren";
+  motionToggle.textContent = enabled ? "Bewegung ausschalten" : "Sensorsteuerung einschalten";
   motionStatus.textContent = enabled
     ? "Aktiv – Smartphone neigen; erneutes Aktivieren kalibriert neu."
     : "Smartphone neigen, um die Fläche zu drehen.";
 };
 const toggleMotion = async () => {
   if (motionEnabled) { setMotionEnabled(false); return; }
-  if (!("DeviceOrientationEvent" in window)) {
+  if (!isSecureContext) {
+    motionStatus.textContent = "Sensoren benötigen eine sichere HTTPS-Verbindung.";
+    return;
+  }
+  if (!("DeviceOrientationEvent" in window) && !("DeviceMotionEvent" in window)) {
     motionStatus.textContent = "Dieser Browser stellt keine Bewegungssensoren bereit.";
     return;
   }
   try {
-    if (typeof DeviceOrientationEvent.requestPermission === "function") {
-      const permission = await DeviceOrientationEvent.requestPermission();
-      if (permission !== "granted") throw new Error("permission-denied");
-    }
+    const permissionRequests = [];
+    if (typeof window.DeviceOrientationEvent?.requestPermission === "function")
+      permissionRequests.push(window.DeviceOrientationEvent.requestPermission());
+    if (typeof window.DeviceMotionEvent?.requestPermission === "function")
+      permissionRequests.push(window.DeviceMotionEvent.requestPermission());
+    const permissions = await Promise.all(permissionRequests);
+    if (permissions.length && permissions.every(permission => permission !== "granted"))
+      throw new Error("permission-denied");
     setMotionEnabled(true);
+    motionStatus.textContent = "Aktivierung erfolgreich – Smartphone jetzt bewegen …";
+    motionWatchdog = setTimeout(() => {
+      if (motionEnabled && !motionSource)
+        motionStatus.textContent = "Keine Sensordaten. Sensorzugriff in den Website-Einstellungen erlauben und Seite neu laden.";
+    }, 1800);
   } catch {
     setMotionEnabled(false);
     motionStatus.textContent = "Sensorzugriff wurde nicht erlaubt. Bitte in den Browser-Einstellungen freigeben.";
@@ -144,5 +188,6 @@ document.querySelectorAll("[data-command]").forEach(button => button.addEventLis
   send(command);
 }));
 window.addEventListener("deviceorientation", handleOrientation);
+window.addEventListener("devicemotion", handleDeviceMotion);
 motionToggle.addEventListener("click", toggleMotion);
 connect();
