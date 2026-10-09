@@ -274,6 +274,35 @@ body.resizing-panel {
 }
 .viewer-nav .remote-inline[data-connected="true"] canvas { display: block; margin: 0; }
 
+.viewer-nav .remote-inline.expanded,
+.viewer-nav .remote-inline.expanded[data-connected="true"] {
+  width: 212px;
+  height: auto;
+  overflow: visible;
+  border-radius: 14px;
+  padding: 14px;
+  background: rgba(10, 24, 31, .96);
+  cursor: zoom-out;
+}
+.viewer-nav .remote-inline:not(.expanded) { cursor: zoom-in; }
+.viewer-nav .remote-inline.expanded h2,
+.viewer-nav .remote-inline.expanded p,
+.viewer-nav .remote-inline.expanded #remote-new-session { display: block; }
+.viewer-nav .remote-inline.expanded h2 { margin: 0 0 8px; font-size: .9rem; }
+.viewer-nav .remote-inline.expanded p { min-height: 0; margin: 7px 0 0; color: #cfe0e5; font-size: .72rem; }
+.viewer-nav .remote-inline.expanded canvas,
+.tv .viewer-nav .remote-inline.expanded canvas {
+  width: 180px;
+  height: 180px;
+  margin: 0 auto;
+}
+.viewer-nav .remote-inline.expanded #remote-new-session {
+  min-height: 0;
+  margin-top: 8px;
+  padding: 6px 8px;
+  font-size: .7rem;
+}
+
 .remote-dialog {
   position: absolute;
   z-index: 30;

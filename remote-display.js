@@ -21,6 +21,11 @@ export const createRemoteDisplay = ({ onCommand }) => {
     socket?.close();
     socket = null;
   };
+  const toggleExpanded = () => {
+    const expanded = dialog.classList.toggle("expanded");
+    dialog.setAttribute("aria-expanded", String(expanded));
+    dialog.title = expanded ? "QR-Code verkleinern" : "QR-Code vergrößern";
+  };
 
   const start = async () => {
     closeSocket();
@@ -81,6 +86,19 @@ export const createRemoteDisplay = ({ onCommand }) => {
   openButton?.addEventListener("click", start);
   newButton.addEventListener("click", start);
   closeButton?.addEventListener("click", () => { dialog.hidden = true; closeSocket(); });
+  dialog.addEventListener("click", event => {
+    if (event.target === newButton || event.target === link) return;
+    toggleExpanded();
+  });
+  dialog.addEventListener("keydown", event => {
+    if (["Enter", " "].includes(event.key)) {
+      event.preventDefault();
+      toggleExpanded();
+    } else if (event.key === "Escape" && dialog.classList.contains("expanded")) {
+      event.preventDefault();
+      toggleExpanded();
+    }
+  });
   start();
   return { start, close: closeSocket };
 };
