@@ -17,5 +17,8 @@ body.disconnected .connection-dot { background: #d95f65; }
 button { min-height: 58px; border: 1px solid rgba(255,255,255,.13); border-radius: 14px; background: #1c3a44; color: #eefafb; font: inherit; font-weight: 650; touch-action: manipulation; }
 button:active { transform: scale(.97); background: #285361; }
 button.accent { background: #267b6e; }
+.motion-toggle { grid-column: 1 / -1; background: #3c326c; }
+.motion-toggle[aria-pressed="true"] { background: #6f55c7; box-shadow: 0 0 0 2px rgba(183,163,255,.35); }
+.motion-status { grid-column: 1 / -1; min-height: 1.2em; margin: -2px 4px 0; color: #98b6bc; font-size: .78rem; text-align: center; }
 body:not(.connected) button, body:not(.connected) .touchpad { opacity: .56; }
 @media (orientation: landscape) and (max-height: 540px) { .remote-controller { grid-template: auto 1fr / minmax(240px, 1fr) minmax(220px, .75fr); } header { grid-column: 1 / -1; } }
