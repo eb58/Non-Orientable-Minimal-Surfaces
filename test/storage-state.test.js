@@ -62,15 +62,15 @@ describe("resetDomainState", () => {
 });
 
 describe("constrainDomain", () => {
-  it("kappt einen gespeicherten Kusner-p7-Bereich bei r gleich 1.05", () => {
+  it("kappt einen gespeicherten Kusner-p7-Bereich bei r gleich 1.06", () => {
     const surface = {
-      uRange: [1, 1.05],
-      uBounds: [0.927, 1.05],
+      uRange: [1, 1.06],
+      uBounds: [0.927, 1.06],
       vRange: [0, 6.383]
     };
     assert.deepEqual(
       constrainDomain({ uRange: [0.976, 1.065], vRange: [0, 6.5] }, surface),
-      { uRange: [0.976, 1.05], vRange: [0, 6.383] }
+      { uRange: [0.976, 1.06], vRange: [0, 6.383] }
     );
   });
 });

@@ -62,7 +62,7 @@ const kusnerRadiusDomain = p => {
   const innerPole = ((rootSpan - B) / 2) ** (1 / p);
   const outerPole = ((rootSpan + B) / 2) ** (1 / p);
   const span = outerPole - innerPole;
-  const upperLimit = p === 7 ? 1.05 : Infinity;
+  const upperLimit = p === 7 ? 1.06 : Infinity;
   return {
     range: [1, Math.min(outerPole - span * 0.12, upperLimit)],
     bounds: [innerPole + span * 0.03, Math.min(outerPole - span * 0.03, upperLimit)]
@@ -136,7 +136,7 @@ const s42 = (r1 = 1.8, r2 = 3, uSegments = 58, vSegments = 301) => {
   });
 };
 
-const kusner = ({ name = "Kusner", p = 5, r1, r2 }) => {
+const kusner = ({ name = "Kusner", p = 7, r1, r2 }) => {
   const A = Math.sqrt(2 * p - 1);
   const B = 2 * A / (p - 1);
   const zp = zPowerText(p);

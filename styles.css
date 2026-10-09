@@ -981,6 +981,18 @@ button:hover {
   height: calc(4rem - 4px);
 }
 
+.tv .viewer-nav .remote-inline.expanded,
+.tv .viewer-nav .remote-inline.expanded[data-connected="true"] {
+  width: min(212px, calc(100vw - 7rem));
+  height: auto;
+  padding: 14px;
+}
+
+.tv .viewer-nav .remote-inline.expanded canvas {
+  width: min(180px, calc(100vw - 9rem));
+  height: auto;
+}
+
 .tv .panel-toggle {
   width: 3rem;
   height: 7rem;

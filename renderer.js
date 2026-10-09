@@ -216,8 +216,13 @@ export const createRenderer = ({
     return Math.max(0, Math.sin(wave * 1.8 + x * 37 - y * 29));
   };
   const hammerGeometry = (geometry, factor = 1) => {
-    geometry.computeVertexNormals();
-    const positions = geometry.attributes.position;
+    if (factor === 0) return;
+    // Nur eine temporaere Kopie verformen: Ihre Normalen liefern den
+    // gehämmerten Glanz, die sichtbare Geometrie bleibt geschlossen.
+    const shadingGeometry = new THREE.BufferGeometry();
+    shadingGeometry.setIndex(geometry.index);
+    shadingGeometry.setAttribute("position", geometry.attributes.position.clone());
+    const positions = shadingGeometry.attributes.position;
     const normals = geometry.attributes.normal;
     Array.from({ length: positions.count }).forEach((_, index) => {
       const x = positions.getX(index);
@@ -228,7 +233,9 @@ export const createRenderer = ({
       positions.setXYZ(index, x + normals.getX(index) * lift, y + normals.getY(index) * lift, z + normals.getZ(index) * lift);
     });
     positions.needsUpdate = true;
-    geometry.computeVertexNormals();
+    shadingGeometry.computeVertexNormals();
+    geometry.setAttribute("normal", shadingGeometry.attributes.normal.clone());
+    shadingGeometry.dispose();
   };
 
   const surfaceGeometry = data => {
