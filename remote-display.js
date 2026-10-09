@@ -11,9 +11,14 @@ export const createRemoteDisplay = ({ onCommand }) => {
   const status = document.querySelector("#remote-status");
   const link = document.querySelector("#remote-link");
   const canvas = document.querySelector("#remote-qr");
+  const viewerNav = dialog.closest(".viewer-nav");
   let socket = null;
   let reconnectTimer = 0;
   let generation = 0;
+  const setPeerConnected = connected => {
+    dialog.dataset.connected = String(connected);
+    if (viewerNav) viewerNav.dataset.remoteConnected = String(connected);
+  };
 
   const closeSocket = () => {
     clearTimeout(reconnectTimer);
@@ -21,16 +26,11 @@ export const createRemoteDisplay = ({ onCommand }) => {
     socket?.close();
     socket = null;
   };
-  const toggleExpanded = () => {
-    const expanded = dialog.classList.toggle("expanded");
-    dialog.setAttribute("aria-expanded", String(expanded));
-    dialog.title = expanded ? "QR-Code verkleinern" : "QR-Code vergrößern";
-  };
-
   const start = async () => {
     closeSocket();
     dialog.hidden = false;
-    dialog.dataset.connected = "false";
+    setPeerConnected(false);
+    dialog.classList.add("expanded");
     if (!REMOTE_RELAY_URL) {
       status.textContent = "Der Relay ist noch nicht konfiguriert. Trage seine URL in remote-config.js ein.";
       canvas.hidden = true;
@@ -62,12 +62,13 @@ export const createRemoteDisplay = ({ onCommand }) => {
         let message;
         try { message = JSON.parse(event.data); } catch { return; }
         if (message.type === "peer-connected") {
-          dialog.dataset.connected = "true";
+          setPeerConnected(true);
           status.textContent = "Smartphone verbunden";
           return;
         }
         if (message.type === "peer-disconnected") {
-          dialog.dataset.connected = "false";
+          setPeerConnected(false);
+          dialog.classList.add("expanded");
           status.textContent = "Verbindung zum Smartphone getrennt";
           return;
         }
@@ -76,6 +77,7 @@ export const createRemoteDisplay = ({ onCommand }) => {
       });
       socket.addEventListener("close", () => {
         if (currentGeneration !== generation || dialog.hidden) return;
+        setPeerConnected(false);
         status.textContent = "Relay-Verbindung wird wiederhergestellt …";
         reconnectTimer = setTimeout(connect, 1500);
       });
@@ -86,19 +88,6 @@ export const createRemoteDisplay = ({ onCommand }) => {
   openButton?.addEventListener("click", start);
   newButton.addEventListener("click", start);
   closeButton?.addEventListener("click", () => { dialog.hidden = true; closeSocket(); });
-  dialog.addEventListener("click", event => {
-    if (event.target === newButton || event.target === link) return;
-    toggleExpanded();
-  });
-  dialog.addEventListener("keydown", event => {
-    if (["Enter", " "].includes(event.key)) {
-      event.preventDefault();
-      toggleExpanded();
-    } else if (event.key === "Escape" && dialog.classList.contains("expanded")) {
-      event.preventDefault();
-      toggleExpanded();
-    }
-  });
   start();
   return { start, close: closeSocket };
 };

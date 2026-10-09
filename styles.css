@@ -276,6 +276,7 @@ body.resizing-panel {
 }
 .viewer-nav .remote-inline[data-connected="true"] canvas { display: none; }
 .viewer-nav .remote-inline[data-connected="true"] { display: none; }
+.viewer-nav[data-remote-connected="true"] > .viewer-nav-button { display: none; }
 
 .viewer-nav .remote-inline.expanded,
 .viewer-nav .remote-inline.expanded[data-connected="true"] {
@@ -287,7 +288,6 @@ body.resizing-panel {
   background: rgba(10, 24, 31, .96);
   cursor: zoom-out;
 }
-.viewer-nav .remote-inline:not(.expanded) { cursor: zoom-in; }
 .viewer-nav .remote-inline.expanded h2,
 .viewer-nav .remote-inline.expanded p,
 .viewer-nav .remote-inline.expanded #remote-new-session { display: block; }

@@ -20,7 +20,7 @@ let lastOrientation = null;
 let filteredMotion = { horizontal: 0, vertical: 0 };
 let motionSource = null;
 let motionWatchdog = 0;
-const MOTION_SENSITIVITY = .024;
+const MOTION_SENSITIVITY = .04;
 
 const setStatus = (text, className = "") => {
   status.textContent = text;
@@ -68,10 +68,10 @@ const handleOrientation = event => {
   const rawVertical = angleDelta(next.vertical, lastOrientation.vertical);
   lastOrientation = next;
   if (Math.abs(rawHorizontal) > 25 || Math.abs(rawVertical) > 25) return;
-  filteredMotion.horizontal = filteredMotion.horizontal * .28 + rawHorizontal * .72;
-  filteredMotion.vertical = filteredMotion.vertical * .28 + rawVertical * .72;
-  const horizontal = Math.abs(filteredMotion.horizontal) < .04 ? 0 : filteredMotion.horizontal;
-  const vertical = Math.abs(filteredMotion.vertical) < .04 ? 0 : filteredMotion.vertical;
+  filteredMotion.horizontal = filteredMotion.horizontal * .15 + rawHorizontal * .85;
+  filteredMotion.vertical = filteredMotion.vertical * .15 + rawVertical * .85;
+  const horizontal = Math.abs(filteredMotion.horizontal) < .03 ? 0 : filteredMotion.horizontal;
+  const vertical = Math.abs(filteredMotion.vertical) < .03 ? 0 : filteredMotion.vertical;
   if (horizontal || vertical) queueRotate(horizontal * MOTION_SENSITIVITY, vertical * MOTION_SENSITIVITY);
 };
 const handleDeviceMotion = event => {
