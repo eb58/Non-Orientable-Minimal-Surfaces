@@ -3,8 +3,10 @@ import assert from "node:assert/strict";
 import { BACKGROUNDS, BACKGROUND_IDS } from "../backgrounds.js";
 
 describe("BACKGROUNDS", () => {
-  it("bietet den urspruenglichen Viewer ohne Bildhintergrund an", () => {
-    assert.deepEqual(BACKGROUNDS[0], { id: "none", label: "Keinen Hintergrund" });
+  it("startet mit Weltraum und enthält nur Bildhintergründe", () => {
+    assert.deepEqual(BACKGROUNDS[0], { id: "space", label: "Weltraum" });
+    assert.equal(BACKGROUND_IDS.includes("none"), false);
+    assert.equal(BACKGROUND_IDS.includes("underwater"), false);
   });
   it("hat eindeutige ids", () => {
     assert.equal(new Set(BACKGROUND_IDS).size, BACKGROUND_IDS.length);
