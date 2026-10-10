@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { directionalSliderValue, nearestRangeEndpoint, sliderValueAtRatio } from "../ui.js";
+import { directionalSliderValue, isTvUserAgent, nearestRangeEndpoint, sliderValueAtRatio } from "../ui.js";
 
 const slider = (min, max, step) => ({ min, max, step });
 
@@ -57,5 +57,29 @@ describe("directionalSliderValue", () => {
   it("bleibt an den aeusseren Grenzen innerhalb des erlaubten Bereichs", () => {
     assert.equal(directionalSliderValue(control, 1, 17), 17);
     assert.equal(directionalSliderValue(control, 0, 3), 3);
+  });
+});
+
+describe("isTvUserAgent", () => {
+  it("erkennt verbreitete TV-Plattformen", () => {
+    [
+      "Mozilla/5.0 (Linux; Android 9; AFTMM Build/PS7292) Silk/112.1",
+      "Mozilla/5.0 (Linux; Android 10; BRAVIA 4K GB Build/QTG3)",
+      "Mozilla/5.0 (SMART-TV; Linux; Tizen 7.0)",
+      "Mozilla/5.0 (Web0S; Linux/SmartTV) AppleWebKit/537.41",
+      "HbbTV/1.6.1 (+DRM;Samsung;SmartTV2022)",
+      "Mozilla/5.0 (Linux; U; Android 11; MiTV Build/RTT0)",
+      "Roku/DVP-12.5"
+    ].forEach(userAgent => assert.equal(isTvUserAgent(userAgent), true, userAgent));
+  });
+
+  it("laesst Computer, Smartphones und Tablets im normalen Modus", () => {
+    [
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/140.0",
+      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) Safari/605.1.15",
+      "Mozilla/5.0 (Linux; Android 15; Pixel 9) Mobile Safari/537.36",
+      "Mozilla/5.0 (Linux; Android 13; KFTRWI Build/TP1A) Silk/112.1",
+      "Mozilla/5.0 (iPad; CPU OS 18_0 like Mac OS X) Mobile/15E148"
+    ].forEach(userAgent => assert.equal(isTvUserAgent(userAgent), false, userAgent));
   });
 });

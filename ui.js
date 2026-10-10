@@ -34,6 +34,9 @@ export const directionalSliderValue = (control, ratio, currentValue) => {
   return current;
 };
 
+const TV_USER_AGENT = /(?:\bAFT[A-Z0-9]*\b|Android[ _-]?TV|GoogleTV|SMART[ _-]?TV|SmartTV|webOS(?:\.TV)?|Web0S|Tizen|HbbTV|NetCast|NETTV|BRAVIA|VIERA|VIDAA|VIZIO|SmartCast|MiTV|Roku|CrKey|CE-HTML)/i;
+export const isTvUserAgent = userAgent => TV_USER_AGENT.test(userAgent || "");
+
 export const createUI = ({
   surfaces,
   getObjectPosition,
@@ -351,7 +354,7 @@ export const createUI = ({
   };
 
   const panelToggle = document.getElementById("panel-toggle");
-  const tvMode = new URLSearchParams(location.search).has("tv") || /\bAFT[A-Z0-9]+\b/i.test(navigator.userAgent);
+  const tvMode = new URLSearchParams(location.search).has("tv") || isTvUserAgent(navigator.userAgent);
   document.documentElement.classList.toggle("tv", tvMode);
   const isMobile = () => globalThis.matchMedia("(max-width: 820px)").matches;
   const updatePanelToggle = () => {
