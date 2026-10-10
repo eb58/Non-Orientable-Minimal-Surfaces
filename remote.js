@@ -22,7 +22,8 @@ let lastOrientation = null;
 let filteredMotion = { horizontal: 0, vertical: 0 };
 let motionSource = null;
 let motionWatchdog = 0;
-const MOTION_SENSITIVITY = .04;
+const HORIZONTAL_MOTION_SENSITIVITY = .04;
+const VERTICAL_MOTION_SENSITIVITY = .08;
 
 const setStatus = (text, className = "") => {
   status.textContent = text;
@@ -84,7 +85,10 @@ const handleOrientation = event => {
   filteredMotion.vertical = filteredMotion.vertical * .15 + rawVertical * .85;
   const horizontal = Math.abs(filteredMotion.horizontal) < .03 ? 0 : filteredMotion.horizontal;
   const vertical = Math.abs(filteredMotion.vertical) < .03 ? 0 : filteredMotion.vertical;
-  if (horizontal || vertical) queueObjectRotation(horizontal * MOTION_SENSITIVITY, vertical * MOTION_SENSITIVITY);
+  if (horizontal || vertical) queueObjectRotation(
+    horizontal * HORIZONTAL_MOTION_SENSITIVITY,
+    vertical * VERTICAL_MOTION_SENSITIVITY
+  );
 };
 const handleDeviceMotion = event => {
   if (!motionEnabled || !event.rotationRate) return;
@@ -104,8 +108,8 @@ const handleDeviceMotion = event => {
   if (angle === 90) [horizontal, vertical] = [beta, -gamma];
   else if (angle === 270) [horizontal, vertical] = [-beta, gamma];
   else if (angle === 180) [horizontal, vertical] = [-gamma, -beta];
-  const dx = Math.abs(horizontal) < .2 ? 0 : horizontal * seconds * MOTION_SENSITIVITY;
-  const dy = Math.abs(vertical) < .2 ? 0 : vertical * seconds * MOTION_SENSITIVITY;
+  const dx = Math.abs(horizontal) < .2 ? 0 : horizontal * seconds * HORIZONTAL_MOTION_SENSITIVITY;
+  const dy = Math.abs(vertical) < .2 ? 0 : vertical * seconds * VERTICAL_MOTION_SENSITIVITY;
   if (dx || dy) queueObjectRotation(dx, dy);
 };
 
