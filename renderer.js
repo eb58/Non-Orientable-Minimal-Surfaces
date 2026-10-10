@@ -278,14 +278,14 @@ export const createRenderer = ({
     camera.getWorldDirection(forward);
     const right = new THREE.Vector3().crossVectors(forward, camera.up).normalize();
     const up = new THREE.Vector3().crossVectors(right, forward).normalize();
-    return { forward, right, up };
+    return { right, up };
   };
   const rotateObject = ({ yaw = 0, roll = 0 }) => {
-    const { up, forward } = cameraBasis();
+    const { right, up } = cameraBasis();
     // Bildschirmbezogene Achsen: seitlich um Bildschirm-oben,
-    // vor/zurueck um die Blickrichtung. Der Objektmittelpunkt bleibt fest.
+    // vor/zurueck um Bildschirm-rechts. Der Objektmittelpunkt bleibt fest.
     const rotation = new THREE.Quaternion().setFromAxisAngle(up, yaw);
-    rotation.premultiply(new THREE.Quaternion().setFromAxisAngle(forward, roll));
+    rotation.premultiply(new THREE.Quaternion().setFromAxisAngle(right, roll));
     surfaceGroup.quaternion.premultiply(rotation).normalize();
   };
   const objectDragScale = () => {
