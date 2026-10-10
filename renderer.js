@@ -288,6 +288,18 @@ export const createRenderer = ({
     rotation.premultiply(new THREE.Quaternion().setFromAxisAngle(right, roll));
     surfaceGroup.quaternion.premultiply(rotation).normalize();
   };
+  const translateObject = ({ horizontal = 0, vertical = 0 }) => {
+    const { right, up } = cameraBasis();
+    const position = surfaceGroup.position.clone()
+      .addScaledVector(right, horizontal)
+      .addScaledVector(up, vertical);
+    const bounded = {
+      x: THREE.MathUtils.clamp(position.x, -1.5, 1.5),
+      y: THREE.MathUtils.clamp(position.y, -1.5, 1.5),
+      z: THREE.MathUtils.clamp(position.z, -1.5, 1.5)
+    };
+    onObjectPositionChange(bounded);
+  };
   const objectDragScale = () => {
     const distance = Math.max(0.1, camera.position.distanceTo(surfaceGroup.position));
     const height = 2 * distance * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
@@ -556,7 +568,7 @@ export const createRenderer = ({
   new ResizeObserver(resize).observe(canvas);
 
   return {
-    applyView, currentView, defaultView, nudgeView, rotateObject, renderSurface, resize, animate, saveImage,
+    applyView, currentView, defaultView, nudgeView, rotateObject, translateObject, renderSurface, resize, animate, saveImage,
     setObjectPosition, setAutoRotate, setAutoRotateSpeed, startRecording, stopRecording, isRecording
   };
 };

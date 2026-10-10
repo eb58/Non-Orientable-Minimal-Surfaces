@@ -142,3 +142,46 @@ test("reactivating sensor controls establishes a fresh orientation baseline", as
   remote.emit("deviceorientation", { beta: 71, gamma: 10 });
   expectRotation(remote, 0, .85 * .08);
 });
+
+test("a quick phone movement translates the object on the dominant screen axis", async () => {
+  const remote = await controller();
+  remote.emit("deviceorientation", { beta: 60, gamma: 0 });
+  remote.emit("devicemotion", {
+    timeStamp: 1000,
+    acceleration: { x: -7, y: 1 },
+    rotationRate: { alpha: 0, beta: 0, gamma: 0 }
+  });
+  assert.deepEqual(remote.messages, [{ type: "object-translate", horizontal: -.34, vertical: 0 }]);
+});
+
+test("vertical phone movement uses the matching visual direction", async () => {
+  const remote = await controller();
+  remote.emit("devicemotion", {
+    timeStamp: 1000,
+    acceleration: { x: 0, y: 7 },
+    rotationRate: { alpha: 0, beta: 0, gamma: 0 }
+  });
+  assert.deepEqual(remote.messages, [{ type: "object-translate", horizontal: 0, vertical: -.34 }]);
+});
+
+test("translation follows screen orientation and suppresses the stopping impulse", async () => {
+  const remote = await controller(90);
+  remote.emit("devicemotion", {
+    timeStamp: 1000,
+    acceleration: { x: 0, y: 8 },
+    rotationRate: { alpha: 0, beta: 0, gamma: 0 }
+  });
+  remote.emit("devicemotion", {
+    timeStamp: 1150,
+    acceleration: { x: 0, y: -8 },
+    rotationRate: { alpha: 0, beta: 0, gamma: 0 }
+  });
+  assert.deepEqual(remote.messages, [{ type: "object-translate", horizontal: .34, vertical: 0 }]);
+});
+
+test("slow or diagonal acceleration does not translate the object", async () => {
+  const remote = await controller();
+  remote.emit("devicemotion", { timeStamp: 1000, acceleration: { x: 3, y: 0 }, rotationRate: null });
+  remote.emit("devicemotion", { timeStamp: 2000, acceleration: { x: 7, y: 7 }, rotationRate: null });
+  assert.deepEqual(remote.messages, []);
+});

@@ -5,6 +5,8 @@ export const sanitizeRemoteCommand = value => {
   if (!value || typeof value !== "object") return null;
   if (value.type === "object-rotate" && finiteRange(value.yaw, .5) && finiteRange(value.roll, .5))
     return { type: "object-rotate", yaw: value.yaw, roll: value.roll };
+  if (value.type === "object-translate" && finiteRange(value.horizontal, .5) && finiteRange(value.vertical, .5))
+    return { type: "object-translate", horizontal: value.horizontal, vertical: value.vertical };
   if (value.type === "rotate" && finiteRange(value.dx, .5) && finiteRange(value.dy, .5))
     return { type: "rotate", dx: value.dx, dy: value.dy };
   if (value.type === "zoom" && finiteRange(value.delta, .5))

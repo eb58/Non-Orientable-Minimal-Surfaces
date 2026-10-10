@@ -24,6 +24,10 @@ let motionSource = null;
 let motionWatchdog = 0;
 const HORIZONTAL_MOTION_SENSITIVITY = .04;
 const VERTICAL_MOTION_SENSITIVITY = .08;
+const TRANSLATION_ACCELERATION_THRESHOLD = 3.5;
+const TRANSLATION_STEP = .34;
+const TRANSLATION_COOLDOWN_MS = 280;
+let lastTranslationAt = -Infinity;
 
 const setStatus = (text, className = "") => {
   status.textContent = text;
@@ -92,7 +96,31 @@ const handleOrientation = event => {
   );
 };
 const handleDeviceMotion = event => {
-  if (!motionEnabled || motionSource === "orientation" || !event.rotationRate) return;
+  if (!motionEnabled) return;
+  const accelerationX = event.acceleration?.x;
+  const accelerationY = event.acceleration?.y;
+  if (Number.isFinite(accelerationX) && Number.isFinite(accelerationY)) {
+    const angle = ((screenAngle() % 360) + 360) % 360;
+    let horizontal = accelerationX;
+    let vertical = accelerationY;
+    if (angle === 90) [horizontal, vertical] = [accelerationY, -accelerationX];
+    else if (angle === 270) [horizontal, vertical] = [-accelerationY, accelerationX];
+    else if (angle === 180) [horizontal, vertical] = [-accelerationX, -accelerationY];
+    const now = Number.isFinite(event.timeStamp) ? event.timeStamp : Date.now();
+    const strongest = Math.max(Math.abs(horizontal), Math.abs(vertical));
+    const weakest = Math.min(Math.abs(horizontal), Math.abs(vertical));
+    if (strongest >= TRANSLATION_ACCELERATION_THRESHOLD
+      && strongest >= weakest * 1.2
+      && now - lastTranslationAt >= TRANSLATION_COOLDOWN_MS) {
+      send({
+        type: "object-translate",
+        horizontal: Math.abs(horizontal) === strongest ? Math.sign(horizontal) * TRANSLATION_STEP : 0,
+        vertical: Math.abs(vertical) === strongest ? -Math.sign(vertical) * TRANSLATION_STEP : 0
+      });
+      lastTranslationAt = now;
+    }
+  }
+  if (motionSource === "orientation" || !event.rotationRate) return;
   // rotationRate uses alpha=X and beta=Y, unlike orientation's beta=X,
   // gamma=Y. Its gamma measures twisting around the screen normal.
   const alpha = event.rotationRate.alpha;
@@ -121,6 +149,7 @@ const setMotionEnabled = enabled => {
   lastOrientation = null;
   filteredMotion = { horizontal: 0, vertical: 0 };
   motionSource = null;
+  lastTranslationAt = -Infinity;
   clearTimeout(motionWatchdog);
   motionToggle.setAttribute("aria-pressed", String(enabled));
   motionToggle.textContent = enabled ? "Bewegung ausschalten" : "Sensorsteuerung einschalten";
