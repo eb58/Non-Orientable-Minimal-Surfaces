@@ -51,13 +51,20 @@ const controller = async (angle = 0) => {
   });
   const toggle = () => elements.get("#motion-toggle").listeners.get("click")();
   await toggle();
+  const flushFrames = () => {
+    for (const [id, handler] of frames) {
+      frames.delete(id);
+      handler();
+    }
+  };
   return {
     emit(type, event) {
       listeners.get(type)(event);
-      for (const [id, handler] of frames) {
-        frames.delete(id);
-        handler();
-      }
+      flushFrames();
+    },
+    touch(type, touches) {
+      elements.get("#touchpad").listeners.get(type)({ touches, preventDefault() {} });
+      flushFrames();
     },
     toggle,
     messages,
@@ -143,45 +150,16 @@ test("reactivating sensor controls establishes a fresh orientation baseline", as
   expectRotation(remote, 0, .85 * .08);
 });
 
-test("a quick phone movement translates the object on the dominant screen axis", async () => {
+test("two-finger drag translates the object by its shared center movement", async () => {
   const remote = await controller();
-  remote.emit("deviceorientation", { beta: 60, gamma: 0 });
-  remote.emit("devicemotion", {
-    timeStamp: 1000,
-    acceleration: { x: -7, y: 1 },
-    rotationRate: { alpha: 0, beta: 0, gamma: 0 }
-  });
-  assert.deepEqual(remote.messages, [{ type: "object-translate", horizontal: -.34, vertical: 0 }]);
+  remote.touch("touchstart", [{ clientX: 20, clientY: 30 }, { clientX: 80, clientY: 30 }]);
+  remote.touch("touchmove", [{ clientX: 30, clientY: 25 }, { clientX: 90, clientY: 25 }]);
+  assert.deepEqual(remote.messages, [{ type: "object-translate", horizontal: .06, vertical: .03 }]);
 });
 
-test("vertical phone movement uses the matching visual direction", async () => {
+test("two-finger pinch remains zoom and does not translate", async () => {
   const remote = await controller();
-  remote.emit("devicemotion", {
-    timeStamp: 1000,
-    acceleration: { x: 0, y: 7 },
-    rotationRate: { alpha: 0, beta: 0, gamma: 0 }
-  });
-  assert.deepEqual(remote.messages, [{ type: "object-translate", horizontal: 0, vertical: -.34 }]);
-});
-
-test("translation follows screen orientation and suppresses the stopping impulse", async () => {
-  const remote = await controller(90);
-  remote.emit("devicemotion", {
-    timeStamp: 1000,
-    acceleration: { x: 0, y: 8 },
-    rotationRate: { alpha: 0, beta: 0, gamma: 0 }
-  });
-  remote.emit("devicemotion", {
-    timeStamp: 1150,
-    acceleration: { x: 0, y: -8 },
-    rotationRate: { alpha: 0, beta: 0, gamma: 0 }
-  });
-  assert.deepEqual(remote.messages, [{ type: "object-translate", horizontal: .34, vertical: 0 }]);
-});
-
-test("slow or diagonal acceleration does not translate the object", async () => {
-  const remote = await controller();
-  remote.emit("devicemotion", { timeStamp: 1000, acceleration: { x: 3, y: 0 }, rotationRate: null });
-  remote.emit("devicemotion", { timeStamp: 2000, acceleration: { x: 7, y: 7 }, rotationRate: null });
-  assert.deepEqual(remote.messages, []);
+  remote.touch("touchstart", [{ clientX: 20, clientY: 30 }, { clientX: 80, clientY: 30 }]);
+  remote.touch("touchmove", [{ clientX: 10, clientY: 30 }, { clientX: 90, clientY: 30 }]);
+  assert.deepEqual(remote.messages, [{ type: "zoom", delta: -.12 }]);
 });
