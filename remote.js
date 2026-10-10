@@ -58,8 +58,8 @@ const queueObjectRotation = (yaw, roll) => {
 const angleDelta = (next, previous) => ((next - previous + 540) % 360) - 180;
 const screenAngle = () => screen.orientation?.angle ?? window.orientation ?? 0;
 const orientedTilt = event => {
-  const beta = Number(event.beta);
-  const gamma = Number(event.gamma);
+  const beta = event.beta;
+  const gamma = event.gamma;
   if (!Number.isFinite(beta) || !Number.isFinite(gamma)) return null;
   const angle = ((screenAngle() % 360) + 360) % 360;
   if (angle === 90) return { horizontal: beta, vertical: -gamma };
@@ -68,11 +68,12 @@ const orientedTilt = event => {
   return { horizontal: gamma, vertical: beta };
 };
 const handleOrientation = event => {
-  if (!motionEnabled || motionSource === "gyroscope") return;
+  if (!motionEnabled) return;
   const next = orientedTilt(event);
   if (!next) return;
-  if (!motionSource) {
+  if (motionSource !== "orientation") {
     motionSource = "orientation";
+    lastOrientation = null;
     clearTimeout(motionWatchdog);
     motionStatus.textContent = "Aktiv – Neigungssensor empfängt Daten.";
   }
@@ -91,10 +92,12 @@ const handleOrientation = event => {
   );
 };
 const handleDeviceMotion = event => {
-  if (!motionEnabled || !event.rotationRate) return;
-  const beta = Number(event.rotationRate.beta);
-  const gamma = Number(event.rotationRate.gamma);
-  if (!Number.isFinite(beta) || !Number.isFinite(gamma)) return;
+  if (!motionEnabled || motionSource === "orientation" || !event.rotationRate) return;
+  // rotationRate uses alpha=X and beta=Y, unlike orientation's beta=X,
+  // gamma=Y. Its gamma measures twisting around the screen normal.
+  const alpha = event.rotationRate.alpha;
+  const beta = event.rotationRate.beta;
+  if (!Number.isFinite(alpha) || !Number.isFinite(beta)) return;
   if (motionSource !== "gyroscope") {
     motionSource = "gyroscope";
     lastOrientation = null;
@@ -103,11 +106,11 @@ const handleDeviceMotion = event => {
   }
   const seconds = Math.max(.005, Math.min(.1, Number(event.interval || 16) / 1000));
   const angle = ((screenAngle() % 360) + 360) % 360;
-  let horizontal = gamma;
-  let vertical = beta;
-  if (angle === 90) [horizontal, vertical] = [beta, -gamma];
-  else if (angle === 270) [horizontal, vertical] = [-beta, gamma];
-  else if (angle === 180) [horizontal, vertical] = [-gamma, -beta];
+  let horizontal = beta;
+  let vertical = alpha;
+  if (angle === 90) [horizontal, vertical] = [alpha, -beta];
+  else if (angle === 270) [horizontal, vertical] = [-alpha, beta];
+  else if (angle === 180) [horizontal, vertical] = [-beta, -alpha];
   const dx = Math.abs(horizontal) < .2 ? 0 : horizontal * seconds * HORIZONTAL_MOTION_SENSITIVITY;
   const dy = Math.abs(vertical) < .2 ? 0 : vertical * seconds * VERTICAL_MOTION_SENSITIVITY;
   if (dx || dy) queueObjectRotation(dx, dy);
