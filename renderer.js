@@ -278,7 +278,7 @@ export const createRenderer = ({
     camera.getWorldDirection(forward);
     const right = new THREE.Vector3().crossVectors(forward, camera.up).normalize();
     const up = new THREE.Vector3().crossVectors(right, forward).normalize();
-    return { right, up };
+    return { forward, right, up };
   };
   const rotateObject = ({ yaw = 0, roll = 0 }) => {
     const { up, forward } = cameraBasis();

@@ -1,5 +1,7 @@
 import { REMOTE_RELAY_URL } from "./remote-config.js";
-import { randomToken, sanitizeRemoteCommand, websocketUrl } from "./remote-protocol.js";
+import {
+  PUBLIC_REMOTE_SECRET, randomToken, remoteCredentialsHash, sanitizeRemoteCommand, websocketUrl
+} from "./remote-protocol.js";
 
 const QR_MODULE = "https://cdn.jsdelivr.net/npm/qrcode@1.5.4/+esm";
 
@@ -26,11 +28,18 @@ export const createRemoteDisplay = ({ onCommand }) => {
     socket?.close();
     socket = null;
   };
-  const start = async () => {
+  const tvMode = document.documentElement.classList.contains("tv");
+  const userAgent = navigator.userAgent || "";
+  const mobileMode = navigator.userAgentData?.mobile === true
+    || /Android|iPhone|iPad|iPod|Mobile|Tablet/i.test(userAgent)
+    || (/Macintosh/i.test(userAgent) && navigator.maxTouchPoints > 1);
+  if (!tvMode && mobileMode) return { start: () => {}, close: closeSocket };
+
+  const start = async ({ keepExpanded = false } = {}) => {
     closeSocket();
     dialog.hidden = false;
     setPeerConnected(false);
-    dialog.classList.add("expanded");
+    if (!keepExpanded) dialog.classList.toggle("expanded", tvMode);
     if (!REMOTE_RELAY_URL) {
       status.textContent = "Der Relay ist noch nicht konfiguriert. Trage seine URL in remote-config.js ein.";
       canvas.hidden = true;
@@ -41,15 +50,15 @@ export const createRemoteDisplay = ({ onCommand }) => {
     link.hidden = false;
     const currentGeneration = generation;
     const room = randomToken(6);
-    const secret = randomToken();
+    const secret = PUBLIC_REMOTE_SECRET;
     const controllerUrl = new URL("remote.html", location.href);
-    controllerUrl.hash = new URLSearchParams({ room, secret }).toString();
+    controllerUrl.hash = remoteCredentialsHash(room);
     link.href = controllerUrl.href;
     link.textContent = controllerUrl.href;
     status.textContent = "QR-Code mit dem Smartphone scannen";
     try {
       const { default: QRCode } = await import(QR_MODULE);
-      await QRCode.toCanvas(canvas, controllerUrl.href, { width: 184, margin: 1, errorCorrectionLevel: "L" });
+      await QRCode.toCanvas(canvas, controllerUrl.href, { width: 148, margin: 1, errorCorrectionLevel: "L" });
     } catch {
       canvas.hidden = true;
       status.textContent = "QR-Code konnte nicht geladen werden. Öffne den Link auf dem Smartphone.";
@@ -85,8 +94,12 @@ export const createRemoteDisplay = ({ onCommand }) => {
     connect();
   };
 
-  openButton?.addEventListener("click", start);
-  newButton.addEventListener("click", start);
+  openButton?.addEventListener("click", () => start({ keepExpanded: true }));
+  dialog.addEventListener("click", event => {
+    if (event.target.closest("button, a")) return;
+    dialog.classList.toggle("expanded");
+  });
+  newButton.addEventListener("click", () => start({ keepExpanded: true }));
   closeButton?.addEventListener("click", () => { dialog.hidden = true; closeSocket(); });
   start();
   return { start, close: closeSocket };

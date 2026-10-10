@@ -1,6 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { sanitizeRemoteCommand, websocketUrl } from "../remote-protocol.js";
+import {
+  PUBLIC_REMOTE_SECRET, parseRemoteCredentials, remoteCredentialsHash, sanitizeRemoteCommand, websocketUrl
+} from "../remote-protocol.js";
 
 test("accepts known bounded commands", () => {
   assert.deepEqual(sanitizeRemoteCommand({ type: "rotate", dx: .2, dy: -.1, ignored: true }), { type: "rotate", dx: .2, dy: -.1 });
@@ -19,4 +21,17 @@ test("rejects malformed and excessive commands", () => {
 
 test("builds a secure websocket URL", () => {
   assert.equal(websocketUrl("https://relay.example", "abc", "display", "secret"), "wss://relay.example/room/abc?role=display&secret=secret");
+});
+
+test("encodes a remote room into a compact hash", () => {
+  const room = "001122334455";
+  const hash = remoteCredentialsHash(room);
+  assert.equal(hash.length, 8);
+  assert.deepEqual(parseRemoteCredentials(`#${hash}`), { room, secret: PUBLIC_REMOTE_SECRET, relay: null });
+});
+
+test("keeps accepting legacy remote links", () => {
+  assert.deepEqual(parseRemoteCredentials("#room=abc&secret=def&relay=https%3A%2F%2Frelay.example"), {
+    room: "abc", secret: "def", relay: "https://relay.example"
+  });
 });

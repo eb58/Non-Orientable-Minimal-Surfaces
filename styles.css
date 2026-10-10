@@ -267,7 +267,7 @@ body.resizing-panel {
 
 .viewer-nav .remote-inline.expanded,
 .viewer-nav .remote-inline.expanded[data-connected="true"] {
-  width: 212px;
+  width: 180px;
   height: auto;
   overflow: visible;
   border-radius: 14px;
@@ -284,8 +284,8 @@ body.resizing-panel {
 .viewer-nav .remote-inline.expanded canvas,
 .tv .viewer-nav .remote-inline.expanded canvas {
   display: block;
-  width: 180px;
-  height: 180px;
+  width: 148px;
+  height: 148px;
   margin: 0 auto;
 }
 .viewer-nav .remote-inline.expanded #remote-new-session {
@@ -970,13 +970,13 @@ button:hover {
 
 .tv .viewer-nav .remote-inline.expanded,
 .tv .viewer-nav .remote-inline.expanded[data-connected="true"] {
-  width: min(212px, calc(100vw - 7rem));
+  width: min(180px, calc(100vw - 7rem));
   height: auto;
   padding: 14px;
 }
 
 .tv .viewer-nav .remote-inline.expanded canvas {
-  width: min(180px, calc(100vw - 9rem));
+  width: min(148px, calc(100vw - 9rem));
   height: auto;
 }
 

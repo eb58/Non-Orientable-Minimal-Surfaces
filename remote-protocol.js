@@ -20,6 +20,24 @@ export const randomToken = (bytes = 16) => {
   return Array.from(values, value => value.toString(16).padStart(2, "0")).join("");
 };
 
+const hexToBase64Url = hex => btoa(String.fromCharCode(...hex.match(/.{2}/g).map(byte => parseInt(byte, 16))))
+  .replaceAll("+", "-").replaceAll("/", "_").replace(/=+$/, "");
+const base64UrlToHex = value => Array.from(atob(value.replaceAll("-", "+").replaceAll("_", "/")))
+  .map(character => character.charCodeAt(0).toString(16).padStart(2, "0")).join("");
+
+export const PUBLIC_REMOTE_SECRET = "00000000000000000000000000000000";
+export const remoteCredentialsHash = room => hexToBase64Url(room);
+
+export const parseRemoteCredentials = hash => {
+  const value = hash.replace(/^#/, "");
+  if (/^[A-Za-z0-9_-]{8}$/.test(value))
+    return { room: base64UrlToHex(value), secret: PUBLIC_REMOTE_SECRET, relay: null };
+  const compact = value.match(/^([A-Za-z0-9_-]{8})\.([A-Za-z0-9_-]{22})$/);
+  if (compact) return { room: base64UrlToHex(compact[1]), secret: base64UrlToHex(compact[2]), relay: null };
+  const params = new URLSearchParams(value);
+  return { room: params.get("room"), secret: params.get("secret"), relay: params.get("relay") };
+};
+
 export const websocketUrl = (relayUrl, room, role, secret) => {
   const url = new URL(`/room/${encodeURIComponent(room)}`, relayUrl);
   url.protocol = url.protocol === "https:" ? "wss:" : "ws:";

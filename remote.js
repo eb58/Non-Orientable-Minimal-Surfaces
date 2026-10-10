@@ -1,10 +1,10 @@
-import { sanitizeRemoteCommand, websocketUrl } from "./remote-protocol.js";
+import { parseRemoteCredentials, sanitizeRemoteCommand, websocketUrl } from "./remote-protocol.js";
 import { REMOTE_RELAY_URL } from "./remote-config.js";
 
-const params = new URLSearchParams(location.hash.slice(1));
-const room = params.get("room");
-const secret = params.get("secret");
-const relay = params.get("relay") || REMOTE_RELAY_URL;
+const credentials = parseRemoteCredentials(location.hash);
+const room = credentials.room;
+const secret = credentials.secret;
+const relay = credentials.relay || REMOTE_RELAY_URL;
 const status = document.querySelector("#connection-status");
 const touchpad = document.querySelector("#touchpad");
 const motionToggle = document.querySelector("#motion-toggle");
