@@ -6,6 +6,9 @@ export const normalizeRotationSpeed = value => Math.min(
   Math.max(ROTATION_SPEED.min, Number(value) || ROTATION_SPEED.default)
 );
 
+export const isPresentationInteraction = event =>
+  event.type !== "pointermove" || event.buttons !== 0;
+
 export const createInteractionPause = ({
   delay = PRESENTATION_IDLE_DELAY_MS,
   onPause,

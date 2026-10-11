@@ -5,6 +5,7 @@ import {
   PRESENTATION_IDLE_DELAY_MS,
   ROTATION_SPEED,
   createInteractionPause,
+  isPresentationInteraction,
   nextPresentationIndices,
   normalizeRotationSpeed
 } from "../presentation.js";
@@ -27,6 +28,13 @@ describe("Präsentationsschleife", () => {
     assert.equal(normalizeRotationSpeed(0.1), ROTATION_SPEED.min);
     assert.equal(normalizeRotationSpeed(4), ROTATION_SPEED.max);
     assert.equal(normalizeRotationSpeed(1.5), 1.5);
+  });
+
+  it("wertet bloße Mausbewegungen nicht als Interaktion", () => {
+    assert.equal(isPresentationInteraction({ type: "pointermove", buttons: 0 }), false);
+    assert.equal(isPresentationInteraction({ type: "pointermove", buttons: 1 }), true);
+    assert.equal(isPresentationInteraction({ type: "pointerdown", buttons: 1 }), true);
+    assert.equal(isPresentationInteraction({ type: "wheel" }), true);
   });
 
   it("wechselt zunächst nur zur nächsten Fläche", () => assert.deepEqual(step(1), {

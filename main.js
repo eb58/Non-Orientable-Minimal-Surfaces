@@ -3,7 +3,12 @@ import { createRenderer } from "./renderer.js";
 import { createUI } from "./ui.js";
 import { MATERIAL_MODES, adjacentMaterialMode } from "./materials.js";
 import { BACKGROUND_IDS } from "./backgrounds.js";
-import { createInteractionPause, nextPresentationIndices, normalizeRotationSpeed } from "./presentation.js";
+import {
+  createInteractionPause,
+  isPresentationInteraction,
+  nextPresentationIndices,
+  normalizeRotationSpeed
+} from "./presentation.js";
 import { constrainDomain, migrateStorageState, resetDomainState } from "./storage-state.js";
 import { createRemoteDisplay } from "./remote-display.js";
 
@@ -324,7 +329,10 @@ services.ui.syncMaterialSelector(state.materialMode);
 services.ui.syncBackground(state.background);
 services.renderer.setAutoRotateSpeed(state.rotationSpeed);
 services.ui.syncRotationSpeed(state.rotationSpeed);
-const noteUserActivity = () => interactionPause.noteActivity();
+const noteUserActivity = event => {
+  if (event && !isPresentationInteraction(event)) return;
+  interactionPause.noteActivity();
+};
 ["pointerdown", "pointermove", "wheel", "keydown", "input"].forEach(type =>
   document.addEventListener(type, noteUserActivity, { capture: true, passive: true })
 );
