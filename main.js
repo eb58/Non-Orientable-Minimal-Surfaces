@@ -3,7 +3,7 @@ import { createRenderer } from "./renderer.js";
 import { createUI } from "./ui.js";
 import { MATERIAL_MODES, adjacentMaterialMode } from "./materials.js";
 import { BACKGROUND_IDS } from "./backgrounds.js";
-import { nextPresentationIndices, normalizeRotationSpeed } from "./presentation.js";
+import { createInteractionPause, nextPresentationIndices, normalizeRotationSpeed } from "./presentation.js";
 import { constrainDomain, migrateStorageState, resetDomainState } from "./storage-state.js";
 import { createRemoteDisplay } from "./remote-display.js";
 
@@ -66,6 +66,7 @@ const state = {
   sliderFrame: 0
 };
 const services = { renderer: null, ui: null };
+let interactionPause = null;
 const defaultViewFor = surface => surface?.initialView || services.renderer.defaultView();
 
 const domainFor = surface => {
@@ -247,6 +248,7 @@ const saveImage = () => services.renderer.saveImage(state.surface ? domainKey(st
 const toggleAutoRotate = () => {
   state.autoRotating = !state.autoRotating;
   services.renderer.setAutoRotate(state.autoRotating);
+  interactionPause.setPlaying(state.autoRotating);
   services.ui.syncRotation(state.autoRotating);
 };
 const updateRotationSpeed = value => {
@@ -291,6 +293,10 @@ services.renderer = createRenderer({
   onViewChange: saveCurrentView,
   onAutoRotationComplete: advancePresentation
 });
+interactionPause = createInteractionPause({
+  onPause: () => services.renderer.setAutoRotatePaused(true),
+  onResume: () => services.renderer.setAutoRotatePaused(false)
+});
 services.ui = createUI({
   surfaces,
   getObjectPosition: objectPositionFor,
@@ -318,8 +324,13 @@ services.ui.syncMaterialSelector(state.materialMode);
 services.ui.syncBackground(state.background);
 services.renderer.setAutoRotateSpeed(state.rotationSpeed);
 services.ui.syncRotationSpeed(state.rotationSpeed);
+const noteUserActivity = () => interactionPause.noteActivity();
+["pointerdown", "pointermove", "wheel", "keydown", "input"].forEach(type =>
+  document.addEventListener(type, noteUserActivity, { capture: true, passive: true })
+);
 createRemoteDisplay({
   onCommand: command => {
+    noteUserActivity();
     switch (command.type) {
       case "rotate": services.renderer.nudgeView({ horizontal: command.dx, vertical: command.dy }); break;
       case "object-rotate": services.renderer.rotateObject(command); break;

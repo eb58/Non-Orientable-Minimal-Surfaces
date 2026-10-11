@@ -558,6 +558,7 @@ export const createRenderer = ({
     controls.autoRotate = enabled;
     autoRotation.angle = 0;
   };
+  const setAutoRotatePaused = paused => { controls.autoRotate = !paused; };
   const setAutoRotateSpeed = factor => { controls.autoRotateSpeed = ROTATION_SPEED.base * factor; };
 
   controls.addEventListener("change", onViewChange);
@@ -569,6 +570,6 @@ export const createRenderer = ({
 
   return {
     applyView, currentView, defaultView, nudgeView, rotateObject, translateObject, renderSurface, resize, animate, saveImage,
-    setObjectPosition, setAutoRotate, setAutoRotateSpeed, startRecording, stopRecording, isRecording
+    setObjectPosition, setAutoRotate, setAutoRotatePaused, setAutoRotateSpeed, startRecording, stopRecording, isRecording
   };
 };

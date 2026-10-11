@@ -76,7 +76,7 @@ Die Formeln fuer `f` und `g` stehen in `math.js` direkt bei den Presets.
 - `main.js` verbindet State, Mathematik, Renderer und UI.
 - `styles.css` enthaelt das responsive Layout und das resizable Panel.
 - `complex.js` ist ein lokaler ESM-Adapter und exportiert `C$`.
-- `vendor/complex/` enthaelt die vendorte ESM-Fassung von `cops.js`, `tokenizer.js` und `complex.js` aus dem [algorithms-js-Repository](https://github.com/eb58/algorithms-js), Stand `b7e1b2a3ea1a81219b9bb806b9e9590c988223f9`; die App benoetigt dafuer keinen Laufzeit-Netzwerkzugriff.
+- `vendor/complex/` enthaelt die vendorte ESM-Fassung von `cops.js`, `tokenizer.js` und `complex.js` aus dem [algorithms-js-Repository](https://github.com/eb58/algorithms-js), Stand `54fd1be3de405c42f9edb05ce79c243b8f0e4a8c`; die App benoetigt dafuer keinen Laufzeit-Netzwerkzugriff.
 - `vendor/three/` enthaelt Three.js und OrbitControls lokal, damit die App ohne CDN laeuft.
 
 ## Tests

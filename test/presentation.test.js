@@ -1,6 +1,13 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { AUTO_ROTATION_TURNS, ROTATION_SPEED, nextPresentationIndices, normalizeRotationSpeed } from "../presentation.js";
+import {
+  AUTO_ROTATION_TURNS,
+  PRESENTATION_IDLE_DELAY_MS,
+  ROTATION_SPEED,
+  createInteractionPause,
+  nextPresentationIndices,
+  normalizeRotationSpeed
+} from "../presentation.js";
 
 const step = surfaceIndex => nextPresentationIndices({
   surfaceIndex,
@@ -42,4 +49,49 @@ describe("Präsentationsschleife", () => {
     materialIndex: 3,
     themeChanged: false
   }));
+
+  it("pausiert bei Eingaben und setzt nach 30 Sekunden Inaktivität fort", () => {
+    const events = [];
+    const timers = new Map();
+    let nextTimer = 0;
+    const pause = createInteractionPause({
+      onPause: () => events.push("pause"),
+      onResume: () => events.push("resume"),
+      setTimer: (callback, delay) => {
+        const id = ++nextTimer;
+        timers.set(id, { callback, delay });
+        return id;
+      },
+      clearTimer: id => timers.delete(id)
+    });
+
+    pause.setPlaying(true);
+    pause.noteActivity();
+    pause.noteActivity();
+
+    assert.deepEqual(events, ["pause"]);
+    assert.equal(timers.size, 1);
+    const [{ callback, delay }] = timers.values();
+    assert.equal(delay, PRESENTATION_IDLE_DELAY_MS);
+    callback();
+    assert.deepEqual(events, ["pause", "resume"]);
+  });
+
+  it("setzt eine bewusst gestoppte Präsentation nicht wieder fort", () => {
+    const events = [];
+    let resume;
+    const pause = createInteractionPause({
+      onPause: () => events.push("pause"),
+      onResume: () => events.push("resume"),
+      setTimer: callback => { resume = callback; return 1; },
+      clearTimer: () => {}
+    });
+
+    pause.setPlaying(true);
+    pause.noteActivity();
+    pause.setPlaying(false);
+    resume();
+
+    assert.deepEqual(events, ["pause"]);
+  });
 });
