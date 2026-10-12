@@ -273,7 +273,15 @@ export const createUI = ({
 
   const syncRotation = enabled => {
     rotationToggle.setAttribute("aria-pressed", String(enabled));
+    rotationToggle.dataset.paused = "false";
     const label = enabled ? "Präsentation stoppen" : "Präsentation starten";
+    rotationToggle.title = label;
+    rotationToggle.setAttribute("aria-label", label);
+  };
+  const syncRotationPaused = paused => {
+    rotationToggle.dataset.paused = String(paused);
+    if (!paused) return;
+    const label = "Präsentation pausiert – wird nach Inaktivität fortgesetzt";
     rotationToggle.title = label;
     rotationToggle.setAttribute("aria-label", label);
   };
@@ -558,6 +566,7 @@ export const createUI = ({
     syncHammerFactor,
     syncBackground,
     syncRotation,
+    syncRotationPaused,
     syncRotationSpeed,
     syncRecording
   };

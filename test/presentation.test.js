@@ -58,7 +58,7 @@ describe("Präsentationsschleife", () => {
     themeChanged: false
   }));
 
-  it("pausiert bei Eingaben und setzt nach 30 Sekunden Inaktivität fort", () => {
+  it("pausiert bei Eingaben und setzt nach 10 Sekunden Inaktivität fort", () => {
     const events = [];
     const timers = new Map();
     let nextTimer = 0;

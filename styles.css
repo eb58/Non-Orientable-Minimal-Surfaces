@@ -200,7 +200,38 @@ body.resizing-panel {
 }
 
 .viewer-nav-rotation {
+  position: relative;
   background: linear-gradient(135deg, #1f5c3a, #3fae72 55%, #143b26);
+}
+
+.rotation-pause-status {
+  position: absolute;
+  top: 50%;
+  right: calc(100% + 9px);
+  display: none;
+  transform: translateY(-50%);
+  border: 1px solid rgba(255, 214, 102, 0.75);
+  border-radius: 999px;
+  padding: 4px 9px;
+  color: #fff4c7;
+  background: rgba(75, 50, 8, 0.88);
+  box-shadow: 0 4px 14px rgba(5, 12, 20, 0.35);
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.viewer-nav-rotation[data-paused="true"] {
+  border-color: rgba(255, 214, 102, 0.85);
+  background: linear-gradient(135deg, #6d4b0f, #c58a20 55%, #4c3309);
+  box-shadow: 0 0 0 3px rgba(255, 196, 62, 0.22), 0 4px 14px rgba(5, 12, 20, 0.35);
+}
+
+.viewer-nav-rotation[data-paused="true"] .rotation-pause-status {
+  display: block;
 }
 
 .viewer-nav-rotation .icon-pause {

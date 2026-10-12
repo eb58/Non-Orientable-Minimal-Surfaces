@@ -299,8 +299,15 @@ services.renderer = createRenderer({
   onAutoRotationComplete: advancePresentation
 });
 interactionPause = createInteractionPause({
-  onPause: () => services.renderer.setAutoRotatePaused(true),
-  onResume: () => services.renderer.setAutoRotatePaused(false)
+  onPause: () => {
+    services.renderer.setAutoRotatePaused(true);
+    services.ui.syncRotationPaused(true);
+  },
+  onResume: () => {
+    services.renderer.setAutoRotatePaused(false);
+    services.ui.syncRotationPaused(false);
+    services.ui.syncRotation(true);
+  }
 });
 services.ui = createUI({
   surfaces,
