@@ -1,5 +1,5 @@
 export const AUTO_ROTATION_TURNS = 2;
-export const PRESENTATION_IDLE_DELAY_MS = 30_000;
+export const PRESENTATION_IDLE_DELAY_MS = 10_000;
 export const ROTATION_SPEED = { min: 0.25, max: 3, step: 0.05, default: 1, base: 5 };
 export const normalizeRotationSpeed = value => Math.min(
   ROTATION_SPEED.max,
