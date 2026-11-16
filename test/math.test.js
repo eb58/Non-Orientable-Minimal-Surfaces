@@ -329,6 +329,17 @@ describe("parametrisierte Flaechen", () => {
     assert.equal(rebuilt.vSegments, 441);
     assert.ok(allPoints(pointGridsFor(rebuilt)).every(isFiniteVector));
   });
+  it("S41-Windrad: ist das siebenzaehlige Preset der symmetrischen Schar", () => {
+    const surface = findSurface("S41-Windrad");
+    const defaults = Object.fromEntries(Object.entries(surface.parameters).map(([key, parameter]) => [key, parameter.value]));
+    assert.deepEqual(defaults, { N: 7, k: 5, tau: 1.27, beta: 38 });
+    assert.deepEqual(surface.uRange, [1, 1.1]);
+    assert.match(surface.fText, /z\^20$/);
+    const rebuilt = surface.withParameters({ ...defaults, beta: 0 });
+    assert.equal(rebuilt.name, "S41-Windrad");
+    assert.deepEqual(rebuilt.uRange, [1, 1.1]);
+    assert.ok(allPoints(pointGridsFor(surface)).every(isFiniteVector));
+  });
   it("S41-Symmetrisch: Weierstrass-Daten sind N-zaehlig drehsymmetrisch und tau = 0 ergibt S41", () => {
     const surface = findSurface("S41-Symmetrisch");
     const distance = (a, b) => Math.hypot(a.re - b.re, a.im - b.im);

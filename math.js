@@ -577,6 +577,7 @@ export const surfaces = [
   s41Morph(),
   s41Mix(),
   s41Symmetric(),
+  s41Symmetric({ name: "S41-Windrad", N: 7, k: 5, tau: 1.27, beta: 38, r2: 1.1 }),
   cobra(),
   kusner({ name: "Kusner" }),
   richmond(),
