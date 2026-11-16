@@ -56,6 +56,9 @@ Der Play-Knopf startet eine Präsentationsschleife: Jede Fläche der Loop dreht 
 ## Enthaltene Flaechen
 
 - Meeks' minimales Moebiusband sowie weitere S41-Presets mit einstellbaren ungeraden Parametern `m` und `n`, wobei `n < m` gilt
+- S41-Morph, eine Schar minimaler Moebiusbaender, die S41(`m`, `n`) bei `α = 90°` stetig mit S41(`m`, `j`) bei `α = 0°` verbindet; `j < n < m` sind ungerade. In den Formeln stehen `c = cos α` und `s = sin α · e^(iβ)`; die Phase `β` verdreht die Schlaufen gegeneinander. Mit den Standardwerten `m = 5`, `n = 3`, `j = 1` verformt sich das Trefoil in das UFO
+- S41-Mix, eine Schar minimaler Moebiusbaender, die S41(`m`, 1), S41(`m`, 3) und S41(`m`, 5) gleichzeitig mischt. Die Gewichte `w1`, `w3`, `w5` werden intern auf `|c1|² + |c3|² + |c5|² = 1` normiert, die Phasen `β3` und `β5` verdrehen die Anteile gegeneinander; steht nur ein Gewicht auf 1, erscheint die jeweilige S41-Flaeche
+- S41-Symmetrisch, eine Schar minimaler Moebiusbaender mit `N`-zaehliger Drehsymmetrie fuer jede Parameterwahl: die Weierstrass-Daten haengen nur ueber `z^N` von `z` ab. `τ = 0` ergibt S41(`k + 2N`, `N`), `τ` verformt die Flaeche bei erhaltener Symmetrie, und fuer `β = 0°` oder `180°` kommen `N` Spiegelebenen hinzu. `N` und `k` sind ungerade, `N` teilt `k` nicht. Bei `β = 180°`, `τ ≈ 0.88` hat die Flaeche einen Verzweigungspunkt
 - Cobra mit ungeradem Exponenten `m` und stetigem Deformationsparameter `t`; `t = 1` entspricht der klassischen Form
 - Grad-7-Familie mit dem freien komplexen Parameter `c = Re c + i Im c`
 - S42, eine nichtorientierbare Minimalflaeche vom Typ einer zweifach punktierten projektiven Ebene

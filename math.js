@@ -86,6 +86,138 @@ const s41 = ({ name, m, n, r1 = 1, r2 = 1.2, uSegments = 58, vSegments = 221 }) 
   withParameters: values => s41({ name, ...values, r1, r2, uSegments, vSegments })
 });
 
+// Verbindet S41(m, n) bei alpha = 90° stetig mit S41(m, j) bei alpha = 0°.
+// Mit p = z^n - c z^(n-j) - s und q = 1 + c z^j + conj(s) z^n schliessen sich die Perioden
+// genau wegen c^2 + |s|^2 = 1; n und j ungerade, j < n < m. Die Phase beta von s = sin(alpha) e^(i beta)
+// verdreht die Schlaufen gegeneinander und laesst die Periodenbedingung unberuehrt.
+const s41Morph = ({ name = "S41-Morph", m = 5, n = 3, j = 1, alpha = 45, beta = 0, r2 = 1.4, uSegments = 58, vSegments = 301 } = {}) => {
+  const radians = alpha * Math.PI / 180;
+  const phase = beta * Math.PI / 180;
+  const q = `(1 + c * ${zPowerText(j)} + conj(s) * ${zPowerText(n)})`;
+  return surfaceWithFormulas({
+    name,
+    ...annulus(1, r2, uSegments, vSegments),
+    fText: `z => i * ${q}^2 / z^${m + 1}`,
+    gText: `z => ${zPowerText(m - n)} * (${zPowerText(n)} - c * ${zPowerText(n - j)} - s) / ${q}`,
+    constants: {
+      c: Math.cos(radians),
+      s: { re: Math.sin(radians) * Math.cos(phase), im: Math.sin(radians) * Math.sin(phase) }
+    },
+    parameters: {
+      m: { label: "m", min: 5, max: 13, step: 2, value: m, format: value => Math.round(value).toString() },
+      n: { label: "n", min: 3, max: 11, step: 2, value: n, format: value => Math.round(value).toString() },
+      j: { label: "j", min: 1, max: 9, step: 2, value: j, format: value => Math.round(value).toString() },
+      alpha: { label: "α", min: 0, max: 90, step: 1, value: alpha, format: value => `${Math.round(value)}°` },
+      beta: { label: "β", min: 0, max: 360, step: 1, value: beta, format: value => `${Math.round(value)}°` }
+    },
+    normalizeParameters: values => {
+      const nextM = oddInRange(values.m ?? m, 5, 13);
+      const nextN = oddInRange(values.n ?? n, 3, nextM - 2);
+      return {
+        m: nextM,
+        n: nextN,
+        j: oddInRange(values.j ?? j, 1, nextN - 2),
+        alpha: clamp(0, Number(values.alpha ?? alpha), 90),
+        beta: clamp(0, Number(values.beta ?? beta), 360)
+      };
+    },
+    withParameters: values => s41Morph({ name, ...values, r2, uSegments, vSegments })
+  });
+};
+
+// Mischt die drei Flaechen S41(m, 1), S41(m, 3) und S41(m, 5): p = z^5 - c1 z^4 - c3 z^2 - c5 und
+// q = 1 + conj(c1) z + conj(c3) z^3 + conj(c5) z^5. Weil nur ungerade Terme vorkommen, schliessen
+// sich die Perioden genau dann, wenn |c1|^2 + |c3|^2 + |c5|^2 = 1 gilt; die Phasen sind frei.
+const S41_MIX_TERMS = [1, 3, 5];
+const s41MixWeights = values => {
+  const weights = S41_MIX_TERMS.map(term => clamp(0, Number(values[`w${term}`]), 1));
+  return weights.some(weight => weight > 0) ? weights : [0, 0, 1];
+};
+const s41Mix = ({ name = "S41-Mix", m = 7, w1 = 1, w3 = 1, w5 = 1, b3 = 0, b5 = 0, r2 = 1.3, uSegments = 58, vSegments = 361 } = {}) => {
+  const weights = s41MixWeights({ w1, w3, w5 });
+  const norm = Math.hypot(...weights);
+  const phases = [0, b3, b5].map(degrees => degrees * Math.PI / 180);
+  const coefficients = weights.map((weight, index) => ({
+    re: weight / norm * Math.cos(phases[index]),
+    im: weight / norm * Math.sin(phases[index])
+  }));
+  const weightParameter = (term, value) => ({
+    label: `w${term}`, min: 0, max: 1, step: 0.01, value, format: weight => Number(weight).toFixed(2)
+  });
+  const phaseParameter = (term, value) => ({
+    label: `β${term}`, min: 0, max: 360, step: 1, value, format: degrees => `${Math.round(degrees)}°`
+  });
+  const q = "(1 + conj(c1) * z + conj(c3) * z^3 + conj(c5) * z^5)";
+  return surfaceWithFormulas({
+    name,
+    ...annulus(1, r2, uSegments, vSegments),
+    fText: `z => i * ${q}^2 / z^${m + 1}`,
+    gText: `z => ${zPowerText(m - 5)} * (z^5 - c1 * z^4 - c3 * z^2 - c5) / ${q}`,
+    constants: { c1: coefficients[0], c3: coefficients[1], c5: coefficients[2] },
+    parameters: {
+      m: { label: "m", min: 7, max: 13, step: 2, value: m, format: value => Math.round(value).toString() },
+      w1: weightParameter(1, w1),
+      w3: weightParameter(3, w3),
+      w5: weightParameter(5, w5),
+      b3: phaseParameter(3, b3),
+      b5: phaseParameter(5, b5)
+    },
+    normalizeParameters: values => {
+      const [nextW1, nextW3, nextW5] = s41MixWeights({ w1: values.w1 ?? w1, w3: values.w3 ?? w3, w5: values.w5 ?? w5 });
+      return {
+        m: oddInRange(values.m ?? m, 7, 13),
+        w1: nextW1,
+        w3: nextW3,
+        w5: nextW5,
+        b3: clamp(0, Number(values.b3 ?? b3), 360),
+        b5: clamp(0, Number(values.b5 ?? b5), 360)
+      };
+    },
+    withParameters: values => s41Mix({ name, ...values, r2, uSegments, vSegments })
+  });
+};
+
+// N-zaehlig drehsymmetrische Moebiusbaender: p und q haengen nur von z^N ab,
+// p = z^(2N) - a z^N + b und q = 1 + a z^N + conj(b) z^(2N) mit a = cosh(tau), b = sinh(tau) e^(i beta).
+// Die Perioden schliessen sich wegen a^2 = 1 + |b|^2, solange N kein Teiler von k ist. tau = 0 ergibt
+// S41(k + 2N, N); fuer beta = 0° oder 180° kommen N Spiegelebenen hinzu.
+const s41SymmetricK = (k, N) => {
+  const odd = oddInRange(k, 1, 7);
+  return odd % N !== 0 ? odd : odd + 2 <= 7 ? odd + 2 : odd - 2;
+};
+const s41Symmetric = ({ name = "S41-Symmetrisch", N = 3, k = 1, tau = 0.6, beta = 0, r2 = 1.25, uSegments = 58 } = {}) => {
+  const phase = beta * Math.PI / 180;
+  const zN = zPowerText(N);
+  const z2N = zPowerText(2 * N);
+  const q = `(1 + a * ${zN} + conj(b) * ${z2N})`;
+  return surfaceWithFormulas({
+    name,
+    ...annulus(1, r2, uSegments, 241 + 40 * N),
+    fText: `z => i * ${q}^2 / z^${k + 2 * N + 1}`,
+    gText: `z => ${zPowerText(k)} * (${z2N} - a * ${zN} + b) / ${q}`,
+    constants: {
+      a: Math.cosh(tau),
+      b: { re: Math.sinh(tau) * Math.cos(phase), im: Math.sinh(tau) * Math.sin(phase) }
+    },
+    parameters: {
+      N: { label: "N", min: 3, max: 7, step: 2, value: N, format: value => Math.round(value).toString() },
+      k: { label: "k", min: 1, max: 7, step: 2, value: k, format: value => Math.round(value).toString() },
+      tau: { label: "τ", min: 0, max: 2, step: 0.01, value: tau, format: value => Number(value).toFixed(2) },
+      beta: { label: "β", min: 0, max: 360, step: 1, value: beta, format: value => `${Math.round(value)}°` }
+    },
+    normalizeParameters: values => {
+      const nextN = oddInRange(values.N ?? N, 3, 7);
+      return {
+        N: nextN,
+        k: s41SymmetricK(values.k ?? k, nextN),
+        tau: clamp(0, Number(values.tau ?? tau), 2),
+        beta: clamp(0, Number(values.beta ?? beta), 360)
+      };
+    },
+    withParameters: values => s41Symmetric({ name, ...values, r2, uSegments })
+  });
+};
+
 const cobra = ({ name = "Cobra", m = 5, t = 1, r2 = 1.2, uSegments = 58, vSegments = 221 } = {}) =>
   surfaceWithFormulas({
     name,
@@ -442,6 +574,9 @@ export const surfaces = [
   s41({ name: "S41_5_3 Trefoil         ", m: 5, n: 3, r1: 1.0, r2: 1.5 }),
   s41({ name: "S41_5_3 Double Trefoil  ", m: 5, n: 3, r1: 1.1, r2: 1.5 }),
   s41({ name: "S41_7_5                 ", m: 7, n: 5, r1: 1.1, r2: 1.3 }),
+  s41Morph(),
+  s41Mix(),
+  s41Symmetric(),
   cobra(),
   kusner({ name: "Kusner" }),
   richmond(),

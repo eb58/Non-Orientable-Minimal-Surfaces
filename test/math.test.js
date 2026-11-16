@@ -231,6 +231,144 @@ describe("parametrisierte Flaechen", () => {
     assert.equal(rebuilt.vSegments, 221);
     assert.ok(allPoints(pointGridsFor(rebuilt)).every(isFiniteVector));
   });
+  it("S41-Morph: normalisiert j < n < m und verbindet zwei S41-Flaechen", () => {
+    const surface = findSurface("S41-Morph");
+    assert.deepEqual(surface.normalizeParameters({ m: 4, n: 8, j: 6, alpha: 120 }), { m: 5, n: 3, j: 1, alpha: 90, beta: 0 });
+    assert.deepEqual(surface.normalizeParameters({ alpha: 30, beta: 400 }), { m: 5, n: 3, j: 1, alpha: 30, beta: 360 });
+    const rebuilt = surface.withParameters({ m: 7, n: 5, j: 3, alpha: 20 });
+    assert.match(rebuilt.fText, /z\^8$/);
+    assert.match(rebuilt.gText, /^z => z\^2 \* \(z\^5 - c \* z\^2 - s\)/);
+    assert.ok(allPoints(pointGridsFor(rebuilt)).every(isFiniteVector));
+
+    const s41 = surfaces.find(candidate => candidate.name.trim().startsWith("S41_3_1"));
+    const z = C$(1.07, 0.31);
+    const sameData = (a, b) => Math.hypot(a.f(z).re - b.f(z).re, a.f(z).im - b.f(z).im) < 1e-12
+      && Math.hypot(a.g(z).re - b.g(z).re, a.g(z).im - b.g(z).im) < 1e-12;
+    assert.ok(sameData(surface.withParameters({ m: 5, n: 3, j: 1, alpha: 90 }), s41.withParameters({ m: 5, n: 3 })));
+    assert.ok(sameData(surface.withParameters({ m: 5, n: 3, j: 1, alpha: 0 }), s41.withParameters({ m: 5, n: 1 })));
+  });
+  it("S41-Morph: die Flaeche schliesst sich auf dem Einheitskreis antipodal", () => {
+    [0, 70, 180].forEach(beta => {
+    const surface = findSurface("S41-Morph").withParameters({ m: 5, n: 3, j: 1, alpha: 45, beta });
+    const steps = 4000;
+    const halfTurn = Array.from({ length: steps }, (_, index) => {
+      const angle = Math.PI * (index + 0.5) / steps;
+      const point = C$(Math.cos(angle), Math.sin(angle));
+      const dz = C$(-Math.sin(angle) * Math.PI / steps, Math.cos(angle) * Math.PI / steps);
+      const f = surface.f(point);
+      const g = surface.g(point);
+      const product = (a, b) => ({ re: a.re * b.re - a.im * b.im, im: a.re * b.im + a.im * b.re });
+      const g2 = product(g, g);
+      return [
+        product(product(f, { re: (1 - g2.re) / 2, im: -g2.im / 2 }), dz).re,
+        product(product(product({ re: 0, im: 1 }, f), { re: (1 + g2.re) / 2, im: g2.im / 2 }), dz).re,
+        product(product(f, g), dz).re
+      ];
+    }).reduce((sum, delta) => sum.map((value, axis) => value + delta[axis]), [0, 0, 0]);
+    assert.ok(Math.hypot(...halfTurn) < 1e-5, `beta = ${beta}: X(-1) - X(1) = ${halfTurn}`);
+    });
+  });
+  it("S41-Mix: normalisiert Gewichte und Phasen und trifft die drei S41-Ecken", () => {
+    const surface = findSurface("S41-Mix");
+    assert.deepEqual(
+      surface.normalizeParameters({ m: 8, w1: 2, w3: -1, w5: 0.4, b3: 400, b5: -5 }),
+      { m: 9, w1: 1, w3: 0, w5: 0.4, b3: 360, b5: 0 }
+    );
+    assert.deepEqual(
+      surface.normalizeParameters({ w1: 0, w3: 0, w5: 0 }),
+      { m: 7, w1: 0, w3: 0, w5: 1, b3: 0, b5: 0 }
+    );
+    const rebuilt = surface.withParameters({ m: 9, w1: 0.3, w3: 1, w5: 0.6, b3: 77, b5: 201 });
+    assert.match(rebuilt.fText, /z\^10$/);
+    assert.match(rebuilt.gText, /^z => z\^4 \* /);
+    assert.ok(allPoints(pointGridsFor(rebuilt)).every(isFiniteVector));
+
+    const s41 = surfaces.find(candidate => candidate.name.trim().startsWith("S41_3_1"));
+    const z = C$(1.07, 0.31);
+    const distance = (a, b) => Math.hypot(a.re - b.re, a.im - b.im);
+    [[1, { w1: 1, w3: 0, w5: 0 }], [3, { w1: 0, w3: 1, w5: 0 }], [5, { w1: 0, w3: 0, w5: 1 }]].forEach(([n, weights]) => {
+      const corner = surface.withParameters({ m: 7, b3: 0, b5: 0, ...weights });
+      const reference = s41.withParameters({ m: 7, n });
+      assert.ok(distance(corner.f(z), reference.f(z)) < 1e-12, `f, n = ${n}`);
+      assert.ok(distance(corner.g(z), reference.g(z)) < 1e-12, `g, n = ${n}`);
+    });
+  });
+  it("S41-Mix: die Flaeche schliesst sich fuer beliebige Gewichte und Phasen", () => {
+    const product = (a, b) => ({ re: a.re * b.re - a.im * b.im, im: a.re * b.im + a.im * b.re });
+    [
+      { m: 7, w1: 1, w3: 1, w5: 1, b3: 0, b5: 0 },
+      { m: 9, w1: 0.3, w3: 1, w5: 0.6, b3: 77, b5: 201 },
+      { m: 13, w1: 1, w3: 0.2, w5: 0.05, b3: 300, b5: 45 }
+    ].forEach(values => {
+      const surface = findSurface("S41-Mix").withParameters(values);
+      const steps = 4000;
+      const halfTurn = Array.from({ length: steps }, (_, index) => {
+        const angle = Math.PI * (index + 0.5) / steps;
+        const point = C$(Math.cos(angle), Math.sin(angle));
+        const dz = { re: -Math.sin(angle) * Math.PI / steps, im: Math.cos(angle) * Math.PI / steps };
+        const f = surface.f(point);
+        const g = surface.g(point);
+        const g2 = product(g, g);
+        return [
+          product(product(f, { re: (1 - g2.re) / 2, im: -g2.im / 2 }), dz).re,
+          product(product(product({ re: 0, im: 1 }, f), { re: (1 + g2.re) / 2, im: g2.im / 2 }), dz).re,
+          product(product(f, g), dz).re
+        ];
+      }).reduce((sum, delta) => sum.map((value, axis) => value + delta[axis]), [0, 0, 0]);
+      assert.ok(Math.hypot(...halfTurn) < 1e-5, `${JSON.stringify(values)}: X(-1) - X(1) = ${halfTurn}`);
+    });
+  });
+  it("S41-Symmetrisch: normalisiert die Parameter und haelt N und k teilerfremd", () => {
+    const surface = findSurface("S41-Symmetrisch");
+    assert.deepEqual(surface.normalizeParameters({ N: 4, k: 2, tau: 5, beta: -3 }), { N: 5, k: 3, tau: 2, beta: 0 });
+    assert.deepEqual(surface.normalizeParameters({ N: 3, k: 3 }), { N: 3, k: 5, tau: 0.6, beta: 0 });
+    assert.deepEqual(surface.normalizeParameters({ N: 7, k: 7 }), { N: 7, k: 5, tau: 0.6, beta: 0 });
+    const rebuilt = surface.withParameters({ N: 5, k: 3, tau: 0.8, beta: 40 });
+    assert.match(rebuilt.fText, /z\^14$/);
+    assert.match(rebuilt.gText, /^z => z\^3 \* \(z\^10 - a \* z\^5 \+ b\)/);
+    assert.equal(rebuilt.vSegments, 441);
+    assert.ok(allPoints(pointGridsFor(rebuilt)).every(isFiniteVector));
+  });
+  it("S41-Symmetrisch: Weierstrass-Daten sind N-zaehlig drehsymmetrisch und tau = 0 ergibt S41", () => {
+    const surface = findSurface("S41-Symmetrisch");
+    const distance = (a, b) => Math.hypot(a.re - b.re, a.im - b.im);
+    const product = (a, b) => ({ re: a.re * b.re - a.im * b.im, im: a.re * b.im + a.im * b.re });
+    const unit = angle => ({ re: Math.cos(angle), im: Math.sin(angle) });
+    [{ N: 3, k: 1, tau: 0.6, beta: 0 }, { N: 5, k: 3, tau: 1.4, beta: 250 }].forEach(values => {
+      const rebuilt = surface.withParameters(values);
+      const turn = TAU / values.N;
+      const z = { re: 1.07, im: 0.31 };
+      const rotated = product(z, unit(turn));
+      const at = point => C$(point.re, point.im);
+      assert.ok(distance(rebuilt.g(at(rotated)), product(unit(values.k * turn), rebuilt.g(at(z)))) < 1e-10);
+      assert.ok(distance(rebuilt.f(at(rotated)), product(unit(-(values.k + 1) * turn), rebuilt.f(at(z)))) < 1e-10);
+    });
+    const s41 = surfaces.find(candidate => candidate.name.trim().startsWith("S41_3_1")).withParameters({ m: 7, n: 3 });
+    const base = surface.withParameters({ N: 3, k: 1, tau: 0, beta: 0 });
+    const z = C$(1.07, 0.31);
+    assert.ok(distance(base.f(z), s41.f(z)) < 1e-12);
+    assert.ok(distance(base.g(z), s41.g(z)) < 1e-12);
+  });
+  it("S41-Symmetrisch: die Flaeche schliesst sich auf dem Einheitskreis antipodal", () => {
+    const product = (a, b) => ({ re: a.re * b.re - a.im * b.im, im: a.re * b.im + a.im * b.re });
+    [{ N: 3, k: 1, tau: 0.6, beta: 0 }, { N: 5, k: 3, tau: 1.4, beta: 250 }, { N: 7, k: 5, tau: 0.4, beta: 33 }].forEach(values => {
+      const surface = findSurface("S41-Symmetrisch").withParameters(values);
+      const steps = 6000;
+      const halfTurn = Array.from({ length: steps }, (_, index) => {
+        const angle = Math.PI * (index + 0.5) / steps;
+        const dz = { re: -Math.sin(angle) * Math.PI / steps, im: Math.cos(angle) * Math.PI / steps };
+        const f = surface.f(C$(Math.cos(angle), Math.sin(angle)));
+        const g = surface.g(C$(Math.cos(angle), Math.sin(angle)));
+        const g2 = product(g, g);
+        return [
+          product(product(f, { re: (1 - g2.re) / 2, im: -g2.im / 2 }), dz).re,
+          product(product(product({ re: 0, im: 1 }, f), { re: (1 + g2.re) / 2, im: g2.im / 2 }), dz).re,
+          product(product(f, g), dz).re
+        ];
+      }).reduce((sum, delta) => sum.map((value, axis) => value + delta[axis]), [0, 0, 0]);
+      assert.ok(Math.hypot(...halfTurn) < 1e-4, `${JSON.stringify(values)}: X(-1) - X(1) = ${halfTurn}`);
+    });
+  });
   it("Grad-7-Familie: normalisiert den komplexen Parameter und erzeugt endliche Punkte", () => {
     const surface = findSurface("Grad-7-Familie");
     assert.deepEqual(surface.normalizeParameters({ cr: -4, ci: 4 }), { cr: -2.5, ci: 2.5 });
